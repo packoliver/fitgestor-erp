@@ -50,7 +50,7 @@ function CaixaPage() {
     mutationFn: async () => {
       if (!locationId) throw new Error("Selecione o local.");
       const { error } = await supabase.rpc("open_cash_session", {
-        _location_id: locationId, _opening_amount: Number(opening) || 0, _notes: openNotes || null,
+        _location_id: locationId, _opening_amount: Number(opening) || 0, _notes: openNotes || undefined,
       });
       if (error) throw error;
     },
@@ -63,7 +63,7 @@ function CaixaPage() {
       if (!session) throw new Error("Sem caixa aberto.");
       if (counted === "") throw new Error("Informe o valor contado.");
       const { error, data } = await supabase.rpc("close_cash_session", {
-        _session_id: session.id, _counted_amount: Number(counted), _notes: closeNotes || null,
+        _session_id: session.id, _counted_amount: Number(counted), _notes: closeNotes || undefined,
       });
       if (error) throw error;
       return data;
