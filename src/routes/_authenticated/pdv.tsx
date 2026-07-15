@@ -52,6 +52,9 @@ function PdvPage() {
   const [payMethod, setPayMethod] = useState<PaymentMethod>("cash");
   const [payAmount, setPayAmount] = useState("");
   const [payInst, setPayInst] = useState(1);
+  const [payRef, setPayRef] = useState("");
+  const [voucherInfo, setVoucherInfo] = useState<{ balance: number; code: string } | null>(null);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [requestId] = useState(newRequestId());
   const [submitting, setSubmitting] = useState(false);
 
