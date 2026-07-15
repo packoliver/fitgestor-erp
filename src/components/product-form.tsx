@@ -262,8 +262,8 @@ export function ProductForm({
               <Input value={values.name} maxLength={160} onChange={(e) => setValues({ ...values, name: e.target.value })} placeholder="Ex.: Blusa Dry Fit" />
             </div>
             <div className="space-y-2">
-              <Label className="text-muted-foreground text-xs">Cor</Label>
-              <p className="text-xs text-muted-foreground">Defina a cor em cada variação abaixo — um produto pode ter várias cores.</p>
+              <Label>Cor</Label>
+              <Input value={values.color ?? ""} maxLength={60} placeholder="Ex.: Preta" onChange={(e) => setValues({ ...values, color: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>Status</Label>
