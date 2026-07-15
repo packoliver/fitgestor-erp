@@ -323,7 +323,7 @@ export function ProductForm({
               <span className="text-xs text-muted-foreground mr-2 self-center">Adicionar tamanho rapidamente:</span>
               {SIZE_SUGGESTIONS.map((s) => (
                 <Button key={s} type="button" size="sm" variant="outline"
-                  onClick={() => setVariants((prev) => prev.some((v) => v.size === s && !v.color) ? prev : [...prev, emptyVariant("", s)])}>
+                  onClick={() => setVariants((prev) => prev.some((v) => v.size === s) ? prev : [...prev, emptyVariant(s)])}>
                   {s}
                 </Button>
               ))}
