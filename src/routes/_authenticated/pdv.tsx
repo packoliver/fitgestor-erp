@@ -397,6 +397,20 @@ function PdvPage() {
                 <Input type="number" min={1} max={12} className="w-20 h-8" value={payInst} onChange={(e) => setPayInst(Number(e.target.value) || 1)} />
               </div>
             )}
+            {payMethod === "exchange_voucher" && (
+              <div className="flex items-center gap-2 text-sm">
+                <Input placeholder="Código do vale" value={payRef} onChange={(e) => setPayRef(e.target.value.toUpperCase())} className="h-8" />
+                <Button size="sm" variant="outline" onClick={lookupVoucher}>Consultar</Button>
+                {voucherInfo && <span className="text-xs">Saldo: <b>{money(voucherInfo.balance)}</b></span>}
+              </div>
+            )}
+            {payMethod === "store_credit" && (
+              <div className="flex items-center gap-2 text-sm">
+                <Button size="sm" variant="outline" onClick={lookupCredit} disabled={!clientId}>Consultar saldo do cliente</Button>
+                {creditBalance !== null && <span className="text-xs">Saldo: <b>{money(creditBalance)}</b></span>}
+                {!clientId && <span className="text-xs text-muted-foreground">Selecione um cliente</span>}
+              </div>
+            )}
             <Button variant="ghost" size="sm" onClick={() => setPayAmount(remaining.toFixed(2))}>Preencher restante</Button>
             <div className="divide-y border-t">
               {payments.map((p, i) => (
