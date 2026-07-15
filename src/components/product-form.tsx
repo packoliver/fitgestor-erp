@@ -330,8 +330,7 @@ export function ProductForm({
             </div>
             <div className="space-y-2">
               {variants.map((v, i) => (
-                <div key={i} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-9">
-                  <Input className="sm:col-span-2" placeholder="Cor" value={v.color} onChange={(e) => updateVariant(i, "color", e.target.value)} />
+                <div key={i} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-8">
                   <Input className="sm:col-span-1" placeholder="Tamanho" value={v.size} onChange={(e) => updateVariant(i, "size", e.target.value)} />
                   <Input className="sm:col-span-2" placeholder="SKU" value={v.sku} onChange={(e) => updateVariant(i, "sku", e.target.value)} />
                   <Input className="sm:col-span-2" placeholder="Código de barras" value={v.barcode} onChange={(e) => updateVariant(i, "barcode", e.target.value)} />
@@ -342,8 +341,8 @@ export function ProductForm({
                   </Button>
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" onClick={() => setVariants([...variants, emptyVariant("", "")])}>
-                <Plus className="mr-2 h-4 w-4" />Adicionar variação
+              <Button type="button" variant="outline" size="sm" onClick={() => setVariants([...variants, emptyVariant("")])}>
+                <Plus className="mr-2 h-4 w-4" />Adicionar tamanho
               </Button>
             </div>
           </CardContent>
