@@ -317,7 +317,7 @@ export function ProductForm({
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Variações (cor + tamanho)</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Tamanhos</CardTitle></CardHeader>
           <CardContent>
             <div className="mb-3 flex flex-wrap gap-1">
               <span className="text-xs text-muted-foreground mr-2 self-center">Adicionar tamanho rapidamente:</span>
