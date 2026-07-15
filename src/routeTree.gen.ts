@@ -26,6 +26,7 @@ import { Route as AuthenticatedCargosRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedCaixaRouteImport } from './routes/_authenticated/caixa'
 import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
 import { Route as AuthenticatedVendasIndexRouteImport } from './routes/_authenticated/vendas.index'
+import { Route as AuthenticatedTrocasIndexRouteImport } from './routes/_authenticated/trocas.index'
 import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authenticated/produtos.index'
 import { Route as AuthenticatedEstoqueIndexRouteImport } from './routes/_authenticated/estoque.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
@@ -124,6 +125,12 @@ const AuthenticatedVendasIndexRoute =
     path: '/vendas/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTrocasIndexRoute =
+  AuthenticatedTrocasIndexRouteImport.update({
+    id: '/trocas/',
+    path: '/trocas/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProdutosIndexRoute =
   AuthenticatedProdutosIndexRouteImport.update({
     id: '/produtos/',
@@ -202,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/estoque/': typeof AuthenticatedEstoqueIndexRoute
   '/produtos/': typeof AuthenticatedProdutosIndexRoute
+  '/trocas/': typeof AuthenticatedTrocasIndexRoute
   '/vendas/': typeof AuthenticatedVendasIndexRoute
 }
 export interface FileRoutesByTo {
@@ -229,6 +237,7 @@ export interface FileRoutesByTo {
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/estoque': typeof AuthenticatedEstoqueIndexRoute
   '/produtos': typeof AuthenticatedProdutosIndexRoute
+  '/trocas': typeof AuthenticatedTrocasIndexRoute
   '/vendas': typeof AuthenticatedVendasIndexRoute
 }
 export interface FileRoutesById {
@@ -258,6 +267,7 @@ export interface FileRoutesById {
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/estoque/': typeof AuthenticatedEstoqueIndexRoute
   '/_authenticated/produtos/': typeof AuthenticatedProdutosIndexRoute
+  '/_authenticated/trocas/': typeof AuthenticatedTrocasIndexRoute
   '/_authenticated/vendas/': typeof AuthenticatedVendasIndexRoute
 }
 export interface FileRouteTypes {
@@ -287,6 +297,7 @@ export interface FileRouteTypes {
     | '/clientes/'
     | '/estoque/'
     | '/produtos/'
+    | '/trocas/'
     | '/vendas/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/estoque'
     | '/produtos'
+    | '/trocas'
     | '/vendas'
   id:
     | '__root__'
@@ -342,6 +354,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes/'
     | '/_authenticated/estoque/'
     | '/_authenticated/produtos/'
+    | '/_authenticated/trocas/'
     | '/_authenticated/vendas/'
   fileRoutesById: FileRoutesById
 }
@@ -474,6 +487,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVendasIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/trocas/': {
+      id: '/_authenticated/trocas/'
+      path: '/trocas'
+      fullPath: '/trocas/'
+      preLoaderRoute: typeof AuthenticatedTrocasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/produtos/': {
       id: '/_authenticated/produtos/'
       path: '/produtos'
@@ -561,6 +581,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
   AuthenticatedEstoqueIndexRoute: typeof AuthenticatedEstoqueIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
+  AuthenticatedTrocasIndexRoute: typeof AuthenticatedTrocasIndexRoute
   AuthenticatedVendasIndexRoute: typeof AuthenticatedVendasIndexRoute
 }
 
@@ -586,6 +607,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
   AuthenticatedEstoqueIndexRoute: AuthenticatedEstoqueIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
+  AuthenticatedTrocasIndexRoute: AuthenticatedTrocasIndexRoute,
   AuthenticatedVendasIndexRoute: AuthenticatedVendasIndexRoute,
 }
 
