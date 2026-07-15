@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { money, PAYMENT_LABELS } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
-import { Printer } from "lucide-react";
+import { Printer, Undo2 } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/trocas/$id")({
   component: TrocaDetalhe,
@@ -16,6 +20,10 @@ export const Route = createFileRoute("/_authenticated/trocas/$id")({
 
 function TrocaDetalhe() {
   const { id } = Route.useParams();
+  const qc = useQueryClient();
+  const [reverseReason, setReverseReason] = useState("");
+  const [reverseOpen, setReverseOpen] = useState(false);
+
   const { data: ex } = useQuery({
     queryKey: ["exchange", id],
     queryFn: async () => (await supabase.from("exchanges").select("*, client:clients(full_name, cpf), sale:sales(sale_number), location:stock_locations(name)").eq("id", id).maybeSingle()).data,
@@ -25,7 +33,24 @@ function TrocaDetalhe() {
   const { data: pays = [] } = useQuery({ queryKey: ["ex-pay", id], queryFn: async () => (await supabase.from("exchange_payments").select("*").eq("exchange_id", id)).data ?? [] });
   const { data: voucher } = useQuery({ queryKey: ["ex-voucher", id], queryFn: async () => (await supabase.from("exchange_vouchers").select("*").eq("issued_from_exchange_id", id).maybeSingle()).data });
 
+  const reverseMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("reverse_exchange", { _exchange_id: id, _reason: reverseReason });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Troca estornada");
+      setReverseOpen(false);
+      setReverseReason("");
+      qc.invalidateQueries();
+    },
+    onError: (err: any) => toast.error(err.message ?? "Erro ao estornar"),
+  });
+
   if (!ex) return <div>Carregando…</div>;
+
+  const canReverse = ex.status === "completed";
 
   return (
     <div>
@@ -34,18 +59,53 @@ function TrocaDetalhe() {
         description={formatDateTime(ex.completed_at ?? ex.created_at)}
         actions={<>
           <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
+          {canReverse && (
+            <AlertDialog open={reverseOpen} onOpenChange={setReverseOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive"><Undo2 className="mr-2 h-4 w-4" />Estornar troca</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Estornar troca #{ex.exchange_number}?</AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                    <div className="space-y-2 text-sm">
+                      <p>Esta ação é irreversível e ficará registrada em auditoria. Serão revertidos:</p>
+                      <ul className="list-disc pl-5">
+                        <li>Movimentos de estoque (itens novos voltam, devolvidos saem)</li>
+                        <li>Crédito da loja emitido: <b>{money(ex.store_credit_amount)}</b></li>
+                        <li>Vale emitido: <b>{money(ex.voucher_amount)}</b></li>
+                        <li>Movimentos de caixa em dinheiro</li>
+                      </ul>
+                      <p className="text-destructive">O estorno será bloqueado se o crédito ou vale já tiver sido utilizado.</p>
+                      <Textarea placeholder="Motivo do estorno (obrigatório)" value={reverseReason} onChange={(e) => setReverseReason(e.target.value)} />
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={reverseReason.trim().length < 3 || reverseMutation.isPending}
+                    onClick={(e) => { e.preventDefault(); reverseMutation.mutate(); }}
+                  >
+                    {reverseMutation.isPending ? "Estornando…" : "Confirmar estorno"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button asChild variant="outline"><Link to="/trocas">Voltar</Link></Button>
         </>}
       />
 
       <div className="grid gap-4 md:grid-cols-2 mb-4">
         <Card className="p-4 space-y-1 text-sm">
-          <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge>{ex.status}</Badge></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge variant={ex.status === "cancelled" ? "destructive" : "default"}>{ex.status}</Badge></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Tipo</span><b>{ex.type}</b></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Venda original</span><b>{ex.sale?.sale_number ? `#${ex.sale.sale_number}` : "—"}</b></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Cliente</span><b>{ex.client?.full_name ?? "—"}</b></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Local</span><b>{ex.location?.name ?? "—"}</b></div>
           {ex.reason && <div className="flex justify-between"><span className="text-muted-foreground">Motivo</span><b>{ex.reason}</b></div>}
+          {ex.cancellation_reason && <div className="flex justify-between"><span className="text-destructive">Motivo do estorno</span><b>{ex.cancellation_reason}</b></div>}
         </Card>
         <Card className="p-4 space-y-1 text-sm">
           <div className="flex justify-between"><span>Devolvido</span><b>{money(ex.subtotal_returned)}</b></div>

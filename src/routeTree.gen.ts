@@ -31,7 +31,9 @@ import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedEstoqueIndexRouteImport } from './routes/_authenticated/estoque.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
 import { Route as AuthenticatedVendasIdRouteImport } from './routes/_authenticated/vendas.$id'
+import { Route as AuthenticatedTrocasValesRouteImport } from './routes/_authenticated/trocas.vales'
 import { Route as AuthenticatedTrocasNovaRouteImport } from './routes/_authenticated/trocas.nova'
+import { Route as AuthenticatedTrocasCreditosRouteImport } from './routes/_authenticated/trocas.creditos'
 import { Route as AuthenticatedTrocasIdRouteImport } from './routes/_authenticated/trocas.$id'
 import { Route as AuthenticatedProdutosNovoRouteImport } from './routes/_authenticated/produtos.novo'
 import { Route as AuthenticatedProdutosIdRouteImport } from './routes/_authenticated/produtos.$id'
@@ -157,11 +159,23 @@ const AuthenticatedVendasIdRoute = AuthenticatedVendasIdRouteImport.update({
   path: '/vendas/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTrocasValesRoute =
+  AuthenticatedTrocasValesRouteImport.update({
+    id: '/trocas/vales',
+    path: '/trocas/vales',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTrocasNovaRoute = AuthenticatedTrocasNovaRouteImport.update({
   id: '/trocas/nova',
   path: '/trocas/nova',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTrocasCreditosRoute =
+  AuthenticatedTrocasCreditosRouteImport.update({
+    id: '/trocas/creditos',
+    path: '/trocas/creditos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTrocasIdRoute = AuthenticatedTrocasIdRouteImport.update({
   id: '/trocas/$id',
   path: '/trocas/$id',
@@ -226,7 +240,9 @@ export interface FileRoutesByFullPath {
   '/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/produtos/novo': typeof AuthenticatedProdutosNovoRoute
   '/trocas/$id': typeof AuthenticatedTrocasIdRoute
+  '/trocas/creditos': typeof AuthenticatedTrocasCreditosRoute
   '/trocas/nova': typeof AuthenticatedTrocasNovaRoute
+  '/trocas/vales': typeof AuthenticatedTrocasValesRoute
   '/vendas/$id': typeof AuthenticatedVendasIdRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/estoque/': typeof AuthenticatedEstoqueIndexRoute
@@ -257,7 +273,9 @@ export interface FileRoutesByTo {
   '/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/produtos/novo': typeof AuthenticatedProdutosNovoRoute
   '/trocas/$id': typeof AuthenticatedTrocasIdRoute
+  '/trocas/creditos': typeof AuthenticatedTrocasCreditosRoute
   '/trocas/nova': typeof AuthenticatedTrocasNovaRoute
+  '/trocas/vales': typeof AuthenticatedTrocasValesRoute
   '/vendas/$id': typeof AuthenticatedVendasIdRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/estoque': typeof AuthenticatedEstoqueIndexRoute
@@ -290,7 +308,9 @@ export interface FileRoutesById {
   '/_authenticated/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/_authenticated/produtos/novo': typeof AuthenticatedProdutosNovoRoute
   '/_authenticated/trocas/$id': typeof AuthenticatedTrocasIdRoute
+  '/_authenticated/trocas/creditos': typeof AuthenticatedTrocasCreditosRoute
   '/_authenticated/trocas/nova': typeof AuthenticatedTrocasNovaRoute
+  '/_authenticated/trocas/vales': typeof AuthenticatedTrocasValesRoute
   '/_authenticated/vendas/$id': typeof AuthenticatedVendasIdRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/estoque/': typeof AuthenticatedEstoqueIndexRoute
@@ -323,7 +343,9 @@ export interface FileRouteTypes {
     | '/produtos/$id'
     | '/produtos/novo'
     | '/trocas/$id'
+    | '/trocas/creditos'
     | '/trocas/nova'
+    | '/trocas/vales'
     | '/vendas/$id'
     | '/clientes/'
     | '/estoque/'
@@ -354,7 +376,9 @@ export interface FileRouteTypes {
     | '/produtos/$id'
     | '/produtos/novo'
     | '/trocas/$id'
+    | '/trocas/creditos'
     | '/trocas/nova'
+    | '/trocas/vales'
     | '/vendas/$id'
     | '/clientes'
     | '/estoque'
@@ -386,7 +410,9 @@ export interface FileRouteTypes {
     | '/_authenticated/produtos/$id'
     | '/_authenticated/produtos/novo'
     | '/_authenticated/trocas/$id'
+    | '/_authenticated/trocas/creditos'
     | '/_authenticated/trocas/nova'
+    | '/_authenticated/trocas/vales'
     | '/_authenticated/vendas/$id'
     | '/_authenticated/clientes/'
     | '/_authenticated/estoque/'
@@ -559,11 +585,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVendasIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/trocas/vales': {
+      id: '/_authenticated/trocas/vales'
+      path: '/trocas/vales'
+      fullPath: '/trocas/vales'
+      preLoaderRoute: typeof AuthenticatedTrocasValesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/trocas/nova': {
       id: '/_authenticated/trocas/nova'
       path: '/trocas/nova'
       fullPath: '/trocas/nova'
       preLoaderRoute: typeof AuthenticatedTrocasNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/trocas/creditos': {
+      id: '/_authenticated/trocas/creditos'
+      path: '/trocas/creditos'
+      fullPath: '/trocas/creditos'
+      preLoaderRoute: typeof AuthenticatedTrocasCreditosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/trocas/$id': {
@@ -651,7 +691,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProdutosIdRoute: typeof AuthenticatedProdutosIdRoute
   AuthenticatedProdutosNovoRoute: typeof AuthenticatedProdutosNovoRoute
   AuthenticatedTrocasIdRoute: typeof AuthenticatedTrocasIdRoute
+  AuthenticatedTrocasCreditosRoute: typeof AuthenticatedTrocasCreditosRoute
   AuthenticatedTrocasNovaRoute: typeof AuthenticatedTrocasNovaRoute
+  AuthenticatedTrocasValesRoute: typeof AuthenticatedTrocasValesRoute
   AuthenticatedVendasIdRoute: typeof AuthenticatedVendasIdRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
   AuthenticatedEstoqueIndexRoute: typeof AuthenticatedEstoqueIndexRoute
@@ -679,7 +721,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProdutosIdRoute: AuthenticatedProdutosIdRoute,
   AuthenticatedProdutosNovoRoute: AuthenticatedProdutosNovoRoute,
   AuthenticatedTrocasIdRoute: AuthenticatedTrocasIdRoute,
+  AuthenticatedTrocasCreditosRoute: AuthenticatedTrocasCreditosRoute,
   AuthenticatedTrocasNovaRoute: AuthenticatedTrocasNovaRoute,
+  AuthenticatedTrocasValesRoute: AuthenticatedTrocasValesRoute,
   AuthenticatedVendasIdRoute: AuthenticatedVendasIdRoute,
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
   AuthenticatedEstoqueIndexRoute: AuthenticatedEstoqueIndexRoute,
