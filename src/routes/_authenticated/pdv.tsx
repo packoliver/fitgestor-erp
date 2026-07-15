@@ -206,7 +206,7 @@ function PdvPage() {
         order_discount_type: orderDiscountType || null,
         order_discount_value: Number(orderDiscountValue) || 0,
         items: cart.map((l) => ({ variant_id: l.variant_id, quantity: l.quantity, unit_price: l.unit_price })),
-        payments: payments.map((p) => ({ payment_method: p.payment_method, amount: p.amount, installments: p.installments })),
+        payments: payments.map((p) => ({ payment_method: p.payment_method, amount: p.amount, installments: p.installments, reference: p.reference })),
       };
       const { data, error } = await supabase.rpc("complete_pos_sale", { _payload: payload });
       if (error) throw error;
