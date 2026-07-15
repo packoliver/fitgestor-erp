@@ -28,7 +28,6 @@ type VariantInput = {
 
 const productSchema = z.object({
   name: z.string().trim().min(2, "Nome obrigatório").max(160),
-  color: z.string().trim().max(60).optional().or(z.literal("")),
   short_description: z.string().trim().max(280).optional().or(z.literal("")),
   description: z.string().trim().max(4000).optional().or(z.literal("")),
   material: z.string().trim().max(120).optional().or(z.literal("")),
