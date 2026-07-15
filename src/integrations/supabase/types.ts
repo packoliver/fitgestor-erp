@@ -25,7 +25,7 @@ export type Database = {
           module: string
           new_data: Json | null
           old_data: Json | null
-          organization_id: string | null
+          organization_id: string
           user_agent: string | null
           user_id: string | null
         }
@@ -39,7 +39,7 @@ export type Database = {
           module: string
           new_data?: Json | null
           old_data?: Json | null
-          organization_id?: string | null
+          organization_id: string
           user_agent?: string | null
           user_id?: string | null
         }
@@ -53,7 +53,7 @@ export type Database = {
           module?: string
           new_data?: Json | null
           old_data?: Json | null
-          organization_id?: string | null
+          organization_id?: string
           user_agent?: string | null
           user_id?: string | null
         }
@@ -154,6 +154,10 @@ export type Database = {
           event_type: string
           external_event_id: string | null
           id: string
+          last_attempt_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          next_retry_at: string | null
           organization_id: string
           payload: Json | null
           processed_at: string | null
@@ -167,6 +171,10 @@ export type Database = {
           event_type: string
           external_event_id?: string | null
           id?: string
+          last_attempt_at?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          next_retry_at?: string | null
           organization_id: string
           payload?: Json | null
           processed_at?: string | null
@@ -180,6 +188,10 @@ export type Database = {
           event_type?: string
           external_event_id?: string | null
           id?: string
+          last_attempt_at?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          next_retry_at?: string | null
           organization_id?: string
           payload?: Json | null
           processed_at?: string | null
@@ -502,6 +514,7 @@ export type Database = {
       product_variants: {
         Row: {
           barcode: string | null
+          color: string | null
           cost_price: number | null
           created_at: string
           deleted_at: string | null
@@ -518,6 +531,7 @@ export type Database = {
         }
         Insert: {
           barcode?: string | null
+          color?: string | null
           cost_price?: number | null
           created_at?: string
           deleted_at?: string | null
@@ -534,6 +548,7 @@ export type Database = {
         }
         Update: {
           barcode?: string | null
+          color?: string | null
           cost_price?: number | null
           created_at?: string
           deleted_at?: string | null
@@ -570,7 +585,6 @@ export type Database = {
           brand_id: string | null
           category_id: string | null
           collection: string | null
-          color: string | null
           cost_price: number | null
           created_at: string
           deleted_at: string | null
@@ -596,7 +610,6 @@ export type Database = {
           brand_id?: string | null
           category_id?: string | null
           collection?: string | null
-          color?: string | null
           cost_price?: number | null
           created_at?: string
           deleted_at?: string | null
@@ -622,7 +635,6 @@ export type Database = {
           brand_id?: string | null
           category_id?: string | null
           collection?: string | null
-          color?: string | null
           cost_price?: number | null
           created_at?: string
           deleted_at?: string | null
@@ -684,7 +696,6 @@ export type Database = {
           id: string
           organization_id: string | null
           phone: string | null
-          role: string | null
           status: Database["public"]["Enums"]["user_status"]
           updated_at: string
         }
@@ -696,7 +707,6 @@ export type Database = {
           id: string
           organization_id?: string | null
           phone?: string | null
-          role?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
         }
@@ -708,7 +718,6 @@ export type Database = {
           id?: string
           organization_id?: string | null
           phone?: string | null
-          role?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
         }
@@ -794,6 +803,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_default: boolean
           name: string
           organization_id: string
           status: Database["public"]["Enums"]["entity_status"]
@@ -803,6 +813,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_default?: boolean
           name: string
           organization_id: string
           status?: Database["public"]["Enums"]["entity_status"]
@@ -812,6 +823,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_default?: boolean
           name?: string
           organization_id?: string
           status?: Database["public"]["Enums"]["entity_status"]
@@ -824,6 +836,76 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_reservations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          location_id: string
+          organization_id: string
+          quantity: number
+          reason: string | null
+          reference_id: string | null
+          reference_type: string | null
+          status: Database["public"]["Enums"]["reservation_status"]
+          updated_at: string
+          variant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          location_id: string
+          organization_id: string
+          quantity: number
+          reason?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: Database["public"]["Enums"]["reservation_status"]
+          updated_at?: string
+          variant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          location_id?: string
+          organization_id?: string
+          quantity?: number
+          reason?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: Database["public"]["Enums"]["reservation_status"]
+          updated_at?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_reservations_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_reservations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_reservations_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -978,6 +1060,7 @@ export type Database = {
         | "reserva"
         | "liberacao_reserva"
       product_status: "ativo" | "inativo" | "rascunho"
+      reservation_status: "ativa" | "consumida" | "cancelada" | "expirada"
       stock_location_type: "loja" | "deposito" | "online" | "outros"
       user_status: "ativo" | "inativo" | "pendente"
     }
@@ -1135,6 +1218,7 @@ export const Constants = {
         "liberacao_reserva",
       ],
       product_status: ["ativo", "inativo", "rascunho"],
+      reservation_status: ["ativa", "consumida", "cancelada", "expirada"],
       stock_location_type: ["loja", "deposito", "online", "outros"],
       user_status: ["ativo", "inativo", "pendente"],
     },
