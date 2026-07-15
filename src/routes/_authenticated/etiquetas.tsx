@@ -106,13 +106,17 @@ function EtiquetasPage() {
 
     // registrar auditoria
     const total = rows.reduce((acc, r) => acc + Number(r.qty), 0);
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) return;
+    const org = (await supabase.from("profiles").select("organization_id").eq("id", userId).maybeSingle()).data?.organization_id;
+    if (!org) return;
     await supabase.from("audit_logs").insert({
       module: "etiquetas",
       action: "print",
       entity_type: "labels",
       new_data: { count: total, items: rows.length } as any,
-      user_id: (await supabase.auth.getUser()).data.user?.id,
-      organization_id: (await supabase.from("profiles").select("organization_id").eq("id", (await supabase.auth.getUser()).data.user?.id ?? "").maybeSingle()).data?.organization_id,
+      user_id: userId,
+      organization_id: org,
     });
   }
 
