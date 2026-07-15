@@ -38,6 +38,7 @@ import { Route as AuthenticatedProdutosIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedEstoqueMovimentacoesRouteImport } from './routes/_authenticated/estoque.movimentacoes'
 import { Route as AuthenticatedEstoqueInventarioRouteImport } from './routes/_authenticated/estoque.inventario'
 import { Route as AuthenticatedEstoqueEntradaRouteImport } from './routes/_authenticated/estoque.entrada'
+import { Route as AuthenticatedConfiguracoesTrocasRouteImport } from './routes/_authenticated/configuracoes.trocas'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -195,6 +196,12 @@ const AuthenticatedEstoqueEntradaRoute =
     path: '/estoque/entrada',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConfiguracoesTrocasRoute =
+  AuthenticatedConfiguracoesTrocasRouteImport.update({
+    id: '/trocas',
+    path: '/trocas',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -205,13 +212,14 @@ export interface FileRoutesByFullPath {
   '/caixa': typeof AuthenticatedCaixaRoute
   '/cargos': typeof AuthenticatedCargosRoute
   '/categorias': typeof AuthenticatedCategoriasRoute
-  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/etiquetas': typeof AuthenticatedEtiquetasRoute
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/marcas': typeof AuthenticatedMarcasRoute
   '/pdv': typeof AuthenticatedPdvRoute
+  '/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
   '/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
   '/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
   '/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
@@ -235,13 +243,14 @@ export interface FileRoutesByTo {
   '/caixa': typeof AuthenticatedCaixaRoute
   '/cargos': typeof AuthenticatedCargosRoute
   '/categorias': typeof AuthenticatedCategoriasRoute
-  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/etiquetas': typeof AuthenticatedEtiquetasRoute
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/marcas': typeof AuthenticatedMarcasRoute
   '/pdv': typeof AuthenticatedPdvRoute
+  '/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
   '/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
   '/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
   '/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
@@ -267,13 +276,14 @@ export interface FileRoutesById {
   '/_authenticated/caixa': typeof AuthenticatedCaixaRoute
   '/_authenticated/cargos': typeof AuthenticatedCargosRoute
   '/_authenticated/categorias': typeof AuthenticatedCategoriasRoute
-  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/etiquetas': typeof AuthenticatedEtiquetasRoute
   '/_authenticated/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/_authenticated/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/_authenticated/marcas': typeof AuthenticatedMarcasRoute
   '/_authenticated/pdv': typeof AuthenticatedPdvRoute
+  '/_authenticated/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
   '/_authenticated/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
   '/_authenticated/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
   '/_authenticated/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
@@ -306,6 +316,7 @@ export interface FileRouteTypes {
     | '/funcionarios'
     | '/marcas'
     | '/pdv'
+    | '/configuracoes/trocas'
     | '/estoque/entrada'
     | '/estoque/inventario'
     | '/estoque/movimentacoes'
@@ -336,6 +347,7 @@ export interface FileRouteTypes {
     | '/funcionarios'
     | '/marcas'
     | '/pdv'
+    | '/configuracoes/trocas'
     | '/estoque/entrada'
     | '/estoque/inventario'
     | '/estoque/movimentacoes'
@@ -367,6 +379,7 @@ export interface FileRouteTypes {
     | '/_authenticated/funcionarios'
     | '/_authenticated/marcas'
     | '/_authenticated/pdv'
+    | '/_authenticated/configuracoes/trocas'
     | '/_authenticated/estoque/entrada'
     | '/_authenticated/estoque/inventario'
     | '/_authenticated/estoque/movimentacoes'
@@ -595,15 +608,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEstoqueEntradaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/configuracoes/trocas': {
+      id: '/_authenticated/configuracoes/trocas'
+      path: '/trocas'
+      fullPath: '/configuracoes/trocas'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesTrocasRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
   }
 }
+
+interface AuthenticatedConfiguracoesRouteChildren {
+  AuthenticatedConfiguracoesTrocasRoute: typeof AuthenticatedConfiguracoesTrocasRoute
+}
+
+const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteChildren =
+  {
+    AuthenticatedConfiguracoesTrocasRoute:
+      AuthenticatedConfiguracoesTrocasRoute,
+  }
+
+const AuthenticatedConfiguracoesRouteWithChildren =
+  AuthenticatedConfiguracoesRoute._addFileChildren(
+    AuthenticatedConfiguracoesRouteChildren,
+  )
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditoriaRoute: typeof AuthenticatedAuditoriaRoute
   AuthenticatedCaixaRoute: typeof AuthenticatedCaixaRoute
   AuthenticatedCargosRoute: typeof AuthenticatedCargosRoute
   AuthenticatedCategoriasRoute: typeof AuthenticatedCategoriasRoute
-  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
+  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEtiquetasRoute: typeof AuthenticatedEtiquetasRoute
   AuthenticatedFornecedoresRoute: typeof AuthenticatedFornecedoresRoute
@@ -630,7 +665,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCaixaRoute: AuthenticatedCaixaRoute,
   AuthenticatedCargosRoute: AuthenticatedCargosRoute,
   AuthenticatedCategoriasRoute: AuthenticatedCategoriasRoute,
-  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
+  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEtiquetasRoute: AuthenticatedEtiquetasRoute,
   AuthenticatedFornecedoresRoute: AuthenticatedFornecedoresRoute,

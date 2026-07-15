@@ -31,7 +31,7 @@ type CartLine = {
   available: number;
 };
 
-type PaymentLine = { payment_method: PaymentMethod; amount: number; installments: number };
+type PaymentLine = { payment_method: PaymentMethod; amount: number; installments: number; reference?: string };
 
 function newRequestId() {
   return (crypto as any).randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
