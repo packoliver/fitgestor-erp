@@ -2739,7 +2739,14 @@ export type Database = {
         | "defective"
         | "used"
         | "supplier_return"
-      stock_location_type: "loja" | "deposito" | "online" | "outros"
+      stock_location_type:
+        | "loja"
+        | "deposito"
+        | "online"
+        | "outros"
+        | "quarentena_avariado"
+        | "quarentena_defeituoso"
+        | "perda"
       user_status: "ativo" | "inativo" | "pendente"
       voucher_status: "active" | "fully_used" | "expired" | "cancelled"
     }
@@ -2940,7 +2947,15 @@ export const Constants = {
         "used",
         "supplier_return",
       ],
-      stock_location_type: ["loja", "deposito", "online", "outros"],
+      stock_location_type: [
+        "loja",
+        "deposito",
+        "online",
+        "outros",
+        "quarentena_avariado",
+        "quarentena_defeituoso",
+        "perda",
+      ],
       user_status: ["ativo", "inativo", "pendente"],
       voucher_status: ["active", "fully_used", "expired", "cancelled"],
     },
