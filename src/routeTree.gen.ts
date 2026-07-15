@@ -15,8 +15,11 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authenticated/produtos.index'
+import { Route as AuthenticatedEstoqueIndexRouteImport } from './routes/_authenticated/estoque.index'
 import { Route as AuthenticatedProdutosNovoRouteImport } from './routes/_authenticated/produtos.novo'
 import { Route as AuthenticatedProdutosIdRouteImport } from './routes/_authenticated/produtos.$id'
+import { Route as AuthenticatedEstoqueMovimentacoesRouteImport } from './routes/_authenticated/estoque.movimentacoes'
+import { Route as AuthenticatedEstoqueEntradaRouteImport } from './routes/_authenticated/estoque.entrada'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
@@ -48,6 +51,12 @@ const AuthenticatedProdutosIndexRoute =
     path: '/produtos/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedEstoqueIndexRoute =
+  AuthenticatedEstoqueIndexRouteImport.update({
+    id: '/estoque/',
+    path: '/estoque/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProdutosNovoRoute =
   AuthenticatedProdutosNovoRouteImport.update({
     id: '/produtos/novo',
@@ -59,14 +68,29 @@ const AuthenticatedProdutosIdRoute = AuthenticatedProdutosIdRouteImport.update({
   path: '/produtos/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEstoqueMovimentacoesRoute =
+  AuthenticatedEstoqueMovimentacoesRouteImport.update({
+    id: '/estoque/movimentacoes',
+    path: '/estoque/movimentacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEstoqueEntradaRoute =
+  AuthenticatedEstoqueEntradaRouteImport.update({
+    id: '/estoque/entrada',
+    path: '/estoque/entrada',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/setup': typeof SetupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
+  '/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
   '/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/produtos/novo': typeof AuthenticatedProdutosNovoRoute
+  '/estoque/': typeof AuthenticatedEstoqueIndexRoute
   '/produtos/': typeof AuthenticatedProdutosIndexRoute
 }
 export interface FileRoutesByTo {
@@ -74,8 +98,11 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/setup': typeof SetupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
+  '/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
   '/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/produtos/novo': typeof AuthenticatedProdutosNovoRoute
+  '/estoque': typeof AuthenticatedEstoqueIndexRoute
   '/produtos': typeof AuthenticatedProdutosIndexRoute
 }
 export interface FileRoutesById {
@@ -85,8 +112,11 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/setup': typeof SetupRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
+  '/_authenticated/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
   '/_authenticated/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/_authenticated/produtos/novo': typeof AuthenticatedProdutosNovoRoute
+  '/_authenticated/estoque/': typeof AuthenticatedEstoqueIndexRoute
   '/_authenticated/produtos/': typeof AuthenticatedProdutosIndexRoute
 }
 export interface FileRouteTypes {
@@ -96,8 +126,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/setup'
     | '/dashboard'
+    | '/estoque/entrada'
+    | '/estoque/movimentacoes'
     | '/produtos/$id'
     | '/produtos/novo'
+    | '/estoque/'
     | '/produtos/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,8 +138,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/setup'
     | '/dashboard'
+    | '/estoque/entrada'
+    | '/estoque/movimentacoes'
     | '/produtos/$id'
     | '/produtos/novo'
+    | '/estoque'
     | '/produtos'
   id:
     | '__root__'
@@ -115,8 +151,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/setup'
     | '/_authenticated/dashboard'
+    | '/_authenticated/estoque/entrada'
+    | '/_authenticated/estoque/movimentacoes'
     | '/_authenticated/produtos/$id'
     | '/_authenticated/produtos/novo'
+    | '/_authenticated/estoque/'
     | '/_authenticated/produtos/'
   fileRoutesById: FileRoutesById
 }
@@ -171,6 +210,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProdutosIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/estoque/': {
+      id: '/_authenticated/estoque/'
+      path: '/estoque'
+      fullPath: '/estoque/'
+      preLoaderRoute: typeof AuthenticatedEstoqueIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/produtos/novo': {
       id: '/_authenticated/produtos/novo'
       path: '/produtos/novo'
@@ -185,20 +231,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProdutosIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/estoque/movimentacoes': {
+      id: '/_authenticated/estoque/movimentacoes'
+      path: '/estoque/movimentacoes'
+      fullPath: '/estoque/movimentacoes'
+      preLoaderRoute: typeof AuthenticatedEstoqueMovimentacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/estoque/entrada': {
+      id: '/_authenticated/estoque/entrada'
+      path: '/estoque/entrada'
+      fullPath: '/estoque/entrada'
+      preLoaderRoute: typeof AuthenticatedEstoqueEntradaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEstoqueEntradaRoute: typeof AuthenticatedEstoqueEntradaRoute
+  AuthenticatedEstoqueMovimentacoesRoute: typeof AuthenticatedEstoqueMovimentacoesRoute
   AuthenticatedProdutosIdRoute: typeof AuthenticatedProdutosIdRoute
   AuthenticatedProdutosNovoRoute: typeof AuthenticatedProdutosNovoRoute
+  AuthenticatedEstoqueIndexRoute: typeof AuthenticatedEstoqueIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEstoqueEntradaRoute: AuthenticatedEstoqueEntradaRoute,
+  AuthenticatedEstoqueMovimentacoesRoute:
+    AuthenticatedEstoqueMovimentacoesRoute,
   AuthenticatedProdutosIdRoute: AuthenticatedProdutosIdRoute,
   AuthenticatedProdutosNovoRoute: AuthenticatedProdutosNovoRoute,
+  AuthenticatedEstoqueIndexRoute: AuthenticatedEstoqueIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
 }
 
