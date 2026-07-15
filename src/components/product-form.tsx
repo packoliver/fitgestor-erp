@@ -402,6 +402,6 @@ export function ProductForm({
   }
 }
 
-function emptyVariant(size: string): VariantInput {
-  return { size, sku: "", barcode: "", cost_price: "", sale_price: "", initial_stock: "", minimum_stock: "" };
+function emptyVariant(color: string, size: string): VariantInput {
+  return { color, size, sku: "", barcode: "", cost_price: "", sale_price: "", initial_stock: "", minimum_stock: "" };
 }
