@@ -52,13 +52,14 @@ export function ProductForm({
 }: {
   initial?: Partial<ProductFormValues>;
   productId?: string;
-  initialVariants?: Array<{ id: string; color: string | null; size: string; sku: string | null; barcode: string | null; cost_price: number | null; sale_price: number | null }>;
+  initialVariants?: Array<{ id: string; size: string; sku: string | null; barcode: string | null; cost_price: number | null; sale_price: number | null }>;
   initialImages?: Array<{ id: string; image_url: string; storage_path: string | null; is_primary: boolean; position: number }>;
   onSaved?: (id: string) => void;
 }) {
   const qc = useQueryClient();
   const [values, setValues] = useState<ProductFormValues>({
     name: initial?.name ?? "",
+    color: (initial as any)?.color ?? "",
     short_description: initial?.short_description ?? "",
     description: initial?.description ?? "",
     material: initial?.material ?? "",
@@ -76,7 +77,6 @@ export function ProductForm({
     initialVariants.length > 0
       ? initialVariants.map((v) => ({
           id: v.id,
-          color: v.color ?? "",
           size: v.size,
           sku: v.sku ?? "",
           barcode: v.barcode ?? "",
@@ -85,7 +85,7 @@ export function ProductForm({
           initial_stock: "",
           minimum_stock: "",
         }))
-      : [emptyVariant("", "P"), emptyVariant("", "M"), emptyVariant("", "G")]
+      : [emptyVariant("P"), emptyVariant("M"), emptyVariant("G")]
   );
 
   const [images, setImages] = useState(initialImages);
