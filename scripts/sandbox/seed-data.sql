@@ -1,21 +1,23 @@
 -- ============================================================
--- SEED SANDBOX — dados de negócio marcados [SANDBOX]
+-- SEED SANDBOX — FASE 1 (independente de usuários auth)
+-- Cria apenas dados que NÃO dependem de auth.users:
+--   organizations, clients, products, product_variants,
+--   inventory_balances, store_credit_accounts, exchange_vouchers.
 -- Idempotente (ON CONFLICT DO NOTHING / UPSERT).
 -- NÃO INCLUIR EM MIGRATION. Executar apenas em staging/branch/local.
--- Executar com service_role (via psql "$SANDBOX_DB_URL" -f).
+-- Executado automaticamente por setup-sandbox.ts.
 -- ============================================================
 
 BEGIN;
 
--- Guarda em tempo de execução: aborta se rodar acidentalmente em prod.
+-- Guarda em tempo de execução (COMPLEMENTAR — proteção principal está no orquestrador).
 DO $$
 BEGIN
-  IF current_setting('server_version') IS NULL THEN RAISE EXCEPTION 'no server'; END IF;
   IF EXISTS (
     SELECT 1 FROM pg_settings
     WHERE name = 'cluster_name' AND setting ILIKE '%prod%'
   ) THEN
-    RAISE EXCEPTION 'ABORT: cluster parece ser produção';
+    RAISE EXCEPTION 'ABORT: cluster parece ser produção (cluster_name contém "prod")';
   END IF;
 END $$;
 
@@ -51,8 +53,7 @@ VALUES
   ('bbbb0000-0000-0000-0003-000000000001', 'bbbb0000-0000-0000-0000-000000000001', 'bbbb0000-0000-0000-0002-000000000001', 'P',  'SBX-B-P',  120.00, 50.00, 'ativo')
 ON CONFLICT (id) DO NOTHING;
 
--- ---------- Estoque inicial (100 un. em cada variante) ----------
--- Usa o local "Loja Principal" criado pelo bootstrap.
+-- ---------- Estoque inicial ----------
 DO $$
 DECLARE v_loc_a uuid; v_loc_b uuid;
 BEGIN

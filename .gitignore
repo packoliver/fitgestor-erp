@@ -30,3 +30,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Sandbox runtime artifacts (Fatia 2.1b)
+scripts/sandbox/.sandbox-manifest.json
+scripts/sandbox/.sandbox-credentials.json
