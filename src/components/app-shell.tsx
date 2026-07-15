@@ -17,7 +17,7 @@ import {
 import {
   LayoutDashboard, Package, Boxes, ArrowDownToLine, ClipboardList, Tag,
   Users, ShieldCheck, Truck, FolderTree, Sparkles, Settings, ScrollText, LogOut,
-  ShoppingCart, Wallet, Receipt, UserSquare2,
+  ShoppingCart, Wallet, Receipt, UserSquare2, RefreshCw,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -38,6 +38,7 @@ const groups: { label: string; items: NavItem[] }[] = [
       { title: "PDV", url: "/pdv", icon: ShoppingCart },
       { title: "Caixa", url: "/caixa", icon: Wallet },
       { title: "Vendas", url: "/vendas", icon: Receipt },
+      { title: "Trocas", url: "/trocas", icon: RefreshCw },
       { title: "Clientes", url: "/clientes", icon: UserSquare2 },
     ],
   },
