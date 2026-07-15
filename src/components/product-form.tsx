@@ -15,7 +15,6 @@ import { z } from "zod";
 
 type VariantInput = {
   id?: string;
-  color: string;
   size: string;
   sku: string;
   barcode: string;
@@ -28,6 +27,7 @@ type VariantInput = {
 
 const productSchema = z.object({
   name: z.string().trim().min(2, "Nome obrigatório").max(160),
+  color: z.string().trim().max(60).optional().or(z.literal("")),
   short_description: z.string().trim().max(280).optional().or(z.literal("")),
   description: z.string().trim().max(4000).optional().or(z.literal("")),
   material: z.string().trim().max(120).optional().or(z.literal("")),
@@ -52,13 +52,14 @@ export function ProductForm({
 }: {
   initial?: Partial<ProductFormValues>;
   productId?: string;
-  initialVariants?: Array<{ id: string; color: string | null; size: string; sku: string | null; barcode: string | null; cost_price: number | null; sale_price: number | null }>;
+  initialVariants?: Array<{ id: string; size: string; sku: string | null; barcode: string | null; cost_price: number | null; sale_price: number | null }>;
   initialImages?: Array<{ id: string; image_url: string; storage_path: string | null; is_primary: boolean; position: number }>;
   onSaved?: (id: string) => void;
 }) {
   const qc = useQueryClient();
   const [values, setValues] = useState<ProductFormValues>({
     name: initial?.name ?? "",
+    color: (initial as any)?.color ?? "",
     short_description: initial?.short_description ?? "",
     description: initial?.description ?? "",
     material: initial?.material ?? "",
@@ -76,7 +77,6 @@ export function ProductForm({
     initialVariants.length > 0
       ? initialVariants.map((v) => ({
           id: v.id,
-          color: v.color ?? "",
           size: v.size,
           sku: v.sku ?? "",
           barcode: v.barcode ?? "",
@@ -85,7 +85,7 @@ export function ProductForm({
           initial_stock: "",
           minimum_stock: "",
         }))
-      : [emptyVariant("", "P"), emptyVariant("", "M"), emptyVariant("", "G")]
+      : [emptyVariant("P"), emptyVariant("M"), emptyVariant("G")]
   );
 
   const [images, setImages] = useState(initialImages);
@@ -112,6 +112,7 @@ export function ProductForm({
       const payload = {
         organization_id: org,
         name: parsed.data.name,
+        color: parsed.data.color?.trim() || null,
         short_description: parsed.data.short_description || null,
         description: parsed.data.description || null,
         material: parsed.data.material || null,
@@ -138,9 +139,12 @@ export function ProductForm({
       // Variações
       const existing = new Set(initialVariants.map((v) => v.id));
       const kept = new Set<string>();
+      const seenSizes = new Set<string>();
       for (const v of variants) {
         const size = v.size.trim();
         if (!size) continue;
+        if (seenSizes.has(size)) throw new Error(`Tamanho duplicado no formulário: ${size}`);
+        seenSizes.add(size);
         const sku = v.sku.trim() || null;
         const barcode = v.barcode.trim() || null;
 
@@ -151,7 +155,6 @@ export function ProductForm({
         const varPayload = {
           organization_id: org,
           product_id: id!,
-          color: v.color.trim() || null,
           size,
           sku,
           barcode,
@@ -259,8 +262,8 @@ export function ProductForm({
               <Input value={values.name} maxLength={160} onChange={(e) => setValues({ ...values, name: e.target.value })} placeholder="Ex.: Blusa Dry Fit" />
             </div>
             <div className="space-y-2">
-              <Label className="text-muted-foreground text-xs">Cor</Label>
-              <p className="text-xs text-muted-foreground">Defina a cor em cada variação abaixo — um produto pode ter várias cores.</p>
+              <Label>Cor</Label>
+              <Input value={values.color ?? ""} maxLength={60} placeholder="Ex.: Preta" onChange={(e) => setValues({ ...values, color: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>Status</Label>
@@ -314,21 +317,20 @@ export function ProductForm({
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Variações (cor + tamanho)</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Tamanhos</CardTitle></CardHeader>
           <CardContent>
             <div className="mb-3 flex flex-wrap gap-1">
               <span className="text-xs text-muted-foreground mr-2 self-center">Adicionar tamanho rapidamente:</span>
               {SIZE_SUGGESTIONS.map((s) => (
                 <Button key={s} type="button" size="sm" variant="outline"
-                  onClick={() => setVariants((prev) => prev.some((v) => v.size === s && !v.color) ? prev : [...prev, emptyVariant("", s)])}>
+                  onClick={() => setVariants((prev) => prev.some((v) => v.size === s) ? prev : [...prev, emptyVariant(s)])}>
                   {s}
                 </Button>
               ))}
             </div>
             <div className="space-y-2">
               {variants.map((v, i) => (
-                <div key={i} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-9">
-                  <Input className="sm:col-span-2" placeholder="Cor" value={v.color} onChange={(e) => updateVariant(i, "color", e.target.value)} />
+                <div key={i} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-8">
                   <Input className="sm:col-span-1" placeholder="Tamanho" value={v.size} onChange={(e) => updateVariant(i, "size", e.target.value)} />
                   <Input className="sm:col-span-2" placeholder="SKU" value={v.sku} onChange={(e) => updateVariant(i, "sku", e.target.value)} />
                   <Input className="sm:col-span-2" placeholder="Código de barras" value={v.barcode} onChange={(e) => updateVariant(i, "barcode", e.target.value)} />
@@ -339,8 +341,8 @@ export function ProductForm({
                   </Button>
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" onClick={() => setVariants([...variants, emptyVariant("", "")])}>
-                <Plus className="mr-2 h-4 w-4" />Adicionar variação
+              <Button type="button" variant="outline" size="sm" onClick={() => setVariants([...variants, emptyVariant("")])}>
+                <Plus className="mr-2 h-4 w-4" />Adicionar tamanho
               </Button>
             </div>
           </CardContent>
@@ -402,6 +404,6 @@ export function ProductForm({
   }
 }
 
-function emptyVariant(color: string, size: string): VariantInput {
-  return { color, size, sku: "", barcode: "", cost_price: "", sale_price: "", initial_stock: "", minimum_stock: "" };
+function emptyVariant(size: string): VariantInput {
+  return { size, sku: "", barcode: "", cost_price: "", sale_price: "", initial_stock: "", minimum_stock: "" };
 }

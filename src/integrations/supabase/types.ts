@@ -390,6 +390,216 @@ export type Database = {
           },
         ]
       }
+      label_print_items: {
+        Row: {
+          barcode_snapshot: string | null
+          color_snapshot: string | null
+          created_at: string
+          id: string
+          price_snapshot: number | null
+          print_job_id: string
+          product_id: string | null
+          product_name_snapshot: string
+          quantity: number
+          size_snapshot: string | null
+          sku_snapshot: string | null
+          variant_id: string | null
+        }
+        Insert: {
+          barcode_snapshot?: string | null
+          color_snapshot?: string | null
+          created_at?: string
+          id?: string
+          price_snapshot?: number | null
+          print_job_id: string
+          product_id?: string | null
+          product_name_snapshot: string
+          quantity?: number
+          size_snapshot?: string | null
+          sku_snapshot?: string | null
+          variant_id?: string | null
+        }
+        Update: {
+          barcode_snapshot?: string | null
+          color_snapshot?: string | null
+          created_at?: string
+          id?: string
+          price_snapshot?: number | null
+          print_job_id?: string
+          product_id?: string | null
+          product_name_snapshot?: string
+          quantity?: number
+          size_snapshot?: string | null
+          sku_snapshot?: string | null
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "label_print_items_print_job_id_fkey"
+            columns: ["print_job_id"]
+            isOneToOne: false
+            referencedRelation: "label_print_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_print_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_print_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      label_print_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          generated_file_url: string | null
+          id: string
+          organization_id: string
+          status: string
+          template_id: string | null
+          total_labels: number
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          generated_file_url?: string | null
+          id?: string
+          organization_id: string
+          status?: string
+          template_id?: string | null
+          total_labels?: number
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          generated_file_url?: string | null
+          id?: string
+          organization_id?: string
+          status?: string
+          template_id?: string | null
+          total_labels?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "label_print_jobs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_print_jobs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "label_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      label_templates: {
+        Row: {
+          barcode_type: string
+          created_at: string
+          font_family: string
+          font_size: number
+          height: number
+          id: string
+          is_default: boolean
+          logo_url: string | null
+          margin_bottom: number
+          margin_left: number
+          margin_right: number
+          margin_top: number
+          name: string
+          organization_id: string
+          show_barcode: boolean
+          show_color: boolean
+          show_name: boolean
+          show_price: boolean
+          show_promotional_price: boolean
+          show_size: boolean
+          show_sku: boolean
+          status: string
+          updated_at: string
+          width: number
+        }
+        Insert: {
+          barcode_type?: string
+          created_at?: string
+          font_family?: string
+          font_size?: number
+          height?: number
+          id?: string
+          is_default?: boolean
+          logo_url?: string | null
+          margin_bottom?: number
+          margin_left?: number
+          margin_right?: number
+          margin_top?: number
+          name: string
+          organization_id: string
+          show_barcode?: boolean
+          show_color?: boolean
+          show_name?: boolean
+          show_price?: boolean
+          show_promotional_price?: boolean
+          show_size?: boolean
+          show_sku?: boolean
+          status?: string
+          updated_at?: string
+          width?: number
+        }
+        Update: {
+          barcode_type?: string
+          created_at?: string
+          font_family?: string
+          font_size?: number
+          height?: number
+          id?: string
+          is_default?: boolean
+          logo_url?: string | null
+          margin_bottom?: number
+          margin_left?: number
+          margin_right?: number
+          margin_top?: number
+          name?: string
+          organization_id?: string
+          show_barcode?: boolean
+          show_color?: boolean
+          show_name?: boolean
+          show_price?: boolean
+          show_promotional_price?: boolean
+          show_size?: boolean
+          show_sku?: boolean
+          status?: string
+          updated_at?: string
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "label_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -514,7 +724,6 @@ export type Database = {
       product_variants: {
         Row: {
           barcode: string | null
-          color: string | null
           cost_price: number | null
           created_at: string
           deleted_at: string | null
@@ -531,7 +740,6 @@ export type Database = {
         }
         Insert: {
           barcode?: string | null
-          color?: string | null
           cost_price?: number | null
           created_at?: string
           deleted_at?: string | null
@@ -548,7 +756,6 @@ export type Database = {
         }
         Update: {
           barcode?: string | null
-          color?: string | null
           cost_price?: number | null
           created_at?: string
           deleted_at?: string | null
@@ -585,6 +792,7 @@ export type Database = {
           brand_id: string | null
           category_id: string | null
           collection: string | null
+          color: string | null
           cost_price: number | null
           created_at: string
           deleted_at: string | null
@@ -610,6 +818,7 @@ export type Database = {
           brand_id?: string | null
           category_id?: string | null
           collection?: string | null
+          color?: string | null
           cost_price?: number | null
           created_at?: string
           deleted_at?: string | null
@@ -635,6 +844,7 @@ export type Database = {
           brand_id?: string | null
           category_id?: string | null
           collection?: string | null
+          color?: string | null
           cost_price?: number | null
           created_at?: string
           deleted_at?: string | null
