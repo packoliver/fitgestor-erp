@@ -15,6 +15,7 @@ import { z } from "zod";
 
 type VariantInput = {
   id?: string;
+  color: string;
   size: string;
   sku: string;
   barcode: string;
@@ -23,6 +24,7 @@ type VariantInput = {
   initial_stock: string;
   minimum_stock: string;
 };
+
 
 const productSchema = z.object({
   name: z.string().trim().min(2, "Nome obrigatório").max(160),
