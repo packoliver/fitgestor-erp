@@ -2665,12 +2665,16 @@ export type Database = {
         }
         Returns: string
       }
+      reverse_exchange: {
+        Args: { _exchange_id: string; _reason: string }
+        Returns: Json
+      }
       run_exchange_tests: {
         Args: never
         Returns: {
           detail: string
           result: string
-          scenario: string
+          test_name: string
         }[]
       }
     }
