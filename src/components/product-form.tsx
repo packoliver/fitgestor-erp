@@ -95,8 +95,8 @@ export function ProductForm({
   const suppliers = useQuery({ queryKey: ["suppliers"], queryFn: async () => (await supabase.from("suppliers").select("id, name").order("name")).data ?? [] });
 
   const margin = (() => {
-    const s = parseFloat(values.sale_price.replace(",", "."));
-    const c = parseFloat(values.cost_price.replace(",", "."));
+    const s = parseFloat((values.sale_price ?? "").replace(",", "."));
+    const c = parseFloat((values.cost_price ?? "").replace(",", "."));
     if (!s || !c || s === 0) return null;
     return (((s - c) / s) * 100).toFixed(1);
   })();
