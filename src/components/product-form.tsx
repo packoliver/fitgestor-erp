@@ -151,6 +151,7 @@ export function ProductForm({
         const varPayload = {
           organization_id: org,
           product_id: id!,
+          color: v.color.trim() || null,
           size,
           sku,
           barcode,
