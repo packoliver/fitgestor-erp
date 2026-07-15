@@ -31,7 +31,7 @@ type CartLine = {
   available: number;
 };
 
-type PaymentLine = { payment_method: PaymentMethod; amount: number; installments: number };
+type PaymentLine = { payment_method: PaymentMethod; amount: number; installments: number; reference?: string };
 
 function newRequestId() {
   return (crypto as any).randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
@@ -52,6 +52,9 @@ function PdvPage() {
   const [payMethod, setPayMethod] = useState<PaymentMethod>("cash");
   const [payAmount, setPayAmount] = useState("");
   const [payInst, setPayInst] = useState(1);
+  const [payRef, setPayRef] = useState("");
+  const [voucherInfo, setVoucherInfo] = useState<{ balance: number; code: string } | null>(null);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [requestId] = useState(newRequestId());
   const [submitting, setSubmitting] = useState(false);
 
@@ -161,8 +164,32 @@ function PdvPage() {
   function addPayment() {
     const amount = Number(payAmount);
     if (!amount || amount <= 0) { toast.error("Valor inválido."); return; }
-    setPayments((p) => [...p, { payment_method: payMethod, amount, installments: payMethod === "credit_card" ? payInst : 1 }]);
-    setPayAmount("");
+    if (payMethod === "exchange_voucher") {
+      if (!payRef.trim()) { toast.error("Informe o código do vale."); return; }
+      if (voucherInfo && amount > voucherInfo.balance) { toast.error("Este vale não possui saldo suficiente."); return; }
+    }
+    if (payMethod === "store_credit") {
+      if (!clientId) { toast.error("Selecione um cliente para usar crédito."); return; }
+      if (creditBalance !== null && amount > creditBalance) { toast.error("Este crédito não possui saldo suficiente."); return; }
+    }
+    setPayments((p) => [...p, { payment_method: payMethod, amount, installments: payMethod === "credit_card" ? payInst : 1, reference: payRef.trim() || undefined }]);
+    setPayAmount(""); setPayRef(""); setVoucherInfo(null);
+  }
+
+  async function lookupVoucher() {
+    if (!payRef.trim()) return;
+    const { data } = await supabase.from("exchange_vouchers").select("code, current_balance, status, expires_at").eq("code", payRef.trim().toUpperCase()).maybeSingle();
+    if (!data) { toast.error("Vale não encontrado."); setVoucherInfo(null); return; }
+    if (data.status !== "active") { toast.error("Vale não está ativo."); setVoucherInfo(null); return; }
+    setVoucherInfo({ code: data.code, balance: Number(data.current_balance) });
+    setPayAmount(String(data.current_balance));
+  }
+
+  async function lookupCredit() {
+    if (!clientId) { toast.error("Selecione um cliente primeiro."); return; }
+    const { data } = await supabase.from("store_credit_accounts").select("balance, status").eq("client_id", clientId).maybeSingle();
+    if (!data || data.status !== "active") { setCreditBalance(0); toast.error("Cliente não possui crédito disponível."); return; }
+    setCreditBalance(Number(data.balance));
   }
 
   const complete = useMutation({
@@ -179,7 +206,7 @@ function PdvPage() {
         order_discount_type: orderDiscountType || null,
         order_discount_value: Number(orderDiscountValue) || 0,
         items: cart.map((l) => ({ variant_id: l.variant_id, quantity: l.quantity, unit_price: l.unit_price })),
-        payments: payments.map((p) => ({ payment_method: p.payment_method, amount: p.amount, installments: p.installments })),
+        payments: payments.map((p) => ({ payment_method: p.payment_method, amount: p.amount, installments: p.installments, reference: p.reference })),
       };
       const { data, error } = await supabase.rpc("complete_pos_sale", { _payload: payload });
       if (error) throw error;
@@ -368,6 +395,20 @@ function PdvPage() {
               <div className="flex items-center gap-2 text-sm">
                 <Label>Parcelas</Label>
                 <Input type="number" min={1} max={12} className="w-20 h-8" value={payInst} onChange={(e) => setPayInst(Number(e.target.value) || 1)} />
+              </div>
+            )}
+            {payMethod === "exchange_voucher" && (
+              <div className="flex items-center gap-2 text-sm">
+                <Input placeholder="Código do vale" value={payRef} onChange={(e) => setPayRef(e.target.value.toUpperCase())} className="h-8" />
+                <Button size="sm" variant="outline" onClick={lookupVoucher}>Consultar</Button>
+                {voucherInfo && <span className="text-xs">Saldo: <b>{money(voucherInfo.balance)}</b></span>}
+              </div>
+            )}
+            {payMethod === "store_credit" && (
+              <div className="flex items-center gap-2 text-sm">
+                <Button size="sm" variant="outline" onClick={lookupCredit} disabled={!clientId}>Consultar saldo do cliente</Button>
+                {creditBalance !== null && <span className="text-xs">Saldo: <b>{money(creditBalance)}</b></span>}
+                {!clientId && <span className="text-xs text-muted-foreground">Selecione um cliente</span>}
               </div>
             )}
             <Button variant="ghost" size="sm" onClick={() => setPayAmount(remaining.toFixed(2))}>Preencher restante</Button>

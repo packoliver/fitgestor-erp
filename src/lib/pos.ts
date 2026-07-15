@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type PaymentMethod = "cash" | "pix" | "debit_card" | "credit_card" | "other";
+export type PaymentMethod = "cash" | "pix" | "debit_card" | "credit_card" | "store_credit" | "exchange_voucher" | "other";
 
 export const PAYMENT_LABELS: Record<string, string> = {
   cash: "Dinheiro",
@@ -9,14 +9,17 @@ export const PAYMENT_LABELS: Record<string, string> = {
   credit_card: "Crédito",
   store_credit: "Crédito da loja",
   gift_voucher: "Vale-troca",
+  exchange_voucher: "Vale-troca",
   other: "Outros",
 };
 
-export const AVAILABLE_METHODS: { value: PaymentMethod; label: string }[] = [
+export const AVAILABLE_METHODS: { value: string; label: string }[] = [
   { value: "cash", label: "Dinheiro" },
   { value: "pix", label: "Pix" },
   { value: "debit_card", label: "Cartão de débito" },
   { value: "credit_card", label: "Cartão de crédito" },
+  { value: "exchange_voucher", label: "Vale-troca" },
+  { value: "store_credit", label: "Crédito da loja" },
   { value: "other", label: "Outros" },
 ];
 
