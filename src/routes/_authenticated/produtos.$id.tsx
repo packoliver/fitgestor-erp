@@ -34,7 +34,7 @@ function ProdutoDetalhe() {
           <Link to="/produtos"><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Link>
         </Button>
       </div>
-      <PageHeader title={data.product.name} description={data.product.color ?? undefined} />
+      <PageHeader title={data.product.name} description={Array.from(new Set(data.variants.map((v: any) => v.color).filter(Boolean))).join(", ") || undefined} />
       <ProductForm
         productId={id}
         initial={data.product as any}
