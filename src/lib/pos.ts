@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type PaymentMethod = "cash" | "pix" | "debit_card" | "credit_card" | "other";
+export type PaymentMethod = "cash" | "pix" | "debit_card" | "credit_card" | "store_credit" | "exchange_voucher" | "other";
 
 export const PAYMENT_LABELS: Record<string, string> = {
   cash: "Dinheiro",
