@@ -112,6 +112,7 @@ export function ProductForm({
       const payload = {
         organization_id: org,
         name: parsed.data.name,
+        color: parsed.data.color?.trim() || null,
         short_description: parsed.data.short_description || null,
         description: parsed.data.description || null,
         material: parsed.data.material || null,
@@ -138,9 +139,12 @@ export function ProductForm({
       // Variações
       const existing = new Set(initialVariants.map((v) => v.id));
       const kept = new Set<string>();
+      const seenSizes = new Set<string>();
       for (const v of variants) {
         const size = v.size.trim();
         if (!size) continue;
+        if (seenSizes.has(size)) throw new Error(`Tamanho duplicado no formulário: ${size}`);
+        seenSizes.add(size);
         const sku = v.sku.trim() || null;
         const barcode = v.barcode.trim() || null;
 
@@ -151,7 +155,6 @@ export function ProductForm({
         const varPayload = {
           organization_id: org,
           product_id: id!,
-          color: v.color.trim() || null,
           size,
           sku,
           barcode,
