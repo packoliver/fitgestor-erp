@@ -112,7 +112,6 @@ export function ProductForm({
       const payload = {
         organization_id: org,
         name: parsed.data.name,
-        color: parsed.data.color || null,
         short_description: parsed.data.short_description || null,
         description: parsed.data.description || null,
         material: parsed.data.material || null,
