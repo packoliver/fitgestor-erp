@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -30,6 +31,11 @@ import { Route as AuthenticatedEstoqueMovimentacoesRouteImport } from './routes/
 import { Route as AuthenticatedEstoqueInventarioRouteImport } from './routes/_authenticated/estoque.inventario'
 import { Route as AuthenticatedEstoqueEntradaRouteImport } from './routes/_authenticated/estoque.entrada'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/setup': typeof SetupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/cargos': typeof AuthenticatedCargosRoute
   '/categorias': typeof AuthenticatedCategoriasRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/setup': typeof SetupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/cargos': typeof AuthenticatedCargosRoute
   '/categorias': typeof AuthenticatedCategoriasRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/setup': typeof SetupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
   '/_authenticated/cargos': typeof AuthenticatedCargosRoute
   '/_authenticated/categorias': typeof AuthenticatedCategoriasRoute
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/setup'
+    | '/sitemap.xml'
     | '/auditoria'
     | '/cargos'
     | '/categorias'
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/setup'
+    | '/sitemap.xml'
     | '/auditoria'
     | '/cargos'
     | '/categorias'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/setup'
+    | '/sitemap.xml'
     | '/_authenticated/auditoria'
     | '/_authenticated/cargos'
     | '/_authenticated/categorias'
@@ -276,10 +288,18 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   SetupRoute: typeof SetupRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/setup': {
       id: '/setup'
       path: '/setup'
@@ -470,6 +490,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   SetupRoute: SetupRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
