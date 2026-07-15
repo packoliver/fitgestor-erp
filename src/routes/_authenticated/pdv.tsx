@@ -164,8 +164,32 @@ function PdvPage() {
   function addPayment() {
     const amount = Number(payAmount);
     if (!amount || amount <= 0) { toast.error("Valor inválido."); return; }
-    setPayments((p) => [...p, { payment_method: payMethod, amount, installments: payMethod === "credit_card" ? payInst : 1 }]);
-    setPayAmount("");
+    if (payMethod === "exchange_voucher") {
+      if (!payRef.trim()) { toast.error("Informe o código do vale."); return; }
+      if (voucherInfo && amount > voucherInfo.balance) { toast.error("Este vale não possui saldo suficiente."); return; }
+    }
+    if (payMethod === "store_credit") {
+      if (!clientId) { toast.error("Selecione um cliente para usar crédito."); return; }
+      if (creditBalance !== null && amount > creditBalance) { toast.error("Este crédito não possui saldo suficiente."); return; }
+    }
+    setPayments((p) => [...p, { payment_method: payMethod, amount, installments: payMethod === "credit_card" ? payInst : 1, reference: payRef.trim() || undefined }]);
+    setPayAmount(""); setPayRef(""); setVoucherInfo(null);
+  }
+
+  async function lookupVoucher() {
+    if (!payRef.trim()) return;
+    const { data } = await supabase.from("exchange_vouchers").select("code, current_balance, status, expires_at").eq("code", payRef.trim().toUpperCase()).maybeSingle();
+    if (!data) { toast.error("Vale não encontrado."); setVoucherInfo(null); return; }
+    if (data.status !== "active") { toast.error("Vale não está ativo."); setVoucherInfo(null); return; }
+    setVoucherInfo({ code: data.code, balance: Number(data.current_balance) });
+    setPayAmount(String(data.current_balance));
+  }
+
+  async function lookupCredit() {
+    if (!clientId) { toast.error("Selecione um cliente primeiro."); return; }
+    const { data } = await supabase.from("store_credit_accounts").select("balance, status").eq("client_id", clientId).maybeSingle();
+    if (!data || data.status !== "active") { setCreditBalance(0); toast.error("Cliente não possui crédito disponível."); return; }
+    setCreditBalance(Number(data.balance));
   }
 
   const complete = useMutation({
