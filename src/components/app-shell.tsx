@@ -17,6 +17,7 @@ import {
 import {
   LayoutDashboard, Package, Boxes, ArrowDownToLine, ClipboardList, Tag,
   Users, ShieldCheck, Truck, FolderTree, Sparkles, Settings, ScrollText, LogOut,
+  ShoppingCart, Wallet, Receipt, UserSquare2,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -31,6 +32,15 @@ import { toast } from "sonner";
 type NavItem = { title: string; url: string; icon: React.ComponentType<{ className?: string }> };
 
 const groups: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Vendas",
+    items: [
+      { title: "PDV", url: "/pdv", icon: ShoppingCart },
+      { title: "Caixa", url: "/caixa", icon: Wallet },
+      { title: "Vendas", url: "/vendas", icon: Receipt },
+      { title: "Clientes", url: "/clientes", icon: UserSquare2 },
+    ],
+  },
   {
     label: "Operação",
     items: [
@@ -60,6 +70,7 @@ const groups: { label: string; items: NavItem[] }[] = [
     ],
   },
 ];
+
 
 function AppSidebar() {
   const { state } = useSidebar();
