@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, MessageCircle } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import {
   NAV_ITEMS, filterByPermission, itemsForWorkspace, itemsByGroup,
