@@ -50,6 +50,7 @@ const groups: { label: string; items: NavItem[] }[] = [
   {
     label: "Operação",
     items: [
+      { title: "Área de trabalho", url: "/trabalho", icon: LayoutDashboard },
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
       { title: "Produtos", url: "/produtos", icon: Package, perm: "product.view" },
       { title: "Estoque", url: "/estoque", icon: Boxes, perm: "stock.view" },
@@ -73,6 +74,7 @@ const groups: { label: string; items: NavItem[] }[] = [
       { title: "Painel", url: "/expedicao", icon: LayoutDashboard, perm: ["shipping.view", "shipping.view_all", "shipping.view_own", "shipping.dispatch", "shipping.pick"] },
       { title: "Fila", url: "/expedicao/fila", icon: ClipboardList, perm: ["shipping.view", "shipping.view_all", "shipping.pick", "shipping.dispatch", "shipping.deliver"] },
       { title: "Rotas", url: "/expedicao/rotas", icon: MapPin, perm: ["shipping.view", "shipping.view_all", "shipping.dispatch"] },
+      { title: "Vendas sem entrega", url: "/expedicao/pendencias", icon: ClipboardList, perm: ["shipping.view", "shipping.view_all", "shipping.create"] },
       { title: "Motoboys", url: "/expedicao/motoboys", icon: Truck, perm: "shipping.manage_couriers" },
       { title: "Minhas rotas", url: "/motoboy", icon: Truck, perm: ["shipping.view_own", "shipping.deliver"] },
     ],

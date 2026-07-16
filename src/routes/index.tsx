@@ -9,7 +9,14 @@ export const Route = createFileRoute("/")({
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
     const { data } = await supabase.auth.getSession();
-    if (data.session) throw redirect({ to: "/dashboard" });
+    if (!data.session) return;
+    const { data: workspace } = await supabase.rpc("default_workspace_for_current_user");
+    const target =
+      workspace === "operational" ? "/trabalho" :
+      workspace === "motoboy" ? "/motoboy" :
+      workspace === "setup" ? "/setup" :
+      "/dashboard";
+    throw redirect({ to: target });
   },
   component: Landing,
 });

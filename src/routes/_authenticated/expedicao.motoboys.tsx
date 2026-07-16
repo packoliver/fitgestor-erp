@@ -10,9 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Power, Search } from "lucide-react";
+import { Plus, Pencil, Power, Search, Link2, Unlink } from "lucide-react";
 import { toast } from "sonner";
 import { RequirePermission } from "@/components/require-permission";
 
@@ -43,6 +43,22 @@ function CouriersPage() {
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(empty);
+  const [linkFor, setLinkFor] = useState<Courier | null>(null);
+  const [userSearch, setUserSearch] = useState("");
+
+  const users = useQuery({
+    queryKey: ["org-profiles", userSearch],
+    enabled: !!linkFor,
+    queryFn: async () => {
+      let q = supabase.from("profiles").select("id, full_name, email, status").eq("status", "ativo").order("full_name").limit(50);
+      const t = userSearch.trim();
+      if (t) q = q.or(`full_name.ilike.%${t}%,email.ilike.%${t}%`);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as { id: string; full_name: string; email: string; status: string }[];
+    },
+  });
+
 
   const list = useQuery({
     queryKey: ["couriers"],
@@ -53,8 +69,24 @@ function CouriersPage() {
         .order("active", { ascending: false })
         .order("full_name");
       if (error) throw error;
-      return (data ?? []) as Courier[];
+      const couriers = (data ?? []) as Courier[];
+      const uids = couriers.map((c) => c.user_id).filter((v): v is string => !!v);
+      let byId: Record<string, { full_name: string; email: string }> = {};
+      if (uids.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, full_name, email").in("id", uids);
+        for (const p of (profs ?? []) as any[]) byId[p.id] = { full_name: p.full_name, email: p.email };
+      }
+      return couriers.map((c) => ({ ...c, linked_user: c.user_id ? byId[c.user_id] ?? null : null }));
     },
+  });
+
+  const linkMut = useMutation({
+    mutationFn: async ({ courierId, userId }: { courierId: string; userId: string | null }) => {
+      const { error } = await supabase.rpc("link_courier_user", { _courier_id: courierId, _user_id: userId as any });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Vínculo atualizado."); setLinkFor(null); qc.invalidateQueries({ queryKey: ["couriers"] }); },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const filtered = useMemo(() => {
@@ -135,15 +167,26 @@ function CouriersPage() {
           {filtered.map((c) => (
             <div key={c.id} className="p-3 flex items-center gap-3">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium truncate">{c.full_name}</span>
                   {c.active ? <Badge variant="secondary">Ativo</Badge> : <Badge variant="outline">Inativo</Badge>}
+                  {c.user_id
+                    ? <Badge variant="default" className="gap-1"><Link2 className="h-3 w-3" />Acesso ao painel</Badge>
+                    : <Badge variant="outline" className="text-muted-foreground">Sem acesso</Badge>}
                 </div>
                 <div className="text-xs text-muted-foreground truncate">
                   {[c.phone, c.document, c.vehicle_plate].filter(Boolean).join(" · ") || "Sem dados adicionais"}
                 </div>
+                {c.linked_user && (
+                  <div className="text-xs text-muted-foreground truncate">
+                    Vinculado a: {c.linked_user.full_name} ({c.linked_user.email})
+                  </div>
+                )}
                 {c.notes && <div className="text-xs text-muted-foreground truncate">{c.notes}</div>}
               </div>
+              <Button size="sm" variant="outline" onClick={() => setLinkFor(c)}>
+                <Link2 className="h-3.5 w-3.5 mr-1" />Vínculo
+              </Button>
               <Button size="sm" variant="outline" onClick={() => startEdit(c)}>
                 <Pencil className="h-3.5 w-3.5 mr-1" />Editar
               </Button>
@@ -193,6 +236,53 @@ function CouriersPage() {
             <Button onClick={() => save.mutate()} disabled={save.isPending || !form.full_name.trim()}>
               {save.isPending ? "Salvando…" : "Salvar"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!linkFor} onOpenChange={(o) => { if (!o) setLinkFor(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Vincular usuário ao motoboy</DialogTitle>
+            <DialogDescription>
+              O usuário selecionado poderá acessar o painel <b>/motoboy</b> e ver apenas as próprias entregas.
+              Este vínculo não altera automaticamente os cargos ou permissões — atribua o cargo Motoboy separadamente.
+            </DialogDescription>
+          </DialogHeader>
+          {linkFor?.user_id ? (
+            <div className="space-y-3">
+              <p className="text-sm">Este motoboy já está vinculado a um usuário.</p>
+              <Button variant="destructive" onClick={() => linkMut.mutate({ courierId: linkFor.id, userId: null })}
+                disabled={linkMut.isPending}>
+                <Unlink className="h-4 w-4 mr-1" />Remover vínculo
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Input placeholder="Buscar por nome ou e-mail" value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)} />
+              <div className="max-h-[300px] overflow-y-auto border rounded-md divide-y">
+                {users.isLoading && <div className="p-3 text-sm text-muted-foreground">Carregando…</div>}
+                {(users.data ?? []).map((u) => (
+                  <button key={u.id}
+                    className="w-full text-left p-3 hover:bg-muted/50 text-sm flex justify-between items-center gap-2"
+                    onClick={() => linkFor && linkMut.mutate({ courierId: linkFor.id, userId: u.id })}
+                    disabled={linkMut.isPending}>
+                    <div>
+                      <div className="font-medium">{u.full_name}</div>
+                      <div className="text-xs text-muted-foreground">{u.email}</div>
+                    </div>
+                    <Link2 className="h-4 w-4 text-primary" />
+                  </button>
+                ))}
+                {!users.isLoading && (users.data ?? []).length === 0 && (
+                  <div className="p-3 text-sm text-muted-foreground">Nenhum usuário encontrado.</div>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkFor(null)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
