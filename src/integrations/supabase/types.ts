@@ -1216,6 +1216,14 @@ export type Database = {
           organization_id: string
           position: number
           product_id: string | null
+          raw_color_label: string | null
+          raw_counted_quantity: number | null
+          raw_description: string | null
+          raw_notes: string | null
+          raw_size_label: string | null
+          resolution_status: string
+          resolved_at: string | null
+          resolved_by: string | null
           total_quantity: number
           updated_at: string
         }
@@ -1231,6 +1239,14 @@ export type Database = {
           organization_id: string
           position?: number
           product_id?: string | null
+          raw_color_label?: string | null
+          raw_counted_quantity?: number | null
+          raw_description?: string | null
+          raw_notes?: string | null
+          raw_size_label?: string | null
+          resolution_status?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
           total_quantity?: number
           updated_at?: string
         }
@@ -1246,6 +1262,14 @@ export type Database = {
           organization_id?: string
           position?: number
           product_id?: string | null
+          raw_color_label?: string | null
+          raw_counted_quantity?: number | null
+          raw_description?: string | null
+          raw_notes?: string | null
+          raw_size_label?: string | null
+          resolution_status?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
           total_quantity?: number
           updated_at?: string
         }
@@ -1296,6 +1320,7 @@ export type Database = {
           receipt_date: string
           receipt_number: number
           status: string
+          sub_status: string | null
           supplier_id: string | null
           total_items: number
           total_quantity: number
@@ -1325,6 +1350,7 @@ export type Database = {
           receipt_date?: string
           receipt_number: number
           status?: string
+          sub_status?: string | null
           supplier_id?: string | null
           total_items?: number
           total_quantity?: number
@@ -1354,6 +1380,7 @@ export type Database = {
           receipt_date?: string
           receipt_number?: number
           status?: string
+          sub_status?: string | null
           supplier_id?: string | null
           total_items?: number
           total_quantity?: number
@@ -1993,6 +2020,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "label_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_size_presets: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          organization_id: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          organization_id: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          organization_id?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_size_presets_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
