@@ -285,14 +285,32 @@ function PosVendaFila() {
                       <TableCell><Badge variant={POST_SALE_STATUS_TONE[t.status] ?? "outline"}>{POST_SALE_STATUS_LABELS[t.status] ?? t.status}</Badge></TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="outline" disabled={!link || openWa.isPending}
-                            onClick={() => openWa.mutate(t)}>
-                            <MessageCircle className="h-4 w-4 mr-1" />Abrir
-                          </Button>
-                          <Button size="sm" variant="default" disabled={markSent.isPending}
-                            onClick={() => markSent.mutate(t.id)}>
-                            Marcar enviada
-                          </Button>
+                          {t.status === "pending_review" ? (
+                            <>
+                              <Button size="sm" variant="default" disabled={reviewApprove.isPending}
+                                onClick={() => reviewApprove.mutate({ id: t.id })}>
+                                Aprovar
+                              </Button>
+                              <Button size="sm" variant="outline" disabled={reviewReject.isPending}
+                                onClick={() => {
+                                  const r = window.prompt("Motivo (opcional):") ?? undefined;
+                                  reviewReject.mutate({ id: t.id, reason: r });
+                                }}>
+                                Rejeitar
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button size="sm" variant="outline" disabled={!link || openWa.isPending}
+                                onClick={() => openWa.mutate(t)}>
+                                <MessageCircle className="h-4 w-4 mr-1" />Abrir
+                              </Button>
+                              <Button size="sm" variant="default" disabled={markSent.isPending}
+                                onClick={() => markSent.mutate(t.id)}>
+                                Marcar enviada
+                              </Button>
+                            </>
+                          )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button size="sm" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button>
