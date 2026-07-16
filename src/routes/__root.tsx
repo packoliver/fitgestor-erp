@@ -79,17 +79,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "FitGestor — ERP para loja de roupas fitness" },
+      { title: "QSF — Sistema de Gestão | Quero Ser Fit®" },
       {
         name: "description",
         content:
-          "FitGestor é um ERP moderno para lojas de roupas fitness: produtos, variações, estoque, etiquetas e integrações.",
+          "Sistema interno de gestão da Quero Ser Fit®. Recebimentos, estoque, etiquetas, PDV, vendas, trocas e relatórios em uma única plataforma.",
       },
-      { name: "author", content: "FitGestor" },
-      { property: "og:title", content: "FitGestor — ERP para loja de roupas fitness" },
+      { name: "author", content: "Quero Ser Fit®" },
+      { property: "og:title", content: "QSF — Sistema de Gestão | Quero Ser Fit®" },
       {
         property: "og:description",
-        content: "Gestão completa de produtos, estoque e operações para sua loja.",
+        content: "Plataforma proprietária da Quero Ser Fit® para controlar toda a operação da loja.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -101,7 +101,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
       },
     ],
   }),

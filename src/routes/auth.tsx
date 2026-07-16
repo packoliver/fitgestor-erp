@@ -5,10 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { QsfIdentity } from "@/components/qsf-logo";
 
 const searchSchema = z.object({ mode: z.enum(["signin", "signup"]).optional() });
 
@@ -37,19 +38,15 @@ function AuthPage() {
 
   return (
     <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-[10px] border border-border bg-surface">
-            <span className="font-serif text-lg font-medium">F</span>
-          </div>
-          <h1 className="font-serif text-[28px] font-medium tracking-tight">FitGestor</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">Acesso ao sistema da loja</p>
+      <div className="w-full max-w-[420px]">
+        <div className="mb-10 flex justify-center">
+          <QsfIdentity align="center" size="lg" onDark />
         </div>
 
-        <Card className="border-border bg-surface shadow-lg">
-          <CardHeader>
-            <CardTitle>Acessar conta</CardTitle>
-            <CardDescription>Entre ou cadastre-se para começar.</CardDescription>
+        <Card className="border-border bg-card shadow-none">
+          <CardHeader className="pb-2">
+            <h2 className="text-[17px] font-semibold tracking-[-0.02em]">Acessar conta</h2>
+            <p className="text-[13px] text-muted-foreground">Entre com suas credenciais corporativas.</p>
           </CardHeader>
           <CardContent>
             <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")}>
@@ -66,6 +63,10 @@ function AuthPage() {
             </Tabs>
           </CardContent>
         </Card>
+
+        <p className="mt-6 text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+          Ambiente corporativo · Quero Ser Fit<sup className="text-[0.6em]">®</sup>
+        </p>
       </div>
     </div>
   );
