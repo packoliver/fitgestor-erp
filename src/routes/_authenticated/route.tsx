@@ -37,9 +37,6 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const ctx = Route.useRouteContext();
-  const pathname = useRouterState({ select: (r) => r.location.pathname });
-  // Motoboy area is mobile-first and skips the desktop shell chrome.
-  if (pathname.startsWith("/motoboy")) return <Outlet />;
   return (
     <AppShell userEmail={ctx.email ?? ""}>
       <Outlet />
