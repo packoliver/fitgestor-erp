@@ -27,20 +27,20 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { usePermissions } from "@/hooks/use-permissions";
 
-type NavItem = { title: string; url: string; icon: React.ComponentType<{ className?: string }> };
+type NavItem = { title: string; url: string; icon: React.ComponentType<{ className?: string }>; perm?: string | string[] };
 
 const groups: { label: string; items: NavItem[] }[] = [
   {
     label: "Vendas",
     items: [
-      { title: "PDV", url: "/pdv", icon: ShoppingCart },
-      { title: "Caixa", url: "/caixa", icon: Wallet },
+      { title: "PDV", url: "/pdv", icon: ShoppingCart, perm: "pos.view" },
+      { title: "Caixa", url: "/caixa", icon: Wallet, perm: ["pos.open_cash", "pos.close_cash", "pos.view"] },
       { title: "Vendas", url: "/vendas", icon: Receipt },
-      { title: "Trocas", url: "/trocas", icon: RefreshCw },
-      { title: "Vales-troca", url: "/trocas/vales", icon: Ticket },
-      { title: "Créditos", url: "/trocas/creditos", icon: PiggyBank },
+      { title: "Trocas", url: "/trocas", icon: RefreshCw, perm: "exchanges.view" },
+      { title: "Vales-troca", url: "/trocas/vales", icon: Ticket, perm: "vouchers.view" },
+      { title: "Créditos", url: "/trocas/creditos", icon: PiggyBank, perm: "credits.view" },
       { title: "Clientes", url: "/clientes", icon: UserSquare2 },
     ],
   },
@@ -48,31 +48,32 @@ const groups: { label: string; items: NavItem[] }[] = [
     label: "Operação",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-      { title: "Produtos", url: "/produtos", icon: Package },
-      { title: "Estoque", url: "/estoque", icon: Boxes },
-      { title: "Entrada de mercadorias", url: "/estoque/entrada", icon: ArrowDownToLine },
-      { title: "Inventário", url: "/estoque/inventario", icon: ClipboardList },
-      { title: "Etiquetas", url: "/etiquetas", icon: Tag },
+      { title: "Produtos", url: "/produtos", icon: Package, perm: "product.view" },
+      { title: "Estoque", url: "/estoque", icon: Boxes, perm: "stock.view" },
+      { title: "Entrada de mercadorias", url: "/estoque/entrada", icon: ArrowDownToLine, perm: "goods_receipt.create" },
+      { title: "Inventário", url: "/estoque/inventario", icon: ClipboardList, perm: "inventory.manage" },
+      { title: "Etiquetas", url: "/etiquetas", icon: Tag, perm: "label.print" },
     ],
   },
   {
     label: "Cadastros",
     items: [
-      { title: "Fornecedores", url: "/fornecedores", icon: Truck },
-      { title: "Categorias", url: "/categorias", icon: FolderTree },
-      { title: "Marcas", url: "/marcas", icon: Sparkles },
+      { title: "Fornecedores", url: "/fornecedores", icon: Truck, perm: "supplier.manage" },
+      { title: "Categorias", url: "/categorias", icon: FolderTree, perm: "category.manage" },
+      { title: "Marcas", url: "/marcas", icon: Sparkles, perm: "brand.manage" },
     ],
   },
   {
     label: "Administração",
     items: [
-      { title: "Funcionários", url: "/funcionarios", icon: Users },
-      { title: "Cargos e permissões", url: "/cargos", icon: ShieldCheck },
-      { title: "Auditoria", url: "/auditoria", icon: ScrollText },
+      { title: "Funcionários", url: "/funcionarios", icon: Users, perm: "user.manage" },
+      { title: "Cargos e permissões", url: "/cargos", icon: ShieldCheck, perm: "role.manage" },
+      { title: "Auditoria", url: "/auditoria", icon: ScrollText, perm: "audit.view" },
       { title: "Configurações", url: "/configuracoes", icon: Settings },
     ],
   },
 ];
+
 
 
 function AppSidebar() {
