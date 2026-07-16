@@ -116,7 +116,7 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-16 flex items-center gap-3 border-b border-border bg-background/80 px-4 sm:px-6 sticky top-0 z-20 backdrop-blur-md">
+          <header className="glass-soft h-16 flex items-center gap-3 border-0 border-b border-border/60 px-4 sm:px-6 sticky top-0 z-20 rounded-none">
             <SidebarTrigger className="h-9 w-9 rounded-lg hover:bg-muted" />
             <div className="hidden md:flex relative flex-1 max-w-md">
               <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
