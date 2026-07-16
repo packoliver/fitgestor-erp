@@ -20,6 +20,24 @@ export const Route = createFileRoute("/_authenticated/cargos")({
   component: CargosPage,
 });
 
+const MODULE_LABELS: Record<string, string> = {
+  exchanges: "Trocas",
+  credits_vouchers: "Créditos e vales",
+  pos: "PDV",
+  reports: "Relatórios",
+  produtos: "Produtos",
+  estoque: "Estoque",
+  vendas: "Vendas",
+  trocas: "Trocas (legado)",
+  estornos: "Estornos",
+  etiquetas: "Etiquetas",
+  cadastros: "Cadastros",
+  clients: "Clientes",
+  administracao: "Administração",
+  relatorios: "Relatórios (legado)",
+};
+
+
 function CargosPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
