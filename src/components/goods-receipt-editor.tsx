@@ -326,7 +326,26 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
 
   return (
     <div className="space-y-4">
-      {readOnly && (
+      {status === "confirmed" && (
+        <div className="rounded-md border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900 flex items-start gap-3">
+          <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0" />
+          <div className="space-y-1">
+            <div><strong>Recebimento confirmado.</strong> As etiquetas ainda estão pendentes de geração.</div>
+            {confirmedAt && <div className="text-xs">Confirmado em {formatDateTime(confirmedAt)}.</div>}
+            {confirmationSummary?.total_quantity != null && (
+              <div className="text-xs">
+                Total adicionado ao estoque: <strong>{confirmationSummary.total_quantity}</strong> peças ·{" "}
+                {(confirmationSummary.created_products?.length ?? 0)} produto(s) novo(s) ·{" "}
+                {(confirmationSummary.created_variants?.length ?? 0)} variação(ões) nova(s).
+              </div>
+            )}
+            <div className="text-xs inline-flex items-center gap-1 mt-1">
+              <Lock className="h-3 w-3" /> Somente leitura · <Badge variant="outline">Etiquetas pendentes</Badge>
+            </div>
+          </div>
+        </div>
+      )}
+      {readOnly && status !== "confirmed" && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
           Este recebimento está com status <strong>{status}</strong> e não pode ser editado.
         </div>
