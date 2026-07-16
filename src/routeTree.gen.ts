@@ -40,6 +40,7 @@ import { Route as AuthenticatedRelatoriosTrocasRouteImport } from './routes/_aut
 import { Route as AuthenticatedProdutosNovoRouteImport } from './routes/_authenticated/produtos.novo'
 import { Route as AuthenticatedProdutosIdRouteImport } from './routes/_authenticated/produtos.$id'
 import { Route as AuthenticatedExpedicaoMotoboysRouteImport } from './routes/_authenticated/expedicao.motoboys'
+import { Route as AuthenticatedExpedicaoFilaRouteImport } from './routes/_authenticated/expedicao.fila'
 import { Route as AuthenticatedEstoqueMovimentacoesRouteImport } from './routes/_authenticated/estoque.movimentacoes'
 import { Route as AuthenticatedEstoqueInventarioRouteImport } from './routes/_authenticated/estoque.inventario'
 import { Route as AuthenticatedEstoqueEntradaRouteImport } from './routes/_authenticated/estoque.entrada'
@@ -218,6 +219,12 @@ const AuthenticatedExpedicaoMotoboysRoute =
     path: '/expedicao/motoboys',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedExpedicaoFilaRoute =
+  AuthenticatedExpedicaoFilaRouteImport.update({
+    id: '/expedicao/fila',
+    path: '/expedicao/fila',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedEstoqueMovimentacoesRoute =
   AuthenticatedEstoqueMovimentacoesRouteImport.update({
     id: '/estoque/movimentacoes',
@@ -293,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
   '/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
   '/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
+  '/expedicao/fila': typeof AuthenticatedExpedicaoFilaRoute
   '/expedicao/motoboys': typeof AuthenticatedExpedicaoMotoboysRoute
   '/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/produtos/novo': typeof AuthenticatedProdutosNovoRoute
@@ -334,6 +342,7 @@ export interface FileRoutesByTo {
   '/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
   '/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
   '/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
+  '/expedicao/fila': typeof AuthenticatedExpedicaoFilaRoute
   '/expedicao/motoboys': typeof AuthenticatedExpedicaoMotoboysRoute
   '/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/produtos/novo': typeof AuthenticatedProdutosNovoRoute
@@ -377,6 +386,7 @@ export interface FileRoutesById {
   '/_authenticated/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
   '/_authenticated/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
   '/_authenticated/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
+  '/_authenticated/expedicao/fila': typeof AuthenticatedExpedicaoFilaRoute
   '/_authenticated/expedicao/motoboys': typeof AuthenticatedExpedicaoMotoboysRoute
   '/_authenticated/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/_authenticated/produtos/novo': typeof AuthenticatedProdutosNovoRoute
@@ -420,6 +430,7 @@ export interface FileRouteTypes {
     | '/estoque/entrada'
     | '/estoque/inventario'
     | '/estoque/movimentacoes'
+    | '/expedicao/fila'
     | '/expedicao/motoboys'
     | '/produtos/$id'
     | '/produtos/novo'
@@ -461,6 +472,7 @@ export interface FileRouteTypes {
     | '/estoque/entrada'
     | '/estoque/inventario'
     | '/estoque/movimentacoes'
+    | '/expedicao/fila'
     | '/expedicao/motoboys'
     | '/produtos/$id'
     | '/produtos/novo'
@@ -503,6 +515,7 @@ export interface FileRouteTypes {
     | '/_authenticated/estoque/entrada'
     | '/_authenticated/estoque/inventario'
     | '/_authenticated/estoque/movimentacoes'
+    | '/_authenticated/expedicao/fila'
     | '/_authenticated/expedicao/motoboys'
     | '/_authenticated/produtos/$id'
     | '/_authenticated/produtos/novo'
@@ -751,6 +764,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedExpedicaoMotoboysRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/expedicao/fila': {
+      id: '/_authenticated/expedicao/fila'
+      path: '/expedicao/fila'
+      fullPath: '/expedicao/fila'
+      preLoaderRoute: typeof AuthenticatedExpedicaoFilaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/estoque/movimentacoes': {
       id: '/_authenticated/estoque/movimentacoes'
       path: '/estoque/movimentacoes'
@@ -862,6 +882,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEstoqueEntradaRoute: typeof AuthenticatedEstoqueEntradaRoute
   AuthenticatedEstoqueInventarioRoute: typeof AuthenticatedEstoqueInventarioRoute
   AuthenticatedEstoqueMovimentacoesRoute: typeof AuthenticatedEstoqueMovimentacoesRoute
+  AuthenticatedExpedicaoFilaRoute: typeof AuthenticatedExpedicaoFilaRoute
   AuthenticatedExpedicaoMotoboysRoute: typeof AuthenticatedExpedicaoMotoboysRoute
   AuthenticatedProdutosIdRoute: typeof AuthenticatedProdutosIdRoute
   AuthenticatedProdutosNovoRoute: typeof AuthenticatedProdutosNovoRoute
@@ -899,6 +920,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEstoqueInventarioRoute: AuthenticatedEstoqueInventarioRoute,
   AuthenticatedEstoqueMovimentacoesRoute:
     AuthenticatedEstoqueMovimentacoesRoute,
+  AuthenticatedExpedicaoFilaRoute: AuthenticatedExpedicaoFilaRoute,
   AuthenticatedExpedicaoMotoboysRoute: AuthenticatedExpedicaoMotoboysRoute,
   AuthenticatedProdutosIdRoute: AuthenticatedProdutosIdRoute,
   AuthenticatedProdutosNovoRoute: AuthenticatedProdutosNovoRoute,
