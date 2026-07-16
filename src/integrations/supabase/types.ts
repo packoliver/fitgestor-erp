@@ -2722,6 +2722,10 @@ export type Database = {
           notes: string | null
           organization_id: string
           payment_method: string
+          refund_reason: string | null
+          refunded_amount: number
+          refunded_at: string | null
+          refunded_by: string | null
           sale_id: string
           status: string
           transaction_reference: string | null
@@ -2737,6 +2741,10 @@ export type Database = {
           notes?: string | null
           organization_id: string
           payment_method: string
+          refund_reason?: string | null
+          refunded_amount?: number
+          refunded_at?: string | null
+          refunded_by?: string | null
           sale_id: string
           status?: string
           transaction_reference?: string | null
@@ -2752,6 +2760,10 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           payment_method?: string
+          refund_reason?: string | null
+          refunded_amount?: number
+          refunded_at?: string | null
+          refunded_by?: string | null
           sale_id?: string
           status?: string
           transaction_reference?: string | null
@@ -3620,6 +3632,10 @@ export type Database = {
         Args: { _event_id: string; _reason: string }
         Returns: Json
       }
+      cancel_route: {
+        Args: { _reason: string; _route_id: string }
+        Returns: undefined
+      }
       close_cash_session: {
         Args: { _counted_amount: number; _notes?: string; _session_id: string }
         Returns: Json
@@ -3667,6 +3683,11 @@ export type Database = {
         Returns: string
       }
       current_org_id: { Args: never; Returns: string }
+      default_workspace_for_current_user: { Args: never; Returns: string }
+      dispatch_and_start_route: {
+        Args: { _route_id: string }
+        Returns: undefined
+      }
       dispatch_route: { Args: { _route_id: string }; Returns: undefined }
       export_exchanges_report: { Args: { _filters: Json }; Returns: Json }
       generate_goods_receipt_labels: {
@@ -3696,6 +3717,23 @@ export type Database = {
         Args: { _items: Json; _sale_id: string }
         Returns: string
       }
+      link_courier_user: {
+        Args: { _courier_id: string; _user_id: string }
+        Returns: undefined
+      }
+      list_available_shipments_for_route: {
+        Args: { _route_id: string }
+        Returns: {
+          city: string
+          id: string
+          neighborhood: string
+          recipient_name: string
+          sale_number: number
+          scheduled_date: string
+          shipment_number: number
+          status: Database["public"]["Enums"]["shipment_status"]
+        }[]
+      }
       list_goods_receipts: { Args: { _filters: Json }; Returns: Json }
       list_open_routes_today: {
         Args: never
@@ -3707,6 +3745,19 @@ export type Database = {
           route_number: number
           status: Database["public"]["Enums"]["route_status"]
           total_stops: number
+        }[]
+      }
+      list_pending_deliveries: {
+        Args: never
+        Returns: {
+          client_id: string
+          client_name: string
+          reason: string
+          sale_date: string
+          sale_id: string
+          sale_number: number
+          seller: string
+          total: number
         }[]
       }
       mark_shipment_absent: {
@@ -3741,6 +3792,10 @@ export type Database = {
           _reason?: string
         }
         Returns: Json
+      }
+      record_payment_refund: {
+        Args: { _amount: number; _payment_id: string; _reason?: string }
+        Returns: undefined
       }
       refresh_shipment_payment_summary: {
         Args: { _shipment_id: string }
