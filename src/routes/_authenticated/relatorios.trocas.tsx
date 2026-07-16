@@ -125,7 +125,7 @@ function ReportInner() {
 
   const exportCsv = async () => {
     if (!canExport) return;
-    const { data, error } = await supabase.rpc("export_exchanges_report", { _filters: payload });
+    const { data, error } = await supabase.rpc("export_exchanges_report", { _filters: payload as any });
     if (error) return toast.error(error.message);
     const res = data as { rows: any[]; total_rows: number; exported_rows: number; truncated: boolean; max_export: number };
     if (!res.rows?.length) return toast.info("Nenhum registro para exportar.");
