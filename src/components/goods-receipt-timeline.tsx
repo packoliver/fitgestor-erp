@@ -30,59 +30,97 @@ function actionMeta(action: string, entity: string): { title: string; icon: Reac
   return { title: `${action} · ${entity}`, icon: <FileText className="h-4 w-4" /> };
 }
 
+type AuditRow = {
+  id: string;
+  action: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  created_at: string;
+  user_id: string | null;
+  new_data: unknown;
+};
+
+type JobRow = {
+  id: string;
+  status: string;
+  total_labels: number | null;
+  created_at: string;
+  completed_at: string | null;
+  user_id: string | null;
+};
+
 export function GoodsReceiptTimeline({ draftId }: { draftId: string }) {
   const q = useQuery({
     queryKey: ["goods-receipt-timeline", draftId],
     queryFn: async () => {
-      // 1) audit_logs for the draft
-      const { data: logs, error: e1 } = await supabase
+      const { data: logsData, error: e1 } = await supabase
         .from("audit_logs")
-        .select("id, action, entity_type, entity_id, created_at, user_id, new_data, profiles:profiles!audit_logs_user_id_fkey(full_name, email)")
+        .select("id, action, entity_type, entity_id, created_at, user_id, new_data")
         .eq("entity_type", "goods_receipt_draft")
         .eq("entity_id", draftId)
         .order("created_at", { ascending: true });
       if (e1) throw e1;
+      const logs = (logsData ?? []) as AuditRow[];
 
-      // 2) label print jobs vinculados
-      const { data: jobs, error: e2 } = await supabase
+      const { data: jobsData, error: e2 } = await supabase
         .from("label_print_jobs")
-        .select("id, status, total_labels, created_at, completed_at, user_id, profiles:profiles!label_print_jobs_user_id_fkey(full_name, email)")
+        .select("id, status, total_labels, created_at, completed_at, user_id")
         .eq("goods_receipt_draft_id", draftId)
         .eq("origin", "goods_receipt")
         .order("created_at", { ascending: true });
       if (e2) throw e2;
+      const jobs = (jobsData ?? []) as JobRow[];
 
-      // 3) audit_logs para esses jobs
-      const jobIds = (jobs ?? []).map((j) => j.id);
-      let jobLogs: Array<{ id: string; action: string; entity_type: string; entity_id: string; created_at: string; user_id: string | null; new_data: unknown; profiles: { full_name: string | null; email: string | null } | null }> = [];
+      const jobIds = jobs.map((j) => j.id);
+      let jobLogs: AuditRow[] = [];
       if (jobIds.length > 0) {
         const { data: jl, error: e3 } = await supabase
           .from("audit_logs")
-          .select("id, action, entity_type, entity_id, created_at, user_id, new_data, profiles:profiles!audit_logs_user_id_fkey(full_name, email)")
+          .select("id, action, entity_type, entity_id, created_at, user_id, new_data")
           .eq("entity_type", "label_print_job")
           .in("entity_id", jobIds)
           .order("created_at", { ascending: true });
         if (e3) throw e3;
-        jobLogs = (jl ?? []) as typeof jobLogs;
+        jobLogs = (jl ?? []) as AuditRow[];
+      }
+
+      // Fetch profiles for all actor user_ids
+      const userIds = Array.from(new Set([
+        ...logs.map((l) => l.user_id).filter(Boolean) as string[],
+        ...jobLogs.map((l) => l.user_id).filter(Boolean) as string[],
+        ...jobs.map((j) => j.user_id).filter(Boolean) as string[],
+      ]));
+      const nameById = new Map<string, string>();
+      if (userIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", userIds);
+        for (const p of profs ?? []) {
+          nameById.set(p.id, p.full_name || p.email || "");
+        }
       }
 
       const events: Event[] = [];
-      for (const l of (logs ?? []) as typeof jobLogs) {
+      for (const l of logs) {
         const meta = actionMeta(l.action, "goods_receipt_draft");
         const nd = (l.new_data ?? {}) as { reason?: string; total_quantity?: number };
         events.push({
           when: l.created_at,
-          actor: l.profiles?.full_name || l.profiles?.email || null,
+          actor: l.user_id ? (nameById.get(l.user_id) || null) : null,
           icon: meta.icon,
           title: meta.title,
-          description: l.action === "cancel" && nd.reason ? `Motivo: ${nd.reason}` : l.action === "confirm" && nd.total_quantity != null ? `${nd.total_quantity} peças adicionadas ao estoque` : undefined,
+          description:
+            l.action === "cancel" && nd.reason ? `Motivo: ${nd.reason}` :
+            l.action === "confirm" && nd.total_quantity != null ? `${nd.total_quantity} peças adicionadas ao estoque` :
+            undefined,
         });
       }
       for (const l of jobLogs) {
         const meta = actionMeta(l.action, "label_print_job");
         events.push({
           when: l.created_at,
-          actor: l.profiles?.full_name || l.profiles?.email || null,
+          actor: l.user_id ? (nameById.get(l.user_id) || null) : null,
           icon: meta.icon,
           title: meta.title,
         });
