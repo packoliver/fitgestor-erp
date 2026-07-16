@@ -300,8 +300,10 @@ function NovaTrocaPage() {
       return data as any;
     },
     onSuccess: (data: any) => {
+      setCompleted(true);
       toast.success(`Troca #${data.exchange_number} concluída.`);
-      navigate({ to: "/trocas/$id", params: { id: data.exchange_id } });
+      // pequeno atraso para garantir que o blocker leia o novo estado antes da navegação
+      setTimeout(() => navigate({ to: "/trocas/$id", params: { id: data.exchange_id } }), 0);
     },
     onError: (e: Error) => toast.error(e.message),
   });
