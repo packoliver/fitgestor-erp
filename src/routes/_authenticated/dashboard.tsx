@@ -50,7 +50,22 @@ function Dashboard() {
     staleTime: 30_000,
   });
 
+  const canPostSale = perms.has("post_sale.view");
+  const postSaleStats = useQuery({
+    enabled: canPostSale,
+    queryKey: ["post-sale-stats-dashboard"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("post_sale_queue_stats");
+      return (data ?? {}) as Record<string, number>;
+    },
+    staleTime: 30_000,
+  });
+  useEffect(() => {
+    if (canPostSale) supabase.rpc("process_due_post_sale_rules").then(() => {});
+  }, [canPostSale]);
+
   const s = q.data ?? {};
+  const ps = postSaleStats.data ?? {};
   const canFinance = perms.hasAny("report.view","pos.view");
   const canShip = perms.hasAny("shipping.view","shipping.view_all","shipping.dispatch");
   const canTeam = perms.has("user.manage");
