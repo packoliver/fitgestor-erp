@@ -169,30 +169,66 @@ function PdvPage() {
     if (!amount || amount <= 0) { toast.error("Valor inválido."); return; }
     if (payMethod === "exchange_voucher") {
       if (!payRef.trim()) { toast.error("Informe o código do vale."); return; }
-      if (voucherInfo && amount > voucherInfo.balance) { toast.error("Este vale não possui saldo suficiente."); return; }
+      if (!voucherInfo) { toast.error("Consulte o vale antes de adicionar."); return; }
+      if (amount > voucherInfo.balance + 0.005) { toast.error("Valor acima do saldo do vale."); return; }
+      if (amount > remaining + 0.005) { toast.error("Valor acima do restante da venda."); return; }
     }
     if (payMethod === "store_credit") {
       if (!clientId) { toast.error("Selecione um cliente para usar crédito."); return; }
-      if (creditBalance !== null && amount > creditBalance) { toast.error("Este crédito não possui saldo suficiente."); return; }
+      if (creditBalance === null) { toast.error("Consulte o saldo antes de adicionar."); return; }
+      if (amount > creditBalance + 0.005) { toast.error("Valor acima do saldo de crédito."); return; }
+      if (amount > remaining + 0.005) { toast.error("Valor acima do restante da venda."); return; }
     }
     setPayments((p) => [...p, { payment_method: payMethod, amount, installments: payMethod === "credit_card" ? payInst : 1, reference: payRef.trim() || undefined }]);
     setPayAmount(""); setPayRef(""); setVoucherInfo(null);
   }
 
   async function lookupVoucher() {
-    if (!payRef.trim()) return;
-    const { data } = await supabase.from("exchange_vouchers").select("code, current_balance, status, expires_at").eq("code", payRef.trim().toUpperCase()).maybeSingle();
-    if (!data) { toast.error("Vale não encontrado."); setVoucherInfo(null); return; }
-    if (data.status !== "active") { toast.error("Vale não está ativo."); setVoucherInfo(null); return; }
-    setVoucherInfo({ code: data.code, balance: Number(data.current_balance) });
-    setPayAmount(String(data.current_balance));
+    const code = payRef.trim().toUpperCase();
+    if (!code) { toast.error("Informe o código do vale."); return; }
+    setVoucherLookupPending(true);
+    try {
+      // RLS restringe ao organization_id atual — vales de outra loja retornam vazio.
+      const { data } = await supabase.from("exchange_vouchers")
+        .select("code, current_balance, status, expires_at, client:clients(full_name)")
+        .eq("code", code).maybeSingle();
+      if (!data) { toast.error("Vale não encontrado nesta loja."); setVoucherInfo(null); return; }
+      if (data.status === "cancelled") { toast.error("Vale cancelado."); setVoucherInfo(null); return; }
+      if (data.status === "fully_used" || Number(data.current_balance) <= 0) { toast.error("Vale já totalmente utilizado."); setVoucherInfo(null); return; }
+      if (data.expires_at && new Date(data.expires_at) < new Date()) { toast.error("Vale vencido."); setVoucherInfo(null); return; }
+      if (data.status !== "active") { toast.error(`Vale não está ativo (${data.status}).`); setVoucherInfo(null); return; }
+      const info = { code: data.code, balance: Number(data.current_balance), expires_at: data.expires_at, holder: (data as any).client?.full_name ?? null };
+      setVoucherInfo(info);
+      const suggested = Math.min(info.balance, Math.max(remaining, 0));
+      setPayAmount(suggested.toFixed(2));
+    } finally { setVoucherLookupPending(false); }
   }
 
-  async function lookupCredit() {
-    if (!clientId) { toast.error("Selecione um cliente primeiro."); return; }
-    const { data } = await supabase.from("store_credit_accounts").select("balance, status").eq("client_id", clientId).maybeSingle();
-    if (!data || data.status !== "active") { setCreditBalance(0); toast.error("Cliente não possui crédito disponível."); return; }
-    setCreditBalance(Number(data.balance));
+  async function lookupCreditByCpf() {
+    const cpf = normalizeDigits(creditCpfTerm);
+    if (!cpf) { toast.error("Informe o CPF do cliente."); return; }
+    setCreditLookupPending(true);
+    try {
+      const { data: cli } = await supabase.from("clients")
+        .select("id, full_name, cpf").eq("cpf", cpf).is("deleted_at", null).maybeSingle();
+      if (!cli) { toast.error("Nenhum cliente encontrado com este CPF."); return; }
+      setClientId(cli.id); setClientName(cli.full_name);
+      await lookupCredit(cli.id);
+    } finally { setCreditLookupPending(false); }
+  }
+
+  async function lookupCredit(cid?: string) {
+    const id = cid ?? clientId;
+    if (!id) { toast.error("Selecione um cliente primeiro."); return; }
+    const { data } = await supabase.from("store_credit_accounts")
+      .select("balance, status").eq("client_id", id).maybeSingle();
+    if (!data) { setCreditBalance(0); toast.error("Cliente não possui conta de crédito."); return; }
+    if (data.status !== "active") { setCreditBalance(0); toast.error(`Crédito ${data.status}.`); return; }
+    const bal = Number(data.balance);
+    setCreditBalance(bal);
+    if (bal <= 0) { toast.error("Cliente sem saldo de crédito disponível."); return; }
+    const suggested = Math.min(bal, Math.max(remaining, 0));
+    setPayAmount(suggested.toFixed(2));
   }
 
   const complete = useMutation({
