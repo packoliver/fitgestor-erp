@@ -12,8 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { useMemo, useState } from "react";
-import { getOpenSession, money, PAYMENT_LABELS } from "@/lib/pos";
-import { Search, Trash2, Plus } from "lucide-react";
+import { getOpenSession, money, PAYMENT_LABELS, normalizeDigits } from "@/lib/pos";
+import { Search, Trash2, Plus, ChevronLeft, ChevronRight, Check, User as UserIcon, Calendar } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/trocas/nova")({
   component: NovaTrocaPage,
@@ -59,10 +60,25 @@ const DESTINATIONS = [
   { v: "disposal", l: "Descarte" }, { v: "no_stock_return", l: "Não retornar ao estoque" },
 ];
 
+const STEPS = [
+  { n: 1, label: "Buscar venda" },
+  { n: 2, label: "Itens devolvidos" },
+  { n: 3, label: "Condição e destino" },
+  { n: 4, label: "Novos produtos" },
+  { n: 5, label: "Financeiro" },
+  { n: 6, label: "Revisar e concluir" },
+];
+
 function newRequestId() { return (crypto as any).randomUUID?.() ?? `${Date.now()}-${Math.random()}`; }
+
+function fmtDate(iso: string | null | undefined) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
 
 function NovaTrocaPage() {
   const navigate = useNavigate();
+  const [step, setStep] = useState(1);
   const [saleTerm, setSaleTerm] = useState("");
   const [saleId, setSaleId] = useState<string | null>(null);
   const [returns, setReturns] = useState<ReturnLine[]>([]);
@@ -77,31 +93,99 @@ function NovaTrocaPage() {
   const [notes, setNotes] = useState("");
   const [productTerm, setProductTerm] = useState("");
   const [requestId] = useState(newRequestId());
+  const [searchResults, setSearchResults] = useState<any[] | null>(null);
 
   const { data: session } = useQuery({ queryKey: ["pdv-session"], queryFn: () => getOpenSession() });
 
   const { data: sale } = useQuery({
     queryKey: ["sale-lookup", saleId],
     enabled: !!saleId,
-    queryFn: async () => (await supabase.from("sales").select("*, client:clients(id, full_name), items:sale_items(*)").eq("id", saleId!).maybeSingle()).data,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("sales")
+        .select("*, client:clients(id, full_name, cpf, phone), seller:profiles!sales_seller_id_fkey(id, full_name), items:sale_items(*), sale_payments(*)")
+        .eq("id", saleId!)
+        .maybeSingle();
+      return data;
+    },
   });
 
   const searchSale = useMutation({
     mutationFn: async () => {
       const t = saleTerm.trim();
-      if (!t) throw new Error("Informe número, cupom, CPF ou telefone.");
-      const n = Number(t);
-      if (!isNaN(n)) {
-        const { data } = await supabase.from("sales").select("id").eq("sale_number", n).limit(1).maybeSingle();
-        if (data) return data.id;
+      if (!t) throw new Error("Informe número, cupom, CPF, telefone, nome ou SKU.");
+      const digits = normalizeDigits(t);
+
+      // 1) Nº da venda
+      const asNum = Number(t);
+      if (!isNaN(asNum) && Number.isInteger(asNum) && asNum > 0 && t.length <= 10) {
+        const { data } = await supabase.from("sales")
+          .select("id, sale_number, total, completed_at, created_at, client:clients(full_name, cpf, phone)")
+          .eq("sale_number", asNum).limit(5);
+        if (data && data.length > 0) return data;
       }
-      const { data: byCode } = await supabase.from("exchange_receipts").select("original_sale_id").eq("code", t.toUpperCase()).maybeSingle();
-      if (byCode) return byCode.original_sale_id;
-      throw new Error("Venda não encontrada.");
+
+      // 2) Código do cupom / vale
+      const { data: byCode } = await supabase.from("exchange_receipts")
+        .select("original_sale_id, sales:sales!exchange_receipts_original_sale_id_fkey(id, sale_number, total, completed_at, created_at, client:clients(full_name, cpf, phone))")
+        .eq("code", t.toUpperCase()).maybeSingle();
+      if (byCode?.sales) return [byCode.sales];
+
+      // 3) CPF ou telefone (dígitos)
+      if (digits.length >= 8) {
+        const { data: cli } = await supabase.from("clients")
+          .select("id").or(`cpf.eq.${digits},phone.ilike.%${digits}%`).limit(20);
+        const ids = (cli ?? []).map((c) => c.id);
+        if (ids.length > 0) {
+          const { data } = await supabase.from("sales")
+            .select("id, sale_number, total, completed_at, created_at, client:clients(full_name, cpf, phone)")
+            .in("client_id", ids).order("created_at", { ascending: false }).limit(20);
+          if (data && data.length > 0) return data;
+        }
+      }
+
+      // 4) SKU ou código de barras → vendas contendo o item
+      const { data: vars } = await supabase.from("product_variants")
+        .select("id").or(`sku.ilike.%${t}%,barcode.eq.${t}`).limit(20);
+      const varIds = (vars ?? []).map((v) => v.id);
+      if (varIds.length > 0) {
+        const { data: sitems } = await supabase.from("sale_items")
+          .select("sale_id").in("variant_id", varIds).limit(50);
+        const saleIds = [...new Set((sitems ?? []).map((s) => s.sale_id))];
+        if (saleIds.length > 0) {
+          const { data } = await supabase.from("sales")
+            .select("id, sale_number, total, completed_at, created_at, client:clients(full_name, cpf, phone)")
+            .in("id", saleIds).order("created_at", { ascending: false }).limit(20);
+          if (data && data.length > 0) return data;
+        }
+      }
+
+      // 5) Nome do cliente
+      const { data: cliByName } = await supabase.from("clients")
+        .select("id").ilike("full_name", `%${t}%`).limit(20);
+      const nameIds = (cliByName ?? []).map((c) => c.id);
+      if (nameIds.length > 0) {
+        const { data } = await supabase.from("sales")
+          .select("id, sale_number, total, completed_at, created_at, client:clients(full_name, cpf, phone)")
+          .in("client_id", nameIds).order("created_at", { ascending: false }).limit(20);
+        if (data && data.length > 0) return data;
+      }
+
+      throw new Error("Nenhuma venda encontrada para o termo informado.");
     },
-    onSuccess: (id) => { setSaleId(id); setReturns([]); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: (list) => {
+      setSearchResults(list);
+      if (list.length === 1) selectSale(list[0].id);
+    },
+    onError: (e: Error) => { setSearchResults([]); toast.error(e.message); },
   });
+
+  function selectSale(id: string) {
+    setSaleId(id);
+    setReturns([]);
+    setSearchResults(null);
+    setStep(2);
+  }
 
   const { data: productResults = [] } = useQuery({
     queryKey: ["exchange-search", productTerm, session?.location_id],
@@ -126,6 +210,10 @@ function NovaTrocaPage() {
       unit_value: Number(item.unit_price), max_qty: item.quantity, quantity: 1,
       condition: "new", restock_destination: "available_stock", return_to_available_stock: true,
     }]);
+  }
+
+  function removeReturn(sale_item_id: string) {
+    setReturns((p) => p.filter((r) => r.sale_item_id !== sale_item_id));
   }
 
   function addNewItem(v: any) {
@@ -188,169 +276,413 @@ function NovaTrocaPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Validação de avanço por etapa
+  function canAdvanceFrom(s: number): boolean {
+    if (s === 1) return !!sale;
+    if (s === 2) return returns.length > 0 || newItems.length > 0; // pode pular direto para troca sem devolver? não faz sentido; exigir returns quando venda selecionada
+    if (s === 3) return returns.every((r) => r.condition && r.restock_destination);
+    if (s === 4) return true; // novos itens são opcionais
+    if (s === 5) {
+      if (diff > 0) return paidIncoming >= diff - 0.005;
+      if (diff < 0) return paidOutgoing >= owed - 0.005 || genCredit || genVoucher;
+      return true;
+    }
+    return true;
+  }
+
+  function goNext() {
+    if (!canAdvanceFrom(step)) { toast.error("Preencha os dados desta etapa antes de continuar."); return; }
+    setStep((s) => Math.min(6, s + 1));
+  }
+  function goPrev() { setStep((s) => Math.max(1, s - 1)); }
+
   return (
     <div className="space-y-4">
-      <PageHeader title="Nova troca" description="Localize a venda, selecione itens e conclua." actions={<Button asChild variant="outline"><Link to="/trocas">Voltar</Link></Button>} />
+      <PageHeader
+        title="Nova troca"
+        description="Assistente em 6 etapas — os dados são preservados ao voltar."
+        actions={<Button asChild variant="outline"><Link to="/trocas">Voltar</Link></Button>}
+      />
 
-      {/* Etapa 1: localizar venda */}
-      <Card className="p-4 space-y-3">
-        <div className="font-semibold">1. Localizar venda</div>
-        <div className="flex gap-2">
-          <Input placeholder="Nº venda, código do cupom, CPF ou telefone" value={saleTerm} onChange={(e) => setSaleTerm(e.target.value)} onKeyDown={(e) => e.key === "Enter" && searchSale.mutate()} />
-          <Button onClick={() => searchSale.mutate()}><Search className="mr-2 h-4 w-4" />Buscar</Button>
-        </div>
-        {sale && <div className="text-sm text-muted-foreground">Venda <b>#{sale.sale_number}</b> · Cliente: {sale.client?.full_name ?? "não identificado"} · Total: {money(sale.total)}</div>}
+      {/* Stepper */}
+      <Card className="p-3">
+        <ol className="flex flex-wrap gap-1 sm:gap-2 text-xs">
+          {STEPS.map((s) => {
+            const done = step > s.n;
+            const current = step === s.n;
+            return (
+              <li key={s.n} className="flex-1 min-w-[130px]">
+                <button
+                  type="button"
+                  onClick={() => { if (s.n < step || canAdvanceFrom(step)) setStep(s.n); }}
+                  className={cn(
+                    "w-full flex items-center gap-2 rounded-md border px-2 py-2 text-left transition",
+                    current && "border-primary bg-primary/5",
+                    done && "border-green-500/40 bg-green-500/5",
+                    !current && !done && "border-border hover:bg-muted/40",
+                  )}
+                >
+                  <span className={cn(
+                    "flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold",
+                    current && "bg-primary text-primary-foreground",
+                    done && "bg-green-600 text-white",
+                    !current && !done && "bg-muted text-muted-foreground",
+                  )}>
+                    {done ? <Check className="h-3 w-3" /> : s.n}
+                  </span>
+                  <span className="truncate">{s.label}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
       </Card>
 
-      {/* Etapa 2: itens devolvidos */}
-      {sale && (
-        <Card className="p-4 space-y-3">
-          <div className="font-semibold">2. Itens devolvidos</div>
-          <Table>
-            <TableHeader><TableRow><TableHead>Produto</TableHead><TableHead>Tam</TableHead><TableHead className="text-right">Qtd</TableHead><TableHead className="text-right">Preço</TableHead><TableHead></TableHead></TableRow></TableHeader>
-            <TableBody>
-              {(sale.items ?? []).map((it: any) => (
-                <TableRow key={it.id}>
-                  <TableCell>{it.product_name_snapshot} {it.color_snapshot ? `— ${it.color_snapshot}` : ""}</TableCell>
-                  <TableCell>{it.size_snapshot}</TableCell>
-                  <TableCell className="text-right">{it.quantity}</TableCell>
-                  <TableCell className="text-right">{money(it.unit_price)}</TableCell>
-                  <TableCell><Button size="sm" variant="outline" onClick={() => addReturn(it)} disabled={!!returns.find((r) => r.sale_item_id === it.id)}>Devolver</Button></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        {/* MAIN */}
+        <div className="space-y-4 min-w-0">
+          {step === 1 && (
+            <Card className="p-4 space-y-3">
+              <div className="font-semibold">1. Localizar venda</div>
+              <div className="text-xs text-muted-foreground">Busque por: número da venda, código do cupom, CPF, telefone, nome do cliente, SKU ou código de barras.</div>
+              <div className="flex gap-2">
+                <Input
+                  autoFocus
+                  placeholder="Digite e pressione Enter…"
+                  value={saleTerm}
+                  onChange={(e) => setSaleTerm(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && searchSale.mutate()}
+                />
+                <Button onClick={() => searchSale.mutate()} disabled={searchSale.isPending}>
+                  <Search className="mr-2 h-4 w-4" />{searchSale.isPending ? "Buscando…" : "Buscar"}
+                </Button>
+              </div>
 
-          {returns.length > 0 && (
-            <div className="border-t pt-3 space-y-2">
-              <div className="text-sm font-medium">Selecionados</div>
-              {returns.map((r, i) => (
-                <div key={r.sale_item_id} className="grid grid-cols-12 gap-2 items-center text-sm">
-                  <div className="col-span-3">{r.name} {r.color ? `— ${r.color}` : ""} · Tam {r.size}</div>
-                  <Input type="number" min={1} max={r.max_qty} className="col-span-1 h-8" value={r.quantity} onChange={(e) => setReturns((p) => p.map((x, ix) => ix === i ? { ...x, quantity: Math.min(Math.max(1, Number(e.target.value) || 1), r.max_qty) } : x))} />
-                  <Select value={r.condition} onValueChange={(v) => setReturns((p) => p.map((x, ix) => ix === i ? { ...x, condition: v, return_to_available_stock: v === "new" || v === "good" ? x.return_to_available_stock : false, restock_destination: v === "damaged" || v === "defective" ? "damaged_stock" : x.restock_destination } : x))}>
-                    <SelectTrigger className="col-span-2 h-8"><SelectValue /></SelectTrigger>
-                    <SelectContent>{CONDITIONS.map((c) => <SelectItem key={c.v} value={c.v}>{c.l}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select value={r.restock_destination} onValueChange={(v) => setReturns((p) => p.map((x, ix) => ix === i ? { ...x, restock_destination: v, return_to_available_stock: v === "available_stock" } : x))}>
-                    <SelectTrigger className="col-span-3 h-8"><SelectValue /></SelectTrigger>
-                    <SelectContent>{DESTINATIONS.map((c) => <SelectItem key={c.v} value={c.v}>{c.l}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <div className="col-span-2 text-right">{money(r.unit_value * r.quantity)}</div>
-                  <Button size="icon" variant="ghost" className="col-span-1 h-8 w-8 text-destructive" onClick={() => setReturns((p) => p.filter((_, ix) => ix !== i))}><Trash2 className="h-3 w-3" /></Button>
+              {searchResults && searchResults.length > 1 && (
+                <div className="border rounded-md divide-y max-h-72 overflow-auto">
+                  {searchResults.map((r) => (
+                    <button
+                      key={r.id}
+                      className="w-full text-left p-3 hover:bg-accent text-sm flex justify-between items-center gap-4"
+                      onClick={() => selectSale(r.id)}
+                    >
+                      <div className="min-w-0">
+                        <div className="font-medium">Venda #{r.sale_number} <span className="text-muted-foreground text-xs ml-2">{fmtDate(r.completed_at ?? r.created_at)}</span></div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {r.client?.full_name ?? "Sem cliente"}
+                          {r.client?.cpf ? ` · CPF ${r.client.cpf}` : ""}
+                          {r.client?.phone ? ` · ${r.client.phone}` : ""}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0"><b>{money(r.total)}</b></div>
+                    </button>
+                  ))}
                 </div>
-              ))}
-              <div className="flex justify-end text-sm"><span className="text-muted-foreground mr-2">Total devolvido:</span><b>{money(returnedTotal)}</b></div>
-            </div>
-          )}
-        </Card>
-      )}
+              )}
 
-      {/* Etapa 3: novos itens */}
-      {sale && (
-        <Card className="p-4 space-y-3">
-          <div className="font-semibold">3. Novos itens (opcional)</div>
-          <div className="flex gap-2">
-            <Input placeholder="Buscar por SKU ou código de barras…" value={productTerm} onChange={(e) => setProductTerm(e.target.value)} />
-          </div>
-          {productResults.length > 0 && (
-            <div className="border rounded max-h-40 overflow-auto divide-y">
-              {productResults.map((v: any) => (
-                <button key={v.id} className="w-full text-left p-2 hover:bg-accent flex justify-between text-sm" onClick={() => addNewItem(v)}>
-                  <span>{v.product?.name} — {v.product?.color} · Tam {v.size} · SKU {v.sku}</span>
-                  <b>{money(v.sale_price ?? v.product?.promotional_price ?? v.product?.sale_price)}</b>
-                </button>
-              ))}
-            </div>
-          )}
-          {newItems.length > 0 && (
-            <div className="border-t pt-3 space-y-2">
-              {newItems.map((n, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2 items-center text-sm">
-                  <div className="col-span-6">{n.name} {n.color ? `— ${n.color}` : ""} · Tam {n.size}</div>
-                  <Input type="number" min={1} max={n.available} className="col-span-2 h-8" value={n.quantity} onChange={(e) => setNewItems((p) => p.map((x, ix) => ix === i ? { ...x, quantity: Math.min(Math.max(1, Number(e.target.value) || 1), n.available) } : x))} />
-                  <div className="col-span-3 text-right">{money(n.unit_price * n.quantity)}</div>
-                  <Button size="icon" variant="ghost" className="col-span-1 h-8 w-8 text-destructive" onClick={() => setNewItems((p) => p.filter((_, ix) => ix !== i))}><Trash2 className="h-3 w-3" /></Button>
+              {sale && (
+                <div className="rounded-md border bg-muted/30 p-3 space-y-2 text-sm">
+                  <div className="flex justify-between items-start flex-wrap gap-2">
+                    <div>
+                      <div className="font-semibold">Venda #{sale.sale_number}</div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" />{fmtDate(sale.completed_at ?? sale.created_at)}</div>
+                    </div>
+                    <div className="text-right"><div className="text-muted-foreground text-xs">Total</div><b>{money(sale.total)}</b></div>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 text-xs">
+                    <div><div className="text-muted-foreground">Cliente</div><div className="font-medium">{sale.client?.full_name ?? "Não identificado"}{sale.client?.cpf ? ` · ${sale.client.cpf}` : ""}{sale.client?.phone ? ` · ${sale.client.phone}` : ""}</div></div>
+                    <div><div className="text-muted-foreground">Vendedor</div><div className="font-medium flex items-center gap-1"><UserIcon className="h-3 w-3" />{(sale as any).seller?.full_name ?? "—"}</div></div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Itens ({(sale.items ?? []).length})</div>
+                    <ul className="text-xs space-y-0.5">
+                      {(sale.items ?? []).slice(0, 6).map((it: any) => (
+                        <li key={it.id} className="flex justify-between gap-2">
+                          <span className="truncate">{it.quantity}× {it.product_name_snapshot}{it.color_snapshot ? ` — ${it.color_snapshot}` : ""} · Tam {it.size_snapshot}</span>
+                          <span className="text-muted-foreground shrink-0">{money(it.unit_price)}</span>
+                        </li>
+                      ))}
+                      {(sale.items ?? []).length > 6 && <li className="text-muted-foreground">+ {(sale.items ?? []).length - 6} outros…</li>}
+                    </ul>
+                  </div>
+                  {(sale as any).sale_payments?.length > 0 && (
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">Formas de pagamento</div>
+                      <div className="flex flex-wrap gap-1">
+                        {(sale as any).sale_payments.map((p: any) => (
+                          <Badge key={p.id} variant="secondary" className="text-[10px]">{PAYMENT_LABELS[p.payment_method] ?? p.payment_method}: {money(p.amount)}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <Button size="sm" onClick={() => setStep(2)} className="w-full">Continuar <ChevronRight className="ml-1 h-4 w-4" /></Button>
                 </div>
-              ))}
-              <div className="flex justify-end text-sm"><span className="text-muted-foreground mr-2">Total novos:</span><b>{money(newTotal)}</b></div>
-            </div>
+              )}
+            </Card>
           )}
-        </Card>
-      )}
 
-      {/* Etapa 4/5: financeiro */}
-      {sale && (returns.length > 0 || newItems.length > 0) && (
-        <Card className="p-4 space-y-3">
-          <div className="font-semibold">4. Financeiro</div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <div><div className="text-muted-foreground">Devolvido</div><b>{money(returnedTotal)}</b></div>
-            <div><div className="text-muted-foreground">Novos</div><b>{money(newTotal)}</b></div>
-            <div><div className="text-muted-foreground">Diferença</div><b className={diff > 0 ? "text-destructive" : diff < 0 ? "text-green-600" : ""}>{money(diff)}</b></div>
-            <div><div className="text-muted-foreground">{diff >= 0 ? "A pagar" : "A favor cliente"}</div><b>{money(Math.abs(diff))}</b></div>
-          </div>
+          {step === 2 && sale && (
+            <Card className="p-4 space-y-3">
+              <div className="font-semibold">2. Selecionar itens devolvidos</div>
+              <div className="text-xs text-muted-foreground">Clique em <b>Devolver</b> nos itens que o cliente está retornando.</div>
+              <Table>
+                <TableHeader><TableRow><TableHead>Produto</TableHead><TableHead>Tam</TableHead><TableHead className="text-right">Qtd</TableHead><TableHead className="text-right">Preço</TableHead><TableHead></TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {(sale.items ?? []).map((it: any) => {
+                    const inCart = returns.find((r) => r.sale_item_id === it.id);
+                    return (
+                      <TableRow key={it.id} className={inCart ? "bg-primary/5" : ""}>
+                        <TableCell>{it.product_name_snapshot}{it.color_snapshot ? ` — ${it.color_snapshot}` : ""}</TableCell>
+                        <TableCell>{it.size_snapshot}</TableCell>
+                        <TableCell className="text-right">{it.quantity}</TableCell>
+                        <TableCell className="text-right">{money(it.unit_price)}</TableCell>
+                        <TableCell>
+                          {inCart
+                            ? <Button size="sm" variant="ghost" onClick={() => removeReturn(it.id)}><Trash2 className="h-3 w-3" /></Button>
+                            : <Button size="sm" variant="outline" onClick={() => addReturn(it)}>Devolver</Button>}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+              {returns.length > 0 && (
+                <div className="border-t pt-3 space-y-2">
+                  {returns.map((r, i) => (
+                    <div key={r.sale_item_id} className="grid grid-cols-12 gap-2 items-center text-sm">
+                      <div className="col-span-8">{r.name}{r.color ? ` — ${r.color}` : ""} · Tam {r.size}</div>
+                      <div className="col-span-2 text-xs text-muted-foreground text-right">Qtd</div>
+                      <Input type="number" min={1} max={r.max_qty} className="col-span-2 h-8"
+                        value={r.quantity}
+                        onChange={(e) => setReturns((p) => p.map((x, ix) => ix === i ? { ...x, quantity: Math.min(Math.max(1, Number(e.target.value) || 1), r.max_qty) } : x))} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
-            <div><Label>Direção</Label>
-              <Select value={payDir} onValueChange={(v) => setPayDir(v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="incoming">Cliente paga (entrada)</SelectItem>
-                  <SelectItem value="outgoing">Loja devolve (saída)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div><Label>Forma</Label>
-              <Select value={payMethod} onValueChange={setPayMethod}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Dinheiro</SelectItem>
-                  <SelectItem value="pix">Pix</SelectItem>
-                  <SelectItem value="debit_card">Débito</SelectItem>
-                  <SelectItem value="credit_card">Crédito</SelectItem>
-                  <SelectItem value="other">Outros</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div><Label>Valor</Label><Input type="number" step="0.01" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} /></div>
-            <Button onClick={addPayment}><Plus className="mr-2 h-4 w-4" />Adicionar</Button>
-          </div>
+          {step === 3 && sale && (
+            <Card className="p-4 space-y-3">
+              <div className="font-semibold">3. Condição e destino de cada item</div>
+              {returns.length === 0 && <div className="text-sm text-muted-foreground">Nenhum item para devolver. Volte à etapa 2 ou pule para novos produtos.</div>}
+              <div className="space-y-3">
+                {returns.map((r, i) => (
+                  <div key={r.sale_item_id} className="border rounded-md p-3 space-y-2">
+                    <div className="flex justify-between items-start gap-2 text-sm">
+                      <div><div className="font-medium">{r.name}</div><div className="text-xs text-muted-foreground">{r.color ? `${r.color} · ` : ""}Tam {r.size} · Qtd {r.quantity}</div></div>
+                      <div className="text-right"><b>{money(r.unit_value * r.quantity)}</b></div>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div>
+                        <Label className="text-xs">Condição</Label>
+                        <Select value={r.condition} onValueChange={(v) => setReturns((p) => p.map((x, ix) => ix === i ? { ...x, condition: v, return_to_available_stock: v === "new" || v === "good" ? x.return_to_available_stock : false, restock_destination: v === "damaged" || v === "defective" ? "damaged_stock" : x.restock_destination } : x))}>
+                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent>{CONDITIONS.map((c) => <SelectItem key={c.v} value={c.v}>{c.l}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Destino</Label>
+                        <Select value={r.restock_destination} onValueChange={(v) => setReturns((p) => p.map((x, ix) => ix === i ? { ...x, restock_destination: v, return_to_available_stock: v === "available_stock" } : x))}>
+                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent>{DESTINATIONS.map((c) => <SelectItem key={c.v} value={c.v}>{c.l}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Motivo (opcional)</Label>
+                      <Input className="h-8" value={r.reason ?? ""} onChange={(e) => setReturns((p) => p.map((x, ix) => ix === i ? { ...x, reason: e.target.value } : x))} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
-          {payments.length > 0 && (
-            <div className="border rounded divide-y text-sm">
-              {payments.map((p, i) => (
-                <div key={i} className="flex justify-between items-center p-2">
-                  <span><Badge variant={p.direction === "incoming" ? "default" : "secondary"} className="mr-2">{p.direction === "incoming" ? "Entrada" : "Saída"}</Badge>{PAYMENT_LABELS[p.payment_method] ?? p.payment_method}</span>
-                  <div className="flex items-center gap-2"><b>{money(p.amount)}</b>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => setPayments((prev) => prev.filter((_, ix) => ix !== i))}><Trash2 className="h-3 w-3" /></Button>
+          {step === 4 && sale && (
+            <Card className="p-4 space-y-3">
+              <div className="font-semibold">4. Novos produtos (opcional)</div>
+              <div className="flex gap-2">
+                <Input placeholder="Buscar por SKU ou código de barras…" value={productTerm} onChange={(e) => setProductTerm(e.target.value)} />
+              </div>
+              {productResults.length > 0 && (
+                <div className="border rounded max-h-60 overflow-auto divide-y">
+                  {productResults.map((v: any) => (
+                    <button key={v.id} className="w-full text-left p-2 hover:bg-accent flex justify-between text-sm" onClick={() => addNewItem(v)}>
+                      <span>{v.product?.name} — {v.product?.color} · Tam {v.size} · SKU {v.sku}</span>
+                      <b>{money(v.sale_price ?? v.product?.promotional_price ?? v.product?.sale_price)}</b>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {newItems.length > 0 && (
+                <div className="border-t pt-3 space-y-2">
+                  {newItems.map((n, i) => (
+                    <div key={i} className="grid grid-cols-12 gap-2 items-center text-sm">
+                      <div className="col-span-6">{n.name}{n.color ? ` — ${n.color}` : ""} · Tam {n.size}</div>
+                      <Input type="number" min={1} max={n.available} className="col-span-2 h-8" value={n.quantity} onChange={(e) => setNewItems((p) => p.map((x, ix) => ix === i ? { ...x, quantity: Math.min(Math.max(1, Number(e.target.value) || 1), n.available) } : x))} />
+                      <div className="col-span-3 text-right">{money(n.unit_price * n.quantity)}</div>
+                      <Button size="icon" variant="ghost" className="col-span-1 h-8 w-8 text-destructive" onClick={() => setNewItems((p) => p.filter((_, ix) => ix !== i))}><Trash2 className="h-3 w-3" /></Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          )}
+
+          {step === 5 && sale && (
+            <Card className="p-4 space-y-3">
+              <div className="font-semibold">5. Resolver diferença financeira</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div><div className="text-muted-foreground">Devolvido</div><b>{money(returnedTotal)}</b></div>
+                <div><div className="text-muted-foreground">Novos</div><b>{money(newTotal)}</b></div>
+                <div><div className="text-muted-foreground">Diferença</div><b className={diff > 0 ? "text-destructive" : diff < 0 ? "text-green-600" : ""}>{money(diff)}</b></div>
+                <div><div className="text-muted-foreground">{diff >= 0 ? "A pagar (cliente)" : "A favor cliente"}</div><b>{money(Math.abs(diff))}</b></div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+                <div><Label>Direção</Label>
+                  <Select value={payDir} onValueChange={(v) => setPayDir(v as any)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="incoming">Cliente paga (entrada)</SelectItem>
+                      <SelectItem value="outgoing">Loja devolve (saída)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Forma</Label>
+                  <Select value={payMethod} onValueChange={setPayMethod}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Dinheiro</SelectItem>
+                      <SelectItem value="pix">Pix</SelectItem>
+                      <SelectItem value="debit_card">Débito</SelectItem>
+                      <SelectItem value="credit_card">Crédito</SelectItem>
+                      <SelectItem value="other">Outros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Valor</Label><Input type="number" step="0.01" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} /></div>
+                <Button onClick={addPayment}><Plus className="mr-2 h-4 w-4" />Adicionar</Button>
+              </div>
+
+              {payments.length > 0 && (
+                <div className="border rounded divide-y text-sm">
+                  {payments.map((p, i) => (
+                    <div key={i} className="flex justify-between items-center p-2">
+                      <span><Badge variant={p.direction === "incoming" ? "default" : "secondary"} className="mr-2">{p.direction === "incoming" ? "Entrada" : "Saída"}</Badge>{PAYMENT_LABELS[p.payment_method] ?? p.payment_method}</span>
+                      <div className="flex items-center gap-2"><b>{money(p.amount)}</b>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => setPayments((prev) => prev.filter((_, ix) => ix !== i))}><Trash2 className="h-3 w-3" /></Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {owed > 0 && (
+                <div className="border-t pt-3 space-y-2">
+                  <div className="text-sm text-muted-foreground">Saldo a favor do cliente ({money(owed)}) — escolha o destino:</div>
+                  <div className="flex gap-4 flex-wrap">
+                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={genCredit} onChange={(e) => { setGenCredit(e.target.checked); if (e.target.checked) setGenVoucher(false); }} /> Gerar crédito da loja</label>
+                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={genVoucher} onChange={(e) => { setGenVoucher(e.target.checked); if (e.target.checked) setGenCredit(false); }} /> Emitir vale-troca</label>
+                    <div className="text-xs text-muted-foreground">(ou registre uma devolução saindo acima)</div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              )}
 
-          {owed > 0 && (
-            <div className="border-t pt-3 space-y-2">
-              <div className="text-sm text-muted-foreground">Saldo a favor do cliente ({money(owed)}) — escolha o destino:</div>
-              <div className="flex gap-4 flex-wrap">
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={genCredit} onChange={(e) => { setGenCredit(e.target.checked); if (e.target.checked) setGenVoucher(false); }} /> Gerar crédito da loja</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={genVoucher} onChange={(e) => { setGenVoucher(e.target.checked); if (e.target.checked) setGenCredit(false); }} /> Emitir vale-troca</label>
-                <div className="text-xs text-muted-foreground">(ou registre uma devolução saindo acima)</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div><Label>Motivo</Label><Input value={reason} onChange={(e) => setReason(e.target.value)} /></div>
+                <div><Label>Observações</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
               </div>
-            </div>
+            </Card>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
-            <div><Label>Motivo</Label><Input value={reason} onChange={(e) => setReason(e.target.value)} /></div>
-            <div><Label>Observações</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
-          </div>
+          {step === 6 && sale && (
+            <Card className="p-4 space-y-3">
+              <div className="font-semibold">6. Revisar e concluir</div>
+              <div className="rounded-md border p-3 text-sm space-y-2">
+                <div><span className="text-muted-foreground">Venda origem:</span> <b>#{sale.sale_number}</b> · {sale.client?.full_name ?? "Sem cliente"}</div>
+                <div>
+                  <div className="text-muted-foreground text-xs mb-1">Itens devolvidos ({returns.length})</div>
+                  <ul className="text-xs space-y-0.5">
+                    {returns.map((r) => (
+                      <li key={r.sale_item_id} className="flex justify-between gap-2">
+                        <span>{r.quantity}× {r.name} · Tam {r.size} <span className="text-muted-foreground">[{CONDITIONS.find((c) => c.v === r.condition)?.l} → {DESTINATIONS.find((d) => d.v === r.restock_destination)?.l}]</span></span>
+                        <span>{money(r.unit_value * r.quantity)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                {newItems.length > 0 && (
+                  <div>
+                    <div className="text-muted-foreground text-xs mb-1">Novos itens ({newItems.length})</div>
+                    <ul className="text-xs space-y-0.5">
+                      {newItems.map((n, i) => (
+                        <li key={i} className="flex justify-between gap-2"><span>{n.quantity}× {n.name} · Tam {n.size}</span><span>{money(n.unit_price * n.quantity)}</span></li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {payments.length > 0 && (
+                  <div>
+                    <div className="text-muted-foreground text-xs mb-1">Pagamentos</div>
+                    <ul className="text-xs space-y-0.5">
+                      {payments.map((p, i) => (
+                        <li key={i} className="flex justify-between gap-2"><span>{p.direction === "incoming" ? "Entrada" : "Saída"} · {PAYMENT_LABELS[p.payment_method] ?? p.payment_method}</span><span>{money(p.amount)}</span></li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {(genCredit || genVoucher) && (
+                  <div className="text-xs">Saldo a favor: <b>{genCredit ? "crédito da loja" : "vale-troca"}</b> de {money(owed)}</div>
+                )}
+                {reason && <div className="text-xs"><span className="text-muted-foreground">Motivo:</span> {reason}</div>}
+                {notes && <div className="text-xs"><span className="text-muted-foreground">Obs:</span> {notes}</div>}
+              </div>
+            </Card>
+          )}
 
-          <div className="flex justify-end gap-2 border-t pt-3">
-            <Button variant="outline" asChild><Link to="/trocas">Cancelar</Link></Button>
-            <Button onClick={() => complete.mutate()} disabled={complete.isPending}>{complete.isPending ? "Concluindo…" : "Concluir troca"}</Button>
-          </div>
-        </Card>
-      )}
+          {/* Navegação */}
+          <Card className="p-3 flex items-center justify-between gap-2">
+            <Button variant="outline" onClick={goPrev} disabled={step === 1}><ChevronLeft className="mr-1 h-4 w-4" />Voltar</Button>
+            {step < 6
+              ? <Button onClick={goNext} disabled={!sale && step === 1}>Continuar <ChevronRight className="ml-1 h-4 w-4" /></Button>
+              : <Button onClick={() => complete.mutate()} disabled={complete.isPending}><Check className="mr-1 h-4 w-4" />{complete.isPending ? "Concluindo…" : "Concluir troca"}</Button>}
+          </Card>
+        </div>
+
+        {/* SIDEBAR RESUMO */}
+        <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
+          <Card className="p-3 space-y-2 text-sm">
+            <div className="font-semibold text-xs uppercase text-muted-foreground">Resumo</div>
+            {sale ? (
+              <>
+                <div className="text-xs"><span className="text-muted-foreground">Venda:</span> <b>#{sale.sale_number}</b></div>
+                <div className="text-xs truncate"><span className="text-muted-foreground">Cliente:</span> {sale.client?.full_name ?? "—"}</div>
+              </>
+            ) : (
+              <div className="text-xs text-muted-foreground">Nenhuma venda selecionada.</div>
+            )}
+            <div className="border-t pt-2 space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Itens devolvidos</span><b>{returns.length}</b></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Novos itens</span><b>{newItems.length}</b></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Devolvido</span><b>{money(returnedTotal)}</b></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Novos</span><b>{money(newTotal)}</b></div>
+              <div className="flex justify-between border-t pt-1"><span className="text-muted-foreground">Diferença</span><b className={diff > 0 ? "text-destructive" : diff < 0 ? "text-green-600" : ""}>{money(diff)}</b></div>
+              {payments.length > 0 && (
+                <>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Pago (entrada)</span><b>{money(paidIncoming)}</b></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Devolvido (saída)</span><b>{money(paidOutgoing)}</b></div>
+                </>
+              )}
+              {(genCredit || genVoucher) && owed > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">{genCredit ? "Crédito" : "Vale"} a gerar</span><b>{money(owed)}</b></div>
+              )}
+            </div>
+            <div className="border-t pt-2 text-[10px] text-muted-foreground">Etapa {step} de 6 · {STEPS[step - 1].label}</div>
+          </Card>
+        </aside>
+      </div>
     </div>
   );
 }
