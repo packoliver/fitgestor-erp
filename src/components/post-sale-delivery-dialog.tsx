@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Truck, Store, Package, Mail, MoreHorizontal, Loader2 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { money } from "@/lib/pos";
+import { OverrideScheduleDialog } from "@/components/shipping/override-schedule-dialog";
 
 type DeliveryMethod = "pickup" | "motoboy" | "correios" | "carrier" | "other";
 
@@ -82,14 +83,16 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
     queryKey: ["post-sale-info", saleId],
     queryFn: async () => {
       const { data } = await supabase.from("sales")
-        .select("id, sale_number, total_amount, sale_payments(payment_method, amount)")
+        .select("id, sale_number, total, sale_payments(payment_method, amount, status)")
         .eq("id", saleId).maybeSingle();
       return data as any;
     },
   });
 
-  const paid = useMemo(() => (sale?.sale_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0), [sale]);
-  const total = Number(sale?.total_amount ?? 0);
+  const paid = useMemo(() => (sale?.sale_payments ?? [])
+    .filter((p: any) => p.status === "approved")
+    .reduce((s: number, p: any) => s + Number(p.amount || 0), 0), [sale]);
+  const total = Number(sale?.total ?? 0);
   const toCollect = Math.max(total - paid, 0);
 
   const { data: forecast } = useQuery({
@@ -119,16 +122,7 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
     });
   }, [step, method, client]);
 
-  const openRoutes = useQuery({
-    queryKey: ["open-routes-today"],
-    enabled: overrideOpen,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("list_open_routes_today");
-      if (error) throw error;
-      return (data ?? []) as { id: string; route_number: number; courier_id: string; courier_name: string;
-        planned_departure: string | null; total_stops: number; status: string }[];
-    },
-  });
+  // Kept for backwards compatibility, unused now that OverrideScheduleDialog owns the flow.
 
   function validate(): string | null {
     if (method !== "motoboy") return null;
@@ -180,19 +174,7 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
     onSettled: () => setConfirming(false),
   });
 
-  const includeOverride = useMutation({
-    mutationFn: async (routeId: string) => {
-      if (!createdShipmentId) throw new Error("Ordem não encontrada.");
-      const reason = window.prompt("Justificativa para incluir na saída de hoje:")?.trim();
-      if (!reason) throw new Error("Justificativa obrigatória.");
-      const { error } = await supabase.rpc("include_shipment_in_open_route", {
-        _shipment_id: createdShipmentId, _route_id: routeId, _reason: reason,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Entrega incluída na saída de hoje."); setOverrideOpen(false); },
-    onError: (e: Error) => toast.error(e.message),
-  });
+  // includeOverride replaced by <OverrideScheduleDialog />.
 
   const canOverride = perms.has("shipping.override_schedule");
   const forecastLabel = forecast ? (() => {
@@ -369,33 +351,17 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
               <div className="flex justify-between"><span>Status</span><Badge variant="secondary">Aguardando separação</Badge></div>
             </div>
 
-            {forecast?.after_cutoff && !forecast.is_today && canOverride && (
+            {forecast?.after_cutoff && !forecast.is_today && canOverride && createdShipmentId && (
               <div className="mt-2 border-t pt-3">
-                {!overrideOpen ? (
-                  <Button variant="outline" className="w-full" onClick={() => setOverrideOpen(true)}>
-                    Incluir na saída de hoje
-                  </Button>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground">Rotas abertas de hoje:</div>
-                    {openRoutes.isLoading && <div className="text-xs">Carregando…</div>}
-                    {openRoutes.data?.length === 0 && (
-                      <div className="text-xs text-muted-foreground">Nenhuma rota aberta hoje.</div>
-                    )}
-                    {(openRoutes.data ?? []).map((r) => (
-                      <div key={r.id} className="flex items-center justify-between rounded border p-2">
-                        <div className="text-xs">
-                          <div className="font-medium">Rota #{r.route_number} · {r.courier_name}</div>
-                          <div className="text-muted-foreground">
-                            {r.planned_departure ? new Date(r.planned_departure).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "sem horário"}
-                            {" · "}{r.total_stops} paradas
-                          </div>
-                        </div>
-                        <Button size="sm" onClick={() => includeOverride.mutate(r.id)} disabled={includeOverride.isPending}>Incluir</Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <Button variant="outline" className="w-full" onClick={() => setOverrideOpen(true)}>
+                  Incluir na saída de hoje
+                </Button>
+                <OverrideScheduleDialog
+                  open={overrideOpen}
+                  onOpenChange={setOverrideOpen}
+                  shipmentId={createdShipmentId}
+                  previousDate={forecast?.scheduled_date}
+                />
               </div>
             )}
 
@@ -404,9 +370,13 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
               <Button variant="outline" asChild>
                 <Link to="/vendas/$id" params={{ id: saleId }}>Ver venda</Link>
               </Button>
-              <Button disabled title="Tela da ordem de expedição na Fase 3">
-                Ver ordem de expedição
-              </Button>
+              {createdShipmentId && (
+                <Button asChild>
+                  <Link to="/expedicao/ordens/$id" params={{ id: createdShipmentId }}>
+                    Ver ordem de expedição
+                  </Link>
+                </Button>
+              )}
             </DialogFooter>
           </>
         )}

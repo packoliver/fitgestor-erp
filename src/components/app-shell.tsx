@@ -18,7 +18,7 @@ import {
   LayoutDashboard, Package, Boxes, ArrowDownToLine, ClipboardList, Tag,
   Users, ShieldCheck, Truck, FolderTree, Sparkles, Settings, ScrollText, LogOut,
   ShoppingCart, Wallet, Receipt, UserSquare2, RefreshCw, Ticket, PiggyBank, FileBarChart,
-  Search, Bell,
+  Search, Bell, MapPin,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -70,7 +70,11 @@ const groups: { label: string; items: NavItem[] }[] = [
   {
     label: "Expedição",
     items: [
+      { title: "Painel", url: "/expedicao", icon: LayoutDashboard, perm: ["shipping.view", "shipping.view_all", "shipping.view_own", "shipping.dispatch", "shipping.pick"] },
+      { title: "Fila", url: "/expedicao/fila", icon: ClipboardList, perm: ["shipping.view", "shipping.view_all", "shipping.pick", "shipping.dispatch", "shipping.deliver"] },
+      { title: "Rotas", url: "/expedicao/rotas", icon: MapPin, perm: ["shipping.view", "shipping.view_all", "shipping.dispatch"] },
       { title: "Motoboys", url: "/expedicao/motoboys", icon: Truck, perm: "shipping.manage_couriers" },
+      { title: "Minhas rotas", url: "/motoboy", icon: Truck, perm: ["shipping.view_own", "shipping.deliver"] },
     ],
   },
   {

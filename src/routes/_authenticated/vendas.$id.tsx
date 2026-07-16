@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { money, PAYMENT_LABELS } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
-import { Printer } from "lucide-react";
+import { Printer, Truck } from "lucide-react";
 import { PrintDialog } from "@/components/print/print-dialog";
 import { SaleReceipt, type EnrichedPayment } from "@/components/print/sale-receipt";
+import { PostSaleDeliveryDialog } from "@/components/post-sale-delivery-dialog";
+import { SHIPMENT_STATUS_LABEL, statusVariant } from "@/lib/shipping";
 
 export const Route = createFileRoute("/_authenticated/vendas/$id")({
   component: VendaDetalhe,
@@ -20,6 +22,18 @@ export const Route = createFileRoute("/_authenticated/vendas/$id")({
 function VendaDetalhe() {
   const { id } = Route.useParams();
   const [printOpen, setPrintOpen] = useState(false);
+  const [deliveryOpen, setDeliveryOpen] = useState(false);
+
+  const delivery = useQuery({
+    queryKey: ["sale-delivery", id],
+    queryFn: async () => {
+      const [pref, ship] = await Promise.all([
+        supabase.from("sale_delivery_preferences").select("delivery_method, amount_to_collect").eq("sale_id", id).maybeSingle(),
+        supabase.from("shipments").select("id, shipment_number, status").eq("sale_id", id).neq("status", "cancelled").maybeSingle(),
+      ]);
+      return { pref: pref.data, shipment: ship.data } as any;
+    },
+  });
 
   const { data: sale } = useQuery({
     queryKey: ["sale", id],
@@ -129,6 +143,37 @@ function VendaDetalhe() {
         </Card>
       </div>
 
+      <Card className="p-4 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm">
+            <Truck className="h-4 w-4 text-muted-foreground" />
+            <b>Entrega</b>
+            {delivery.data?.shipment ? (
+              <>
+                <span className="text-muted-foreground">Ordem #{delivery.data.shipment.shipment_number}</span>
+                <Badge variant={statusVariant(delivery.data.shipment.status)}>{SHIPMENT_STATUS_LABEL[delivery.data.shipment.status] ?? delivery.data.shipment.status}</Badge>
+              </>
+            ) : delivery.data?.pref ? (
+              <span className="text-muted-foreground">Forma registrada: {delivery.data.pref.delivery_method}</span>
+            ) : (
+              <span className="text-muted-foreground">Sem forma de entrega definida.</span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {delivery.data?.shipment ? (
+              <Button asChild variant="outline" size="sm">
+                <Link to="/expedicao/ordens/$id" params={{ id: delivery.data.shipment.id }}>Ver ordem</Link>
+              </Button>
+            ) : (
+              <Button size="sm" onClick={() => setDeliveryOpen(true)}>
+                {delivery.data?.pref?.delivery_method === "motoboy" ? "Criar Ordem de Expedição" : "Definir forma de entrega"}
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+
+
       <Card className="mb-4">
         <div className="p-3 font-semibold">Itens</div>
         <Table>
@@ -191,6 +236,15 @@ function VendaDetalhe() {
           }}
         />
       </PrintDialog>
+
+      {deliveryOpen && (
+        <PostSaleDeliveryDialog
+          saleId={sale.id}
+          saleNumber={sale.sale_number}
+          clientId={sale.client_id}
+          onClose={() => { setDeliveryOpen(false); delivery.refetch(); }}
+        />
+      )}
     </div>
   );
 }
