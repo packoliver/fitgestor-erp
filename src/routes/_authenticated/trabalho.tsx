@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, MessageCircle } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import {
   NAV_ITEMS, filterByPermission, itemsForWorkspace, itemsByGroup,
@@ -51,6 +52,22 @@ function WorkspacePage() {
     staleTime: 30_000,
   });
 
+  const canPostSale = perms.has("post_sale.view");
+  const psStats = useQuery({
+    enabled: canPostSale,
+    queryKey: ["post-sale-stats-trabalho"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("post_sale_queue_stats");
+      return (data ?? {}) as Record<string, number>;
+    },
+    staleTime: 30_000,
+  });
+  useEffect(() => {
+    if (canPostSale) supabase.rpc("process_due_post_sale_rules").then(() => {});
+  }, [canPostSale]);
+  const ps = psStats.data ?? {};
+  const psPending = (ps.pending_today ?? 0) + (ps.overdue ?? 0) + (ps.pending_review ?? 0);
+
   if (perms.isLoading || workspace.isLoading) return <div>Carregando…</div>;
 
   return (
@@ -69,6 +86,21 @@ function WorkspacePage() {
               <div className="text-xs text-muted-foreground">Toque para revisar e regularizar.</div>
             </div>
             <Badge variant="secondary">{pend.data}</Badge>
+          </Card>
+        </Link>
+      )}
+
+      {canPostSale && psPending > 0 && (
+        <Link to="/pos-venda">
+          <Card className="p-4 mb-4 border-primary/40 bg-primary/5 flex items-center gap-3 hover:bg-primary/10 transition-colors">
+            <MessageCircle className="h-5 w-5 text-primary" />
+            <div className="flex-1">
+              <div className="font-medium">Pós-vendas pendentes</div>
+              <div className="text-xs text-muted-foreground">
+                {ps.pending_today ?? 0} hoje · {ps.overdue ?? 0} atrasadas · {ps.pending_review ?? 0} em revisão
+              </div>
+            </div>
+            <Badge>{psPending}</Badge>
           </Card>
         </Link>
       )}

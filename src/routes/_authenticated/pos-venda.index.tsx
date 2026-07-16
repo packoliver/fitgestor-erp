@@ -51,7 +51,59 @@ function PosVendaFila() {
   const [editing, setEditing] = useState<Task | null>(null);
   const [editText, setEditText] = useState("");
 
-  useEffect(() => { supabase.rpc("post_sale_ensure_defaults").then(() => {}); }, []);
+  useEffect(() => {
+    supabase.rpc("post_sale_ensure_defaults").then(() => {});
+    // Sincronização leve: promove tarefas 'scheduled' vencidas para 'pending'.
+    supabase.rpc("process_due_post_sale_rules").then(({ data }) => {
+      const promoted = (data as { promoted?: number } | null)?.promoted ?? 0;
+      if (promoted > 0) qc.invalidateQueries({ queryKey: ["post-sale-tasks"] });
+    });
+  }, [qc]);
+
+  const processDue = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("process_due_post_sale_rules");
+      if (error) throw error;
+      return data as { promoted?: number };
+    },
+    onSuccess: (d) => {
+      toast.success(`Processamento concluído (${d?.promoted ?? 0} promovidas)`);
+      qc.invalidateQueries({ queryKey: ["post-sale-tasks"] });
+      qc.invalidateQueries({ queryKey: ["post-sale-stats"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const reviewApprove = useMutation({
+    mutationFn: async ({ id, message }: { id: string; message?: string }) => {
+      const { error } = await supabase.rpc("post_sale_review_approve", {
+        _task_id: id, _edited_message: message ?? undefined,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Tarefa aprovada");
+      qc.invalidateQueries({ queryKey: ["post-sale-tasks"] });
+      qc.invalidateQueries({ queryKey: ["post-sale-stats"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const reviewReject = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      const { error } = await supabase.rpc("post_sale_review_reject", {
+        _task_id: id, _reason: reason ?? undefined,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Tarefa rejeitada");
+      qc.invalidateQueries({ queryKey: ["post-sale-tasks"] });
+      qc.invalidateQueries({ queryKey: ["post-sale-stats"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const stats = useQuery({
     queryKey: ["post-sale-stats"],
@@ -152,6 +204,9 @@ function PosVendaFila() {
           description="Fila de mensagens para envio manual pelo WhatsApp."
           actions={
             <div className="flex flex-wrap gap-2">
+              <Button variant="ghost" onClick={() => processDue.mutate()} disabled={processDue.isPending}>
+                <RefreshCw className="h-4 w-4 mr-2" />Processar agora
+              </Button>
               <Button variant="outline" asChild>
                 <Link to="/pos-venda/gerar"><Plus className="h-4 w-4 mr-2" />Gerar pós-vendas</Link>
               </Button>
@@ -230,14 +285,32 @@ function PosVendaFila() {
                       <TableCell><Badge variant={POST_SALE_STATUS_TONE[t.status] ?? "outline"}>{POST_SALE_STATUS_LABELS[t.status] ?? t.status}</Badge></TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="outline" disabled={!link || openWa.isPending}
-                            onClick={() => openWa.mutate(t)}>
-                            <MessageCircle className="h-4 w-4 mr-1" />Abrir
-                          </Button>
-                          <Button size="sm" variant="default" disabled={markSent.isPending}
-                            onClick={() => markSent.mutate(t.id)}>
-                            Marcar enviada
-                          </Button>
+                          {t.status === "pending_review" ? (
+                            <>
+                              <Button size="sm" variant="default" disabled={reviewApprove.isPending}
+                                onClick={() => reviewApprove.mutate({ id: t.id })}>
+                                Aprovar
+                              </Button>
+                              <Button size="sm" variant="outline" disabled={reviewReject.isPending}
+                                onClick={() => {
+                                  const r = window.prompt("Motivo (opcional):") ?? undefined;
+                                  reviewReject.mutate({ id: t.id, reason: r });
+                                }}>
+                                Rejeitar
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button size="sm" variant="outline" disabled={!link || openWa.isPending}
+                                onClick={() => openWa.mutate(t)}>
+                                <MessageCircle className="h-4 w-4 mr-1" />Abrir
+                              </Button>
+                              <Button size="sm" variant="default" disabled={markSent.isPending}
+                                onClick={() => markSent.mutate(t.id)}>
+                                Marcar enviada
+                              </Button>
+                            </>
+                          )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button size="sm" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button>

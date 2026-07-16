@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
@@ -7,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   TrendingUp, Wallet, Truck, Package, Users, AlertTriangle, ClipboardList,
-  RefreshCw, PiggyBank, ArrowRight,
+  RefreshCw, PiggyBank, ArrowRight, MessageCircle,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -49,7 +50,22 @@ function Dashboard() {
     staleTime: 30_000,
   });
 
+  const canPostSale = perms.has("post_sale.view");
+  const postSaleStats = useQuery({
+    enabled: canPostSale,
+    queryKey: ["post-sale-stats-dashboard"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("post_sale_queue_stats");
+      return (data ?? {}) as Record<string, number>;
+    },
+    staleTime: 30_000,
+  });
+  useEffect(() => {
+    if (canPostSale) supabase.rpc("process_due_post_sale_rules").then(() => {});
+  }, [canPostSale]);
+
   const s = q.data ?? {};
+  const ps = postSaleStats.data ?? {};
   const canFinance = perms.hasAny("report.view","pos.view");
   const canShip = perms.hasAny("shipping.view","shipping.view_all","shipping.dispatch");
   const canTeam = perms.has("user.manage");
@@ -153,6 +169,40 @@ function Dashboard() {
           </CardContent>
         </Card>
       </section>
+
+      {canPostSale && (
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pós-venda</h2>
+          <Card>
+            <CardContent className="p-4 flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Fila do WhatsApp</span>
+              </div>
+              <PsStat label="Pendentes hoje" value={ps.pending_today ?? 0} />
+              <PsStat label="Atrasadas" value={ps.overdue ?? 0} tone={(ps.overdue ?? 0) > 0 ? "destructive" : undefined} />
+              <PsStat label="Aguardando revisão" value={ps.pending_review ?? 0} tone={(ps.pending_review ?? 0) > 0 ? "warning" : undefined} />
+              <PsStat label="Abertas" value={ps.opened ?? 0} />
+              <PsStat label="Enviadas hoje" value={ps.sent_today ?? 0} />
+              <PsStat label="Telefones inválidos" value={ps.invalid_phone ?? 0} tone={(ps.invalid_phone ?? 0) > 0 ? "warning" : undefined} />
+              <div className="ml-auto flex gap-2">
+                <ActionLink to="/pos-venda" label="Abrir fila" />
+                <ActionLink to="/pos-venda/sequencial" label="Iniciar" />
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function PsStat({ label, value, tone }: { label: string; value: number; tone?: "warning" | "destructive" }) {
+  const cls = tone === "destructive" ? "text-destructive" : tone === "warning" ? "text-amber-600" : "text-foreground";
+  return (
+    <div>
+      <div className={`text-xl font-semibold tabular-nums ${cls}`}>{value}</div>
+      <div className="text-[11px] text-muted-foreground">{label}</div>
     </div>
   );
 }
