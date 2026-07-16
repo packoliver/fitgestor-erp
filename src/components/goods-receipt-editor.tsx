@@ -346,6 +346,9 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
           </div>
         </div>
       )}
+      {status === "confirmed" && draftId && (
+        <GoodsReceiptLabelsSection draftId={draftId} />
+      )}
       {readOnly && status !== "confirmed" && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
           Este recebimento está com status <strong>{status}</strong> e não pode ser editado.
