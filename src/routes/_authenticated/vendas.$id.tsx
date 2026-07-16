@@ -67,7 +67,7 @@ function VendaDetalhe() {
   const { data: operator } = useQuery({
     queryKey: ["print-op", sale?.cashier_id],
     enabled: !!sale?.cashier_id,
-    queryFn: async () => (await supabase.from("profiles").select("full_name").eq("id", sale!.cashier_id).maybeSingle()).data,
+    queryFn: async () => (await supabase.from("profiles").select("full_name").eq("id", sale!.cashier_id!).maybeSingle()).data,
   });
   const { data: settings } = useQuery({
     queryKey: ["print-settings", sale?.organization_id],
