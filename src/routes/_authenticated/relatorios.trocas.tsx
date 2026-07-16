@@ -245,6 +245,26 @@ function ReportInner() {
               <Field label="Nº da troca"><Input inputMode="numeric" value={draft.exchange_number} onChange={(e) => setDraft({ ...draft, exchange_number: e.target.value })} /></Field>
               <Field label="Nº da venda"><Input inputMode="numeric" value={draft.sale_number} onChange={(e) => setDraft({ ...draft, sale_number: e.target.value })} /></Field>
               <Field label="CPF do cliente"><Input value={draft.cpf} onChange={(e) => setDraft({ ...draft, cpf: e.target.value })} placeholder="apenas números" /></Field>
+              <Field label="Cliente">
+                <EntityAutocomplete
+                  value={draft.client_id}
+                  label={clientLabel}
+                  onChange={(id, lbl) => { setDraft({ ...draft, client_id: id }); setClientLabel(lbl); }}
+                  fetcher={searchClients}
+                  ariaLabel="cliente"
+                  placeholder="Nome, CPF ou telefone…"
+                />
+              </Field>
+              <Field label="Operador">
+                <EntityAutocomplete
+                  value={draft.operator_id}
+                  label={operatorLabel}
+                  onChange={(id, lbl) => { setDraft({ ...draft, operator_id: id }); setOperatorLabel(lbl); }}
+                  fetcher={searchOperators}
+                  ariaLabel="operador"
+                  placeholder="Nome do operador…"
+                />
+              </Field>
               <Field label="Produto / SKU / cor / tamanho"><Input value={draft.product_query} onChange={(e) => setDraft({ ...draft, product_query: e.target.value })} /></Field>
               <Field label="Motivo"><Input value={draft.reason} onChange={(e) => setDraft({ ...draft, reason: e.target.value })} /></Field>
               <Field label="Status">
