@@ -263,6 +263,13 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
           new_product_data: it.new_product_data ?? null,
           new_variant_data: it.new_variant_data ?? null,
           cells: it.cells,
+          raw_description: it.raw_description ?? null,
+          raw_size_label: it.raw_size_label ?? null,
+          raw_color_label: it.raw_color_label ?? null,
+          raw_notes: it.raw_notes ?? null,
+          raw_counted_quantity: it.raw_counted_quantity ?? null,
+          resolution_status: it.resolution_status
+            ?? (it.mode === "count_only" ? "unresolved" : "resolved"),
         })),
       };
       const { data, error } = await supabase.rpc("save_goods_receipt_draft", { _payload: payload });
