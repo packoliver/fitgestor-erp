@@ -150,6 +150,7 @@ function CargosPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </div></RequirePermission>
   );
+
 }
