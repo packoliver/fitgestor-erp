@@ -75,7 +75,11 @@ function TrocaDetalhe() {
 
   if (!ex) return <div>Carregando…</div>;
 
-  const canReverse = ex.status === "completed";
+  const { has } = usePermissions();
+  const canReverse = ex.status === "completed" && has("exchanges.reverse");
+  const canPrintReceipt = has("exchanges.print_receipt");
+  const canPrintVoucher = has("exchanges.print_voucher");
+
 
   return (
     <div>
