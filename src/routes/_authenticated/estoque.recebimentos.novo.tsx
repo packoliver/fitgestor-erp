@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_authenticated/estoque/recebimentos/novo"
   component: () => (
     <RequirePermission code="goods_receipt.create">
       <div>
-        <PageHeader title="Novo recebimento" description="Preencha a grade por tamanho e salve como rascunho. Nenhum estoque é alterado nesta etapa." />
+        <PageHeader title="Nova entrada de mercadoria" description="Substitua a anotação no papel: registre tamanhos, cores e quantidades antes de confirmar o estoque." />
         <ReceiptEditor />
       </div>
     </RequirePermission>

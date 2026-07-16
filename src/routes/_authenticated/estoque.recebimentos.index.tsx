@@ -136,11 +136,11 @@ function List() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Receber mercadoria"
-        description="Rascunhos, recebimentos confirmados e cancelados desta organização."
+        title="Entrada de mercadoria"
+        description="Conte, registre e dê entrada nas peças recebidas — com ou sem nota fiscal do fornecedor."
         actions={
           <Button asChild size="lg">
-            <Link to="/estoque/recebimentos/novo"><Plus className="mr-2 h-4 w-4" />Novo recebimento</Link>
+            <Link to="/estoque/recebimentos/novo"><Plus className="mr-2 h-4 w-4" />Nova entrada de mercadoria</Link>
           </Button>
         }
       />
