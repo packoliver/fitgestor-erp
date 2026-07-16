@@ -31,6 +31,7 @@ import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authentica
 import { Route as AuthenticatedVendasIndexRouteImport } from './routes/_authenticated/vendas.index'
 import { Route as AuthenticatedTrocasIndexRouteImport } from './routes/_authenticated/trocas.index'
 import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authenticated/produtos.index'
+import { Route as AuthenticatedPosVendaIndexRouteImport } from './routes/_authenticated/pos-venda.index'
 import { Route as AuthenticatedExpedicaoIndexRouteImport } from './routes/_authenticated/expedicao.index'
 import { Route as AuthenticatedEstoqueIndexRouteImport } from './routes/_authenticated/estoque.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
@@ -42,6 +43,8 @@ import { Route as AuthenticatedTrocasIdRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRelatoriosTrocasRouteImport } from './routes/_authenticated/relatorios.trocas'
 import { Route as AuthenticatedProdutosNovoRouteImport } from './routes/_authenticated/produtos.novo'
 import { Route as AuthenticatedProdutosIdRouteImport } from './routes/_authenticated/produtos.$id'
+import { Route as AuthenticatedPosVendaSequencialRouteImport } from './routes/_authenticated/pos-venda.sequencial'
+import { Route as AuthenticatedPosVendaGerarRouteImport } from './routes/_authenticated/pos-venda.gerar'
 import { Route as AuthenticatedExpedicaoPendenciasRouteImport } from './routes/_authenticated/expedicao.pendencias'
 import { Route as AuthenticatedExpedicaoMotoboysRouteImport } from './routes/_authenticated/expedicao.motoboys'
 import { Route as AuthenticatedExpedicaoFilaRouteImport } from './routes/_authenticated/expedicao.fila'
@@ -49,6 +52,7 @@ import { Route as AuthenticatedEstoqueMovimentacoesRouteImport } from './routes/
 import { Route as AuthenticatedEstoqueInventarioRouteImport } from './routes/_authenticated/estoque.inventario'
 import { Route as AuthenticatedEstoqueEntradaRouteImport } from './routes/_authenticated/estoque.entrada'
 import { Route as AuthenticatedConfiguracoesTrocasRouteImport } from './routes/_authenticated/configuracoes.trocas'
+import { Route as AuthenticatedConfiguracoesPosVendaRouteImport } from './routes/_authenticated/configuracoes.pos-venda'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedExpedicaoRotasIndexRouteImport } from './routes/_authenticated/expedicao.rotas.index'
 import { Route as AuthenticatedEstoqueRecebimentosIndexRouteImport } from './routes/_authenticated/estoque.recebimentos.index'
@@ -175,6 +179,12 @@ const AuthenticatedProdutosIndexRoute =
     path: '/produtos/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPosVendaIndexRoute =
+  AuthenticatedPosVendaIndexRouteImport.update({
+    id: '/pos-venda/',
+    path: '/pos-venda/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedExpedicaoIndexRoute =
   AuthenticatedExpedicaoIndexRouteImport.update({
     id: '/expedicao/',
@@ -237,6 +247,18 @@ const AuthenticatedProdutosIdRoute = AuthenticatedProdutosIdRouteImport.update({
   path: '/produtos/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPosVendaSequencialRoute =
+  AuthenticatedPosVendaSequencialRouteImport.update({
+    id: '/pos-venda/sequencial',
+    path: '/pos-venda/sequencial',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPosVendaGerarRoute =
+  AuthenticatedPosVendaGerarRouteImport.update({
+    id: '/pos-venda/gerar',
+    path: '/pos-venda/gerar',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedExpedicaoPendenciasRoute =
   AuthenticatedExpedicaoPendenciasRouteImport.update({
     id: '/expedicao/pendencias',
@@ -277,6 +299,12 @@ const AuthenticatedConfiguracoesTrocasRoute =
   AuthenticatedConfiguracoesTrocasRouteImport.update({
     id: '/trocas',
     path: '/trocas',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesPosVendaRoute =
+  AuthenticatedConfiguracoesPosVendaRouteImport.update({
+    id: '/pos-venda',
+    path: '/pos-venda',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
 const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
@@ -353,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/pdv': typeof AuthenticatedPdvRoute
   '/trabalho': typeof AuthenticatedTrabalhoRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRoute
+  '/configuracoes/pos-venda': typeof AuthenticatedConfiguracoesPosVendaRoute
   '/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
   '/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
   '/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
@@ -360,6 +389,8 @@ export interface FileRoutesByFullPath {
   '/expedicao/fila': typeof AuthenticatedExpedicaoFilaRoute
   '/expedicao/motoboys': typeof AuthenticatedExpedicaoMotoboysRoute
   '/expedicao/pendencias': typeof AuthenticatedExpedicaoPendenciasRoute
+  '/pos-venda/gerar': typeof AuthenticatedPosVendaGerarRoute
+  '/pos-venda/sequencial': typeof AuthenticatedPosVendaSequencialRoute
   '/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/produtos/novo': typeof AuthenticatedProdutosNovoRoute
   '/relatorios/trocas': typeof AuthenticatedRelatoriosTrocasRoute
@@ -371,6 +402,7 @@ export interface FileRoutesByFullPath {
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/estoque/': typeof AuthenticatedEstoqueIndexRoute
   '/expedicao/': typeof AuthenticatedExpedicaoIndexRoute
+  '/pos-venda/': typeof AuthenticatedPosVendaIndexRoute
   '/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/trocas/': typeof AuthenticatedTrocasIndexRoute
   '/vendas/': typeof AuthenticatedVendasIndexRoute
@@ -403,6 +435,7 @@ export interface FileRoutesByTo {
   '/pdv': typeof AuthenticatedPdvRoute
   '/trabalho': typeof AuthenticatedTrabalhoRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRoute
+  '/configuracoes/pos-venda': typeof AuthenticatedConfiguracoesPosVendaRoute
   '/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
   '/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
   '/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
@@ -410,6 +443,8 @@ export interface FileRoutesByTo {
   '/expedicao/fila': typeof AuthenticatedExpedicaoFilaRoute
   '/expedicao/motoboys': typeof AuthenticatedExpedicaoMotoboysRoute
   '/expedicao/pendencias': typeof AuthenticatedExpedicaoPendenciasRoute
+  '/pos-venda/gerar': typeof AuthenticatedPosVendaGerarRoute
+  '/pos-venda/sequencial': typeof AuthenticatedPosVendaSequencialRoute
   '/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/produtos/novo': typeof AuthenticatedProdutosNovoRoute
   '/relatorios/trocas': typeof AuthenticatedRelatoriosTrocasRoute
@@ -421,6 +456,7 @@ export interface FileRoutesByTo {
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/estoque': typeof AuthenticatedEstoqueIndexRoute
   '/expedicao': typeof AuthenticatedExpedicaoIndexRoute
+  '/pos-venda': typeof AuthenticatedPosVendaIndexRoute
   '/produtos': typeof AuthenticatedProdutosIndexRoute
   '/trocas': typeof AuthenticatedTrocasIndexRoute
   '/vendas': typeof AuthenticatedVendasIndexRoute
@@ -455,6 +491,7 @@ export interface FileRoutesById {
   '/_authenticated/pdv': typeof AuthenticatedPdvRoute
   '/_authenticated/trabalho': typeof AuthenticatedTrabalhoRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRoute
+  '/_authenticated/configuracoes/pos-venda': typeof AuthenticatedConfiguracoesPosVendaRoute
   '/_authenticated/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
   '/_authenticated/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
   '/_authenticated/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
@@ -462,6 +499,8 @@ export interface FileRoutesById {
   '/_authenticated/expedicao/fila': typeof AuthenticatedExpedicaoFilaRoute
   '/_authenticated/expedicao/motoboys': typeof AuthenticatedExpedicaoMotoboysRoute
   '/_authenticated/expedicao/pendencias': typeof AuthenticatedExpedicaoPendenciasRoute
+  '/_authenticated/pos-venda/gerar': typeof AuthenticatedPosVendaGerarRoute
+  '/_authenticated/pos-venda/sequencial': typeof AuthenticatedPosVendaSequencialRoute
   '/_authenticated/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/_authenticated/produtos/novo': typeof AuthenticatedProdutosNovoRoute
   '/_authenticated/relatorios/trocas': typeof AuthenticatedRelatoriosTrocasRoute
@@ -473,6 +512,7 @@ export interface FileRoutesById {
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/estoque/': typeof AuthenticatedEstoqueIndexRoute
   '/_authenticated/expedicao/': typeof AuthenticatedExpedicaoIndexRoute
+  '/_authenticated/pos-venda/': typeof AuthenticatedPosVendaIndexRoute
   '/_authenticated/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/_authenticated/trocas/': typeof AuthenticatedTrocasIndexRoute
   '/_authenticated/vendas/': typeof AuthenticatedVendasIndexRoute
@@ -507,6 +547,7 @@ export interface FileRouteTypes {
     | '/pdv'
     | '/trabalho'
     | '/clientes/$id'
+    | '/configuracoes/pos-venda'
     | '/configuracoes/trocas'
     | '/estoque/entrada'
     | '/estoque/inventario'
@@ -514,6 +555,8 @@ export interface FileRouteTypes {
     | '/expedicao/fila'
     | '/expedicao/motoboys'
     | '/expedicao/pendencias'
+    | '/pos-venda/gerar'
+    | '/pos-venda/sequencial'
     | '/produtos/$id'
     | '/produtos/novo'
     | '/relatorios/trocas'
@@ -525,6 +568,7 @@ export interface FileRouteTypes {
     | '/clientes/'
     | '/estoque/'
     | '/expedicao/'
+    | '/pos-venda/'
     | '/produtos/'
     | '/trocas/'
     | '/vendas/'
@@ -557,6 +601,7 @@ export interface FileRouteTypes {
     | '/pdv'
     | '/trabalho'
     | '/clientes/$id'
+    | '/configuracoes/pos-venda'
     | '/configuracoes/trocas'
     | '/estoque/entrada'
     | '/estoque/inventario'
@@ -564,6 +609,8 @@ export interface FileRouteTypes {
     | '/expedicao/fila'
     | '/expedicao/motoboys'
     | '/expedicao/pendencias'
+    | '/pos-venda/gerar'
+    | '/pos-venda/sequencial'
     | '/produtos/$id'
     | '/produtos/novo'
     | '/relatorios/trocas'
@@ -575,6 +622,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/estoque'
     | '/expedicao'
+    | '/pos-venda'
     | '/produtos'
     | '/trocas'
     | '/vendas'
@@ -608,6 +656,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pdv'
     | '/_authenticated/trabalho'
     | '/_authenticated/clientes/$id'
+    | '/_authenticated/configuracoes/pos-venda'
     | '/_authenticated/configuracoes/trocas'
     | '/_authenticated/estoque/entrada'
     | '/_authenticated/estoque/inventario'
@@ -615,6 +664,8 @@ export interface FileRouteTypes {
     | '/_authenticated/expedicao/fila'
     | '/_authenticated/expedicao/motoboys'
     | '/_authenticated/expedicao/pendencias'
+    | '/_authenticated/pos-venda/gerar'
+    | '/_authenticated/pos-venda/sequencial'
     | '/_authenticated/produtos/$id'
     | '/_authenticated/produtos/novo'
     | '/_authenticated/relatorios/trocas'
@@ -626,6 +677,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes/'
     | '/_authenticated/estoque/'
     | '/_authenticated/expedicao/'
+    | '/_authenticated/pos-venda/'
     | '/_authenticated/produtos/'
     | '/_authenticated/trocas/'
     | '/_authenticated/vendas/'
@@ -803,6 +855,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProdutosIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/pos-venda/': {
+      id: '/_authenticated/pos-venda/'
+      path: '/pos-venda'
+      fullPath: '/pos-venda/'
+      preLoaderRoute: typeof AuthenticatedPosVendaIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/expedicao/': {
       id: '/_authenticated/expedicao/'
       path: '/expedicao'
@@ -880,6 +939,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProdutosIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/pos-venda/sequencial': {
+      id: '/_authenticated/pos-venda/sequencial'
+      path: '/pos-venda/sequencial'
+      fullPath: '/pos-venda/sequencial'
+      preLoaderRoute: typeof AuthenticatedPosVendaSequencialRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pos-venda/gerar': {
+      id: '/_authenticated/pos-venda/gerar'
+      path: '/pos-venda/gerar'
+      fullPath: '/pos-venda/gerar'
+      preLoaderRoute: typeof AuthenticatedPosVendaGerarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/expedicao/pendencias': {
       id: '/_authenticated/expedicao/pendencias'
       path: '/expedicao/pendencias'
@@ -927,6 +1000,13 @@ declare module '@tanstack/react-router' {
       path: '/trocas'
       fullPath: '/configuracoes/trocas'
       preLoaderRoute: typeof AuthenticatedConfiguracoesTrocasRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/pos-venda': {
+      id: '/_authenticated/configuracoes/pos-venda'
+      path: '/pos-venda'
+      fullPath: '/configuracoes/pos-venda'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesPosVendaRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
     '/_authenticated/clientes/$id': {
@@ -996,11 +1076,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedConfiguracoesRouteChildren {
+  AuthenticatedConfiguracoesPosVendaRoute: typeof AuthenticatedConfiguracoesPosVendaRoute
   AuthenticatedConfiguracoesTrocasRoute: typeof AuthenticatedConfiguracoesTrocasRoute
 }
 
 const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteChildren =
   {
+    AuthenticatedConfiguracoesPosVendaRoute:
+      AuthenticatedConfiguracoesPosVendaRoute,
     AuthenticatedConfiguracoesTrocasRoute:
       AuthenticatedConfiguracoesTrocasRoute,
   }
@@ -1046,6 +1129,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedExpedicaoFilaRoute: typeof AuthenticatedExpedicaoFilaRoute
   AuthenticatedExpedicaoMotoboysRoute: typeof AuthenticatedExpedicaoMotoboysRoute
   AuthenticatedExpedicaoPendenciasRoute: typeof AuthenticatedExpedicaoPendenciasRoute
+  AuthenticatedPosVendaGerarRoute: typeof AuthenticatedPosVendaGerarRoute
+  AuthenticatedPosVendaSequencialRoute: typeof AuthenticatedPosVendaSequencialRoute
   AuthenticatedProdutosIdRoute: typeof AuthenticatedProdutosIdRoute
   AuthenticatedProdutosNovoRoute: typeof AuthenticatedProdutosNovoRoute
   AuthenticatedRelatoriosTrocasRoute: typeof AuthenticatedRelatoriosTrocasRoute
@@ -1057,6 +1142,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
   AuthenticatedEstoqueIndexRoute: typeof AuthenticatedEstoqueIndexRoute
   AuthenticatedExpedicaoIndexRoute: typeof AuthenticatedExpedicaoIndexRoute
+  AuthenticatedPosVendaIndexRoute: typeof AuthenticatedPosVendaIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
   AuthenticatedTrocasIndexRoute: typeof AuthenticatedTrocasIndexRoute
   AuthenticatedVendasIndexRoute: typeof AuthenticatedVendasIndexRoute
@@ -1092,6 +1178,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedExpedicaoFilaRoute: AuthenticatedExpedicaoFilaRoute,
   AuthenticatedExpedicaoMotoboysRoute: AuthenticatedExpedicaoMotoboysRoute,
   AuthenticatedExpedicaoPendenciasRoute: AuthenticatedExpedicaoPendenciasRoute,
+  AuthenticatedPosVendaGerarRoute: AuthenticatedPosVendaGerarRoute,
+  AuthenticatedPosVendaSequencialRoute: AuthenticatedPosVendaSequencialRoute,
   AuthenticatedProdutosIdRoute: AuthenticatedProdutosIdRoute,
   AuthenticatedProdutosNovoRoute: AuthenticatedProdutosNovoRoute,
   AuthenticatedRelatoriosTrocasRoute: AuthenticatedRelatoriosTrocasRoute,
@@ -1103,6 +1191,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
   AuthenticatedEstoqueIndexRoute: AuthenticatedEstoqueIndexRoute,
   AuthenticatedExpedicaoIndexRoute: AuthenticatedExpedicaoIndexRoute,
+  AuthenticatedPosVendaIndexRoute: AuthenticatedPosVendaIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
   AuthenticatedTrocasIndexRoute: AuthenticatedTrocasIndexRoute,
   AuthenticatedVendasIndexRoute: AuthenticatedVendasIndexRoute,
