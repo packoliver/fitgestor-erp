@@ -97,7 +97,10 @@ function ValesPage() {
                     <Link to="/trocas/$id" params={{ id: v.issued_from_exchange_id }} className="underline text-sm">#{v.exchange.exchange_number}</Link>
                   ) : "—"}
                 </TableCell>
-                <TableCell><Button size="sm" variant="ghost" onClick={() => setSelected(v.id)}>Histórico</Button></TableCell>
+                <TableCell className="text-right space-x-1">
+                  <Button size="sm" variant="ghost" onClick={() => setSelected(v.id)}>Histórico</Button>
+                  <Button size="sm" variant="outline" onClick={() => setPrintVoucher(v)}><Printer className="h-3 w-3" /></Button>
+                </TableCell>
               </TableRow>
             ))}
             {vouchers.length === 0 && (
