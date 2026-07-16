@@ -125,6 +125,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     queryKey: ["goods-receipt-draft", initialId],
     enabled: !!initialId,
     queryFn: async () => {
+      const id = initialId!;
       const { data: header, error: e1 } = await supabase
         .from("goods_receipt_drafts")
         .select("*")
