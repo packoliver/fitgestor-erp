@@ -40,6 +40,8 @@ function newRequestId() {
 }
 
 function PdvPage() {
+  const perms = usePermissions();
+
   const navigate = useNavigate();
   const searchRef = useRef<HTMLInputElement>(null);
   const [term, setTerm] = useState("");
