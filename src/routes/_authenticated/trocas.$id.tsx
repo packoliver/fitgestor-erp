@@ -203,6 +203,48 @@ function TrocaDetalhe() {
       )}
 
       <p className="text-xs text-muted-foreground mt-4">Comprovante não fiscal.</p>
+
+      <PrintDialog
+        open={printExOpen}
+        onOpenChange={setPrintExOpen}
+        title={`Comprovante de troca #${ex.exchange_number}`}
+      >
+        <ExchangeReceipt
+          data={{
+            org,
+            exchange: ex,
+            client: ex.client,
+            originalSale: ex.sale,
+            location: ex.location,
+            operator: operator ?? null,
+            returnItems: rets,
+            newItems: news,
+            payments: pays,
+            voucher: voucher ?? null,
+            storeCredit: null,
+            settings: settings ?? null,
+            consultUrl: typeof window !== "undefined" ? `${window.location.origin}/trocas/${ex.id}` : `/trocas/${ex.id}`,
+          }}
+        />
+      </PrintDialog>
+
+      {voucher && (
+        <PrintDialog
+          open={printVoucherOpen}
+          onOpenChange={setPrintVoucherOpen}
+          title={`Vale ${voucher.code}`}
+        >
+          <VoucherReceipt
+            data={{
+              org,
+              voucher,
+              client: ex.client,
+              originalExchangeNumber: ex.exchange_number,
+              settings: settings ?? null,
+            }}
+          />
+        </PrintDialog>
+      )}
     </div>
   );
 }
