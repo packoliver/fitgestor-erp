@@ -103,6 +103,7 @@ function Funcionarios() {
           </TableBody>
         </Table>
       </Card>
-    </div>
+    </div></RequirePermission>
   );
+
 }
