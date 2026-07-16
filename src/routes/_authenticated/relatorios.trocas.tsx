@@ -181,13 +181,7 @@ function ReportInner() {
     else toast.success(`Exportadas ${res.exported_rows} linhas.`);
   };
 
-    if (error) return toast.error(error.message);
-    const res = data as { rows: any[]; total_rows: number; exported_rows: number; truncated: boolean; max_export: number };
-    if (!res.rows?.length) return toast.info("Nenhum registro para exportar.");
-    downloadCsv(res.rows);
-    if (res.truncated) toast.warning(`Exportação limitada às ${res.max_export} linhas mais recentes (total filtrado: ${res.total_rows}).`);
-    else toast.success(`Exportadas ${res.exported_rows} linhas.`);
-  };
+
 
   const filtersSummary = buildSummary(search);
 
