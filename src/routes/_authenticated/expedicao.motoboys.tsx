@@ -133,6 +133,24 @@ function CouriersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const grantAccess = useMutation({
+    mutationFn: async (c: Courier) => {
+      const { error } = await supabase.rpc("configure_courier_user_access" as any, { _courier_id: c.id, _mode: "assign_model" });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Cargo Motoboy adicionado ao usuário."); qc.invalidateQueries({ queryKey: ["couriers"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const revokeAccess = useMutation({
+    mutationFn: async (c: Courier) => {
+      const { error } = await supabase.rpc("revoke_courier_access" as any, { _courier_id: c.id });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Cargo Motoboy removido do usuário."); qc.invalidateQueries({ queryKey: ["couriers"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   function startCreate() { setForm(empty); setOpen(true); }
   function startEdit(c: Courier) {
     setForm({
