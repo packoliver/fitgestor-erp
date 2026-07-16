@@ -65,11 +65,18 @@ function CouriersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("couriers")
-        .select("id, full_name, phone, document, vehicle_plate, notes, active, user_id, created_at, linked_user:profiles!couriers_user_id_fkey(full_name, email)")
+        .select("id, full_name, phone, document, vehicle_plate, notes, active, user_id, created_at")
         .order("active", { ascending: false })
         .order("full_name");
       if (error) throw error;
-      return (data ?? []) as (Courier & { linked_user?: { full_name: string; email: string } | null })[];
+      const couriers = (data ?? []) as Courier[];
+      const uids = couriers.map((c) => c.user_id).filter((v): v is string => !!v);
+      let byId: Record<string, { full_name: string; email: string }> = {};
+      if (uids.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, full_name, email").in("id", uids);
+        for (const p of (profs ?? []) as any[]) byId[p.id] = { full_name: p.full_name, email: p.email };
+      }
+      return couriers.map((c) => ({ ...c, linked_user: c.user_id ? byId[c.user_id] ?? null : null }));
     },
   });
 
