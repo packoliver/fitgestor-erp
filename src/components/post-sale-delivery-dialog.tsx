@@ -351,33 +351,17 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
               <div className="flex justify-between"><span>Status</span><Badge variant="secondary">Aguardando separação</Badge></div>
             </div>
 
-            {forecast?.after_cutoff && !forecast.is_today && canOverride && (
+            {forecast?.after_cutoff && !forecast.is_today && canOverride && createdShipmentId && (
               <div className="mt-2 border-t pt-3">
-                {!overrideOpen ? (
-                  <Button variant="outline" className="w-full" onClick={() => setOverrideOpen(true)}>
-                    Incluir na saída de hoje
-                  </Button>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground">Rotas abertas de hoje:</div>
-                    {openRoutes.isLoading && <div className="text-xs">Carregando…</div>}
-                    {openRoutes.data?.length === 0 && (
-                      <div className="text-xs text-muted-foreground">Nenhuma rota aberta hoje.</div>
-                    )}
-                    {(openRoutes.data ?? []).map((r) => (
-                      <div key={r.id} className="flex items-center justify-between rounded border p-2">
-                        <div className="text-xs">
-                          <div className="font-medium">Rota #{r.route_number} · {r.courier_name}</div>
-                          <div className="text-muted-foreground">
-                            {r.planned_departure ? new Date(r.planned_departure).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "sem horário"}
-                            {" · "}{r.total_stops} paradas
-                          </div>
-                        </div>
-                        <Button size="sm" onClick={() => includeOverride.mutate(r.id)} disabled={includeOverride.isPending}>Incluir</Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <Button variant="outline" className="w-full" onClick={() => setOverrideOpen(true)}>
+                  Incluir na saída de hoje
+                </Button>
+                <OverrideScheduleDialog
+                  open={overrideOpen}
+                  onOpenChange={setOverrideOpen}
+                  shipmentId={createdShipmentId}
+                  previousDate={forecast?.scheduled_date}
+                />
               </div>
             )}
 
@@ -386,9 +370,13 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
               <Button variant="outline" asChild>
                 <Link to="/vendas/$id" params={{ id: saleId }}>Ver venda</Link>
               </Button>
-              <Button disabled title="Tela da ordem de expedição na Fase 3">
-                Ver ordem de expedição
-              </Button>
+              {createdShipmentId && (
+                <Button asChild>
+                  <Link to="/expedicao/ordens/$id" params={{ id: createdShipmentId }}>
+                    Ver ordem de expedição
+                  </Link>
+                </Button>
+              )}
             </DialogFooter>
           </>
         )}
