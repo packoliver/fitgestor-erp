@@ -22,6 +22,18 @@ export const Route = createFileRoute("/_authenticated/vendas/$id")({
 function VendaDetalhe() {
   const { id } = Route.useParams();
   const [printOpen, setPrintOpen] = useState(false);
+  const [deliveryOpen, setDeliveryOpen] = useState(false);
+
+  const delivery = useQuery({
+    queryKey: ["sale-delivery", id],
+    queryFn: async () => {
+      const [pref, ship] = await Promise.all([
+        supabase.from("sale_delivery_preferences").select("delivery_method, amount_to_collect").eq("sale_id", id).maybeSingle(),
+        supabase.from("shipments").select("id, shipment_number, status").eq("sale_id", id).neq("status", "cancelled").maybeSingle(),
+      ]);
+      return { pref: pref.data, shipment: ship.data } as any;
+    },
+  });
 
   const { data: sale } = useQuery({
     queryKey: ["sale", id],
