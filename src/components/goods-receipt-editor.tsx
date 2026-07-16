@@ -14,7 +14,8 @@ import { Loader2, Plus, Minus, Trash2, Search, Save, Package, CheckCircle2, Lock
 import { formatDateTime } from "@/lib/erp";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { GoodsReceiptLabelsSection } from "@/components/goods-receipt-labels-section";
-import { GoodsReceiptCountingPanel, type CountItem } from "@/components/goods-receipt-counting-panel";
+import { ReceiptScannerPanel, type ScannedVariant, type IncrementResult } from "@/components/goods-receipt-scanner-panel";
+import { GoodsReceiptCountingPanel } from "@/components/goods-receipt-counting-panel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type Mode = "restock" | "new_variant" | "new_product" | "count_only";
