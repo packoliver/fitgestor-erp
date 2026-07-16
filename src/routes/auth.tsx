@@ -44,7 +44,7 @@ function AuthPage() {
           <BrandLockup align="center" size="lg" onDark />
         </div>
 
-        <Card className="glass-strong rounded-2xl border-0 shadow-none">
+        <Card className="rounded-3xl">
 
           <CardHeader className="pb-2">
             <h2 className="text-[17px] font-semibold tracking-[-0.02em]">Acessar conta</h2>
