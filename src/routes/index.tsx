@@ -26,9 +26,28 @@ const features = [
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="dark min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+          <Link to="/" className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary text-white shadow-glow">
+              <span className="font-display text-lg font-bold leading-none">F</span>
+            </div>
+            <span className="font-display text-lg font-semibold tracking-tight">FitGestor</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/auth">Entrar</Link>
+            </Button>
+            <Button asChild size="sm" variant="premium">
+              <Link to="/auth" search={{ mode: "signup" }}>
+                Começar agora <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </header>
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
