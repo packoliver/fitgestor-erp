@@ -1196,6 +1196,10 @@ export type Database = {
       goods_receipt_drafts: {
         Row: {
           client_request_id: string | null
+          confirmation_request_id: string | null
+          confirmation_summary: Json | null
+          confirmed_at: string | null
+          confirmed_by: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -1214,6 +1218,10 @@ export type Database = {
         }
         Insert: {
           client_request_id?: string | null
+          confirmation_request_id?: string | null
+          confirmation_summary?: Json | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -1232,6 +1240,10 @@ export type Database = {
         }
         Update: {
           client_request_id?: string | null
+          confirmation_request_id?: string | null
+          confirmation_summary?: Json | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -2797,6 +2809,10 @@ export type Database = {
       }
       complete_exchange: { Args: { _payload: Json }; Returns: Json }
       complete_pos_sale: { Args: { _payload: Json }; Returns: Json }
+      confirm_goods_receipt: {
+        Args: { _client_request_id: string; _draft_id: string }
+        Returns: Json
+      }
       create_organization: {
         Args: { _document?: string; _name: string }
         Returns: string

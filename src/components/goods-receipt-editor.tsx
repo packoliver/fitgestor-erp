@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Minus, Trash2, Search, Save, Package } from "lucide-react";
+import { Loader2, Plus, Minus, Trash2, Search, Save, Package, CheckCircle2, Lock } from "lucide-react";
 import { formatDateTime } from "@/lib/erp";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 type Mode = "restock" | "new_variant" | "new_product";
 
@@ -101,6 +102,11 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
   const [dirty, setDirty] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | undefined>();
   const [status, setStatus] = useState<string>("draft");
+  const [confirmedAt, setConfirmedAt] = useState<string | null>(null);
+  const [confirmationSummary, setConfirmationSummary] = useState<any>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Um único UUID por tentativa real de confirmação — reutilizado em retries de rede.
+  const confirmRequestIdRef = useRef<string>("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   const suppliers = useQuery({
@@ -155,6 +161,8 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     setNotes(d.notes ?? "");
     setStatus(d.status);
     setLastSavedAt(d.updated_at);
+    setConfirmedAt((d as any).confirmed_at ?? null);
+    setConfirmationSummary((d as any).confirmation_summary ?? null);
     setItems(
       d.items.map((it) => ({
         local_id: uid(),
@@ -225,6 +233,36 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const confirmReceipt = useMutation({
+    mutationFn: async () => {
+      if (!draftId) throw new Error("Salve o rascunho antes de confirmar.");
+      if (dirty) throw new Error("Salve as alterações pendentes antes de confirmar.");
+      if (!confirmRequestIdRef.current) {
+        confirmRequestIdRef.current = globalThis.crypto?.randomUUID?.() ?? uid() + uid() + uid();
+      }
+      const { data, error } = await supabase.rpc("confirm_goods_receipt", {
+        _draft_id: draftId,
+        _client_request_id: confirmRequestIdRef.current,
+      });
+      if (error) throw error;
+      return data as any;
+    },
+    onSuccess: (result) => {
+      toast.success("Recebimento confirmado. As etiquetas ainda estão pendentes de geração.");
+      setStatus("confirmed");
+      setConfirmedAt(new Date().toISOString());
+      setConfirmationSummary(result?.summary ?? result);
+      setConfirmOpen(false);
+      qc.invalidateQueries({ queryKey: ["goods-receipt-drafts"] });
+      if (draftId) qc.invalidateQueries({ queryKey: ["goods-receipt-draft", draftId] });
+      qc.invalidateQueries({ queryKey: ["stock-overview"] });
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+      // Mantém o mesmo request_id para retry idempotente
+    },
+  });
+
   function markDirty() { setDirty(true); }
 
   function addItemFromProduct(mode: Mode, product: any) {
@@ -268,7 +306,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     const it = items.find((i) => i.local_id === local_id);
     if (!it) return;
     const hasQty = it.cells.some((c) => c.quantity > 0);
-    if (hasQty && !confirm("Remover este bloco? As quantidades preenchidas serão perdidas.")) return;
+    if (hasQty && !window.confirm("Remover este bloco? As quantidades preenchidas serão perdidas.")) return;
     setItems((prev) => prev.filter((i) => i.local_id !== local_id));
     markDirty();
   }
@@ -288,7 +326,26 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
 
   return (
     <div className="space-y-4">
-      {readOnly && (
+      {status === "confirmed" && (
+        <div className="rounded-md border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900 flex items-start gap-3">
+          <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0" />
+          <div className="space-y-1">
+            <div><strong>Recebimento confirmado.</strong> As etiquetas ainda estão pendentes de geração.</div>
+            {confirmedAt && <div className="text-xs">Confirmado em {formatDateTime(confirmedAt)}.</div>}
+            {confirmationSummary?.total_quantity != null && (
+              <div className="text-xs">
+                Total adicionado ao estoque: <strong>{confirmationSummary.total_quantity}</strong> peças ·{" "}
+                {(confirmationSummary.created_products?.length ?? 0)} produto(s) novo(s) ·{" "}
+                {(confirmationSummary.created_variants?.length ?? 0)} variação(ões) nova(s).
+              </div>
+            )}
+            <div className="text-xs inline-flex items-center gap-1 mt-1">
+              <Lock className="h-3 w-3" /> Somente leitura · <Badge variant="outline">Etiquetas pendentes</Badge>
+            </div>
+          </div>
+        </div>
+      )}
+      {readOnly && status !== "confirmed" && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
           Este recebimento está com status <strong>{status}</strong> e não pode ser editado.
         </div>
@@ -376,12 +433,54 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
             <Badge variant="outline">{totals.newVar} nova variação</Badge>
             <Badge variant="outline">{totals.newProd} produto novo</Badge>
           </div>
-          <Button size="lg" onClick={() => save.mutate()} disabled={save.isPending || readOnly}>
-            {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Salvar rascunho
-          </Button>
+          <div className="flex gap-2">
+            <Button size="lg" variant="outline" onClick={() => save.mutate()} disabled={save.isPending || readOnly}>
+              {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Salvar rascunho
+            </Button>
+            <Button
+              size="lg"
+              onClick={() => setConfirmOpen(true)}
+              disabled={confirmReceipt.isPending || readOnly || !draftId || dirty || totals.qty === 0}
+              title={dirty ? "Salve as alterações antes de confirmar" : totals.qty === 0 ? "Preencha alguma quantidade" : ""}
+            >
+              {confirmReceipt.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+              Confirmar recebimento
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar recebimento e adicionar as peças ao estoque?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Serão adicionadas <strong>{totals.qty}</strong> peças ao local selecionado.
+                  Produtos e variações marcados como novos serão criados agora.
+                </p>
+                <ul className="list-disc pl-5 text-muted-foreground">
+                  <li>Esta ação alterará o estoque.</li>
+                  <li>O recebimento não poderá voltar ao estado de rascunho.</li>
+                  <li>As etiquetas ainda não serão geradas nesta etapa.</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={confirmReceipt.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmReceipt.mutate(); }}
+              disabled={confirmReceipt.isPending}
+            >
+              {confirmReceipt.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
