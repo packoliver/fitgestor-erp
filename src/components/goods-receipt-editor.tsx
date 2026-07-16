@@ -629,7 +629,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
             </CardContent></Card>
           ) : (
             <div className="space-y-3">
-              {items.map((it) => (
+              {items.filter((it) => it.mode !== "count_only").map((it) => (
                 <ItemBlock
                   key={it.local_id}
                   item={it}
@@ -644,6 +644,11 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
                   onUpdateNewVariant={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_variant_data: { ...(i.new_variant_data ?? { size: "" }), ...patch } } : i)); markDirty(); }}
                 />
               ))}
+              {items.some((it) => it.mode === "count_only") && (
+                <div className="text-xs text-muted-foreground">
+                  Existem itens em <strong>Contagem manual</strong> que ainda não foram vinculados. Alterne para a aba <em>Contagem manual</em> para organizá-los.
+                </div>
+              )}
             </div>
           )}
         </TabsContent>
