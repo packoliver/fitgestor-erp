@@ -353,6 +353,56 @@ export type Database = {
           },
         ]
       }
+      couriers: {
+        Row: {
+          active: boolean
+          created_at: string
+          document: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          updated_at: string
+          user_id: string | null
+          vehicle_plate: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          document?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+          vehicle_plate?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          document?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+          vehicle_plate?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "couriers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exchange_counters: {
         Row: {
           next_number: number
@@ -2347,6 +2397,108 @@ export type Database = {
           },
         ]
       }
+      route_counters: {
+        Row: {
+          last_number: number
+          organization_id: string
+        }
+        Insert: {
+          last_number?: number
+          organization_id: string
+        }
+        Update: {
+          last_number?: number
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routes: {
+        Row: {
+          cancelled_at: string | null
+          completed_at: string | null
+          courier_id: string
+          created_at: string
+          created_by: string | null
+          dispatched_at: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          origin_location_id: string | null
+          planned_departure: string | null
+          route_date: string
+          route_number: number
+          status: Database["public"]["Enums"]["route_status"]
+          total_stops: number
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          completed_at?: string | null
+          courier_id: string
+          created_at?: string
+          created_by?: string | null
+          dispatched_at?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          origin_location_id?: string | null
+          planned_departure?: string | null
+          route_date: string
+          route_number: number
+          status?: Database["public"]["Enums"]["route_status"]
+          total_stops?: number
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          completed_at?: string | null
+          courier_id?: string
+          created_at?: string
+          created_by?: string | null
+          dispatched_at?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          origin_location_id?: string | null
+          planned_departure?: string | null
+          route_date?: string
+          route_number?: number
+          status?: Database["public"]["Enums"]["route_status"]
+          total_stops?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routes_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "couriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routes_origin_location_id_fkey"
+            columns: ["origin_location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sale_counters: {
         Row: {
           next_number: number
@@ -2369,6 +2521,90 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: true
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_delivery_preferences: {
+        Row: {
+          address: string | null
+          address_complement: string | null
+          address_number: string | null
+          city: string | null
+          created_at: string
+          delivery_method: Database["public"]["Enums"]["delivery_method"]
+          latitude: number | null
+          longitude: number | null
+          neighborhood: string | null
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          recipient_name: string | null
+          reference: string | null
+          sale_id: string
+          scheduled_date: string | null
+          scheduled_window: string | null
+          state: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          address_complement?: string | null
+          address_number?: string | null
+          city?: string | null
+          created_at?: string
+          delivery_method: Database["public"]["Enums"]["delivery_method"]
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string | null
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          recipient_name?: string | null
+          reference?: string | null
+          sale_id: string
+          scheduled_date?: string | null
+          scheduled_window?: string | null
+          state?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          address_complement?: string | null
+          address_number?: string | null
+          city?: string | null
+          created_at?: string
+          delivery_method?: Database["public"]["Enums"]["delivery_method"]
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string | null
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          recipient_name?: string | null
+          reference?: string | null
+          sale_id?: string
+          scheduled_date?: string | null
+          scheduled_window?: string | null
+          state?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_delivery_preferences_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_delivery_preferences_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: true
+            referencedRelation: "sales"
             referencedColumns: ["id"]
           },
         ]
@@ -2646,6 +2882,322 @@ export type Database = {
             foreignKeyName: "sales_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipment_counters: {
+        Row: {
+          last_number: number
+          organization_id: string
+        }
+        Insert: {
+          last_number?: number
+          organization_id: string
+        }
+        Update: {
+          last_number?: number
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipment_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          from_status: Database["public"]["Enums"]["shipment_status"] | null
+          id: string
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          shipment_id: string
+          to_status: Database["public"]["Enums"]["shipment_status"] | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          from_status?: Database["public"]["Enums"]["shipment_status"] | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          shipment_id: string
+          to_status?: Database["public"]["Enums"]["shipment_status"] | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          from_status?: Database["public"]["Enums"]["shipment_status"] | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          shipment_id?: string
+          to_status?: Database["public"]["Enums"]["shipment_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipment_events_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipments: {
+        Row: {
+          address: string | null
+          address_complement: string | null
+          address_number: string | null
+          amount_to_collect: number
+          city: string | null
+          client_id: string | null
+          courier_id: string | null
+          created_at: string
+          created_by: string | null
+          delivered_at: string | null
+          dispatched_at: string | null
+          failed_at: string | null
+          failure_reason: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          neighborhood: string | null
+          notes: string | null
+          organization_id: string
+          payment_summary: Json
+          phone: string | null
+          recipient_name: string
+          reference: string | null
+          route_id: string | null
+          sale_id: string | null
+          scheduled_date: string
+          scheduled_departure_time: string | null
+          scheduled_window: string | null
+          shipment_number: number
+          state: string | null
+          status: Database["public"]["Enums"]["shipment_status"]
+          stop_order: number | null
+          updated_at: string
+          updated_by: string | null
+          whatsapp_sent_at: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          address_complement?: string | null
+          address_number?: string | null
+          amount_to_collect?: number
+          city?: string | null
+          client_id?: string | null
+          courier_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          dispatched_at?: string | null
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string | null
+          notes?: string | null
+          organization_id: string
+          payment_summary?: Json
+          phone?: string | null
+          recipient_name: string
+          reference?: string | null
+          route_id?: string | null
+          sale_id?: string | null
+          scheduled_date: string
+          scheduled_departure_time?: string | null
+          scheduled_window?: string | null
+          shipment_number: number
+          state?: string | null
+          status?: Database["public"]["Enums"]["shipment_status"]
+          stop_order?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_sent_at?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          address_complement?: string | null
+          address_number?: string | null
+          amount_to_collect?: number
+          city?: string | null
+          client_id?: string | null
+          courier_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          dispatched_at?: string | null
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string | null
+          notes?: string | null
+          organization_id?: string
+          payment_summary?: Json
+          phone?: string | null
+          recipient_name?: string
+          reference?: string | null
+          route_id?: string | null
+          sale_id?: string | null
+          scheduled_date?: string
+          scheduled_departure_time?: string | null
+          scheduled_window?: string | null
+          shipment_number?: number
+          state?: string | null
+          status?: Database["public"]["Enums"]["shipment_status"]
+          stop_order?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_sent_at?: string | null
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipments_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "couriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipments_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipments_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipping_holidays: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          holiday_date: string
+          id: string
+          label: string
+          organization_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          holiday_date: string
+          id?: string
+          label: string
+          organization_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          holiday_date?: string
+          id?: string
+          label?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipping_holidays_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipping_settings: {
+        Row: {
+          cutoff_time: string
+          default_departure_time: string
+          default_origin_location_id: string | null
+          organization_id: string
+          organization_timezone: string
+          updated_at: string
+          updated_by: string | null
+          whatsapp_template: string | null
+          working_days: number[]
+        }
+        Insert: {
+          cutoff_time?: string
+          default_departure_time?: string
+          default_origin_location_id?: string | null
+          organization_id: string
+          organization_timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_template?: string | null
+          working_days?: number[]
+        }
+        Update: {
+          cutoff_time?: string
+          default_departure_time?: string
+          default_origin_location_id?: string | null
+          organization_id?: string
+          organization_timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_template?: string | null
+          working_days?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipping_settings_default_origin_location_id_fkey"
+            columns: ["default_origin_location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipping_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -2990,9 +3542,30 @@ export type Database = {
           id: string
         }[]
       }
+      _next_route_number: { Args: { _org: string }; Returns: number }
+      _next_shipment_number: { Args: { _org: string }; Returns: number }
       _recompute_label_job_status: {
         Args: { _job_id: string }
         Returns: string
+      }
+      _shipment_log: {
+        Args: {
+          _event: string
+          _from: Database["public"]["Enums"]["shipment_status"]
+          _meta: Json
+          _notes: string
+          _shipment_id: string
+          _to: Database["public"]["Enums"]["shipment_status"]
+        }
+        Returns: undefined
+      }
+      advance_shipment_status: {
+        Args: {
+          _notes?: string
+          _shipment_id: string
+          _to: Database["public"]["Enums"]["shipment_status"]
+        }
+        Returns: undefined
       }
       apply_stock_movement: {
         Args: {
@@ -3010,6 +3583,10 @@ export type Database = {
       }
       assert_pos_payment_allowed: {
         Args: { _method: string }
+        Returns: undefined
+      }
+      assign_courier: {
+        Args: { _courier_id: string; _shipment_id: string }
         Returns: undefined
       }
       cancel_goods_receipt_draft: {
@@ -3035,6 +3612,11 @@ export type Database = {
         Returns: Json
       }
       complete_pos_sale: { Args: { _payload: Json }; Returns: Json }
+      complete_route: { Args: { _route_id: string }; Returns: undefined }
+      compute_scheduled_date: {
+        Args: { _at?: string; _org: string }
+        Returns: string
+      }
       confirm_goods_receipt: {
         Args: { _client_request_id: string; _draft_id: string }
         Returns: Json
@@ -3043,20 +3625,47 @@ export type Database = {
         Args: { _document?: string; _name: string }
         Returns: string
       }
+      create_shipment_from_sale: {
+        Args: {
+          _address_override?: Json
+          _delivery_method: Database["public"]["Enums"]["delivery_method"]
+          _notes?: string
+          _sale_id: string
+          _scheduled_hint?: string
+        }
+        Returns: string
+      }
       current_org_id: { Args: never; Returns: string }
+      dispatch_route: { Args: { _route_id: string }; Returns: undefined }
       export_exchanges_report: { Args: { _filters: Json }; Returns: Json }
       generate_goods_receipt_labels: {
         Args: { _client_request_id: string; _receipt_id: string }
         Returns: Json
       }
+      generate_route: {
+        Args: {
+          _courier_id: string
+          _notes?: string
+          _origin_location_id?: string
+          _planned_departure?: string
+          _route_date: string
+          _shipment_ids: string[]
+        }
+        Returns: string
+      }
       has_permission: { Args: { _code: string }; Returns: boolean }
       has_role: { Args: { _role_name: string }; Returns: boolean }
       is_active: { Args: never; Returns: boolean }
+      is_business_day: { Args: { _d: string; _org: string }; Returns: boolean }
       issue_exchange_receipt: {
         Args: { _items: Json; _sale_id: string }
         Returns: string
       }
       list_goods_receipts: { Args: { _filters: Json }; Returns: Json }
+      next_business_day: {
+        Args: { _from: string; _org: string }
+        Returns: string
+      }
       next_exchange_number: { Args: { _org: string }; Returns: number }
       next_goods_receipt_number: { Args: { _org: string }; Returns: number }
       next_sale_number: { Args: { _org: string }; Returns: number }
@@ -3084,6 +3693,10 @@ export type Database = {
         Returns: string
       }
       report_exchanges: { Args: { _filters: Json }; Returns: Json }
+      reschedule_shipment: {
+        Args: { _new_date: string; _reason: string; _shipment_id: string }
+        Returns: undefined
+      }
       resolve_goods_receipt_scan: { Args: { _code: string }; Returns: Json }
       reverse_exchange: {
         Args: { _exchange_id: string; _reason: string }
@@ -3107,6 +3720,7 @@ export type Database = {
         | "forfeit"
         | "require_equal_or_higher_value"
       credit_account_status: "active" | "blocked" | "closed"
+      delivery_method: "pickup" | "motoboy" | "correios" | "carrier" | "other"
       entity_status: "ativo" | "inativo"
       exchange_pay_direction: "incoming" | "outgoing"
       exchange_status:
@@ -3164,6 +3778,22 @@ export type Database = {
         | "defective"
         | "used"
         | "supplier_return"
+      route_status:
+        | "draft"
+        | "dispatched"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+      shipment_status:
+        | "pending_pick"
+        | "picking"
+        | "ready"
+        | "out_for_delivery"
+        | "delivered"
+        | "failed"
+        | "customer_absent"
+        | "rescheduled"
+        | "cancelled"
       stock_location_type:
         | "loja"
         | "deposito"
@@ -3309,6 +3939,7 @@ export const Constants = {
         "require_equal_or_higher_value",
       ],
       credit_account_status: ["active", "blocked", "closed"],
+      delivery_method: ["pickup", "motoboy", "correios", "carrier", "other"],
       entity_status: ["ativo", "inativo"],
       exchange_pay_direction: ["incoming", "outgoing"],
       exchange_status: [
@@ -3371,6 +4002,24 @@ export const Constants = {
         "defective",
         "used",
         "supplier_return",
+      ],
+      route_status: [
+        "draft",
+        "dispatched",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
+      shipment_status: [
+        "pending_pick",
+        "picking",
+        "ready",
+        "out_for_delivery",
+        "delivered",
+        "failed",
+        "customer_absent",
+        "rescheduled",
+        "cancelled",
       ],
       stock_location_type: [
         "loja",
