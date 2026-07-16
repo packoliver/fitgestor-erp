@@ -103,10 +103,16 @@ function NovaTrocaPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("sales")
-        .select("*, client:clients(id, full_name, cpf, phone), seller:profiles!sales_seller_id_fkey(id, full_name), items:sale_items(*), sale_payments(*)")
+        .select("*, client:clients(id, full_name, cpf, phone), items:sale_items(*), sale_payments(*)")
         .eq("id", saleId!)
         .maybeSingle();
-      return data;
+      if (!data) return null;
+      let seller: { id: string; full_name: string | null } | null = null;
+      if (data.seller_id) {
+        const { data: p } = await supabase.from("profiles").select("id, full_name").eq("id", data.seller_id).maybeSingle();
+        seller = p ?? null;
+      }
+      return { ...data, seller } as any;
     },
   });
 
