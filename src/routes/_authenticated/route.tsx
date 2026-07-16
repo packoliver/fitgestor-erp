@@ -10,7 +10,7 @@ const HOME_TARGETS: Record<string, string> = {
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async ({ location }) => {
+  beforeLoad: async () => {
     const { data: userData, error } = await supabase.auth.getUser();
     if (error || !userData.user) throw redirect({ to: "/auth" });
 
@@ -22,13 +22,6 @@ export const Route = createFileRoute("/_authenticated")({
 
     if (!profile || !profile.organization_id) throw redirect({ to: "/setup" });
     if (profile.status !== "ativo") throw redirect({ to: "/auth" });
-
-    // Post-login redirection: hitting "/" routes to the workspace best matching the user's permissions.
-    if (location.pathname === "/" || location.pathname === "") {
-      const { data: workspace } = await supabase.rpc("default_workspace_for_current_user");
-      const target = HOME_TARGETS[workspace as string] ?? "/dashboard";
-      throw redirect({ to: target });
-    }
 
     return { userId: userData.user.id, email: userData.user.email, organizationId: profile.organization_id };
   },
