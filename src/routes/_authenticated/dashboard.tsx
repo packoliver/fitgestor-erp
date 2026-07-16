@@ -1,11 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
-import { Package, Boxes, AlertTriangle, ImageOff, Tag, TrendingDown } from "lucide-react";
+import { Package, Boxes, AlertTriangle, ImageOff, Tag, TrendingDown, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/erp";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
