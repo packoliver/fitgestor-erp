@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { money, PAYMENT_LABELS } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
-import { Printer } from "lucide-react";
+import { Printer, Truck } from "lucide-react";
 import { PrintDialog } from "@/components/print/print-dialog";
 import { SaleReceipt, type EnrichedPayment } from "@/components/print/sale-receipt";
+import { PostSaleDeliveryDialog } from "@/components/post-sale-delivery-dialog";
+import { SHIPMENT_STATUS_LABEL, statusVariant } from "@/lib/shipping";
 
 export const Route = createFileRoute("/_authenticated/vendas/$id")({
   component: VendaDetalhe,
