@@ -43,6 +43,9 @@ import { Route as AuthenticatedEstoqueInventarioRouteImport } from './routes/_au
 import { Route as AuthenticatedEstoqueEntradaRouteImport } from './routes/_authenticated/estoque.entrada'
 import { Route as AuthenticatedConfiguracoesTrocasRouteImport } from './routes/_authenticated/configuracoes.trocas'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
+import { Route as AuthenticatedEstoqueRecebimentosIndexRouteImport } from './routes/_authenticated/estoque.recebimentos.index'
+import { Route as AuthenticatedEstoqueRecebimentosNovoRouteImport } from './routes/_authenticated/estoque.recebimentos.novo'
+import { Route as AuthenticatedEstoqueRecebimentosIdRouteImport } from './routes/_authenticated/estoque.recebimentos.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -229,6 +232,24 @@ const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
   path: '/clientes/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEstoqueRecebimentosIndexRoute =
+  AuthenticatedEstoqueRecebimentosIndexRouteImport.update({
+    id: '/estoque/recebimentos/',
+    path: '/estoque/recebimentos/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEstoqueRecebimentosNovoRoute =
+  AuthenticatedEstoqueRecebimentosNovoRouteImport.update({
+    id: '/estoque/recebimentos/novo',
+    path: '/estoque/recebimentos/novo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEstoqueRecebimentosIdRoute =
+  AuthenticatedEstoqueRecebimentosIdRouteImport.update({
+    id: '/estoque/recebimentos/$id',
+    path: '/estoque/recebimentos/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -264,6 +285,9 @@ export interface FileRoutesByFullPath {
   '/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/trocas/': typeof AuthenticatedTrocasIndexRoute
   '/vendas/': typeof AuthenticatedVendasIndexRoute
+  '/estoque/recebimentos/$id': typeof AuthenticatedEstoqueRecebimentosIdRoute
+  '/estoque/recebimentos/novo': typeof AuthenticatedEstoqueRecebimentosNovoRoute
+  '/estoque/recebimentos/': typeof AuthenticatedEstoqueRecebimentosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -299,6 +323,9 @@ export interface FileRoutesByTo {
   '/produtos': typeof AuthenticatedProdutosIndexRoute
   '/trocas': typeof AuthenticatedTrocasIndexRoute
   '/vendas': typeof AuthenticatedVendasIndexRoute
+  '/estoque/recebimentos/$id': typeof AuthenticatedEstoqueRecebimentosIdRoute
+  '/estoque/recebimentos/novo': typeof AuthenticatedEstoqueRecebimentosNovoRoute
+  '/estoque/recebimentos': typeof AuthenticatedEstoqueRecebimentosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -336,6 +363,9 @@ export interface FileRoutesById {
   '/_authenticated/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/_authenticated/trocas/': typeof AuthenticatedTrocasIndexRoute
   '/_authenticated/vendas/': typeof AuthenticatedVendasIndexRoute
+  '/_authenticated/estoque/recebimentos/$id': typeof AuthenticatedEstoqueRecebimentosIdRoute
+  '/_authenticated/estoque/recebimentos/novo': typeof AuthenticatedEstoqueRecebimentosNovoRoute
+  '/_authenticated/estoque/recebimentos/': typeof AuthenticatedEstoqueRecebimentosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -373,6 +403,9 @@ export interface FileRouteTypes {
     | '/produtos/'
     | '/trocas/'
     | '/vendas/'
+    | '/estoque/recebimentos/$id'
+    | '/estoque/recebimentos/novo'
+    | '/estoque/recebimentos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -408,6 +441,9 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/trocas'
     | '/vendas'
+    | '/estoque/recebimentos/$id'
+    | '/estoque/recebimentos/novo'
+    | '/estoque/recebimentos'
   id:
     | '__root__'
     | '/'
@@ -444,6 +480,9 @@ export interface FileRouteTypes {
     | '/_authenticated/produtos/'
     | '/_authenticated/trocas/'
     | '/_authenticated/vendas/'
+    | '/_authenticated/estoque/recebimentos/$id'
+    | '/_authenticated/estoque/recebimentos/novo'
+    | '/_authenticated/estoque/recebimentos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -694,6 +733,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/estoque/recebimentos/': {
+      id: '/_authenticated/estoque/recebimentos/'
+      path: '/estoque/recebimentos'
+      fullPath: '/estoque/recebimentos/'
+      preLoaderRoute: typeof AuthenticatedEstoqueRecebimentosIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/estoque/recebimentos/novo': {
+      id: '/_authenticated/estoque/recebimentos/novo'
+      path: '/estoque/recebimentos/novo'
+      fullPath: '/estoque/recebimentos/novo'
+      preLoaderRoute: typeof AuthenticatedEstoqueRecebimentosNovoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/estoque/recebimentos/$id': {
+      id: '/_authenticated/estoque/recebimentos/$id'
+      path: '/estoque/recebimentos/$id'
+      fullPath: '/estoque/recebimentos/$id'
+      preLoaderRoute: typeof AuthenticatedEstoqueRecebimentosIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -741,6 +801,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
   AuthenticatedTrocasIndexRoute: typeof AuthenticatedTrocasIndexRoute
   AuthenticatedVendasIndexRoute: typeof AuthenticatedVendasIndexRoute
+  AuthenticatedEstoqueRecebimentosIdRoute: typeof AuthenticatedEstoqueRecebimentosIdRoute
+  AuthenticatedEstoqueRecebimentosNovoRoute: typeof AuthenticatedEstoqueRecebimentosNovoRoute
+  AuthenticatedEstoqueRecebimentosIndexRoute: typeof AuthenticatedEstoqueRecebimentosIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -773,6 +836,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
   AuthenticatedTrocasIndexRoute: AuthenticatedTrocasIndexRoute,
   AuthenticatedVendasIndexRoute: AuthenticatedVendasIndexRoute,
+  AuthenticatedEstoqueRecebimentosIdRoute:
+    AuthenticatedEstoqueRecebimentosIdRoute,
+  AuthenticatedEstoqueRecebimentosNovoRoute:
+    AuthenticatedEstoqueRecebimentosNovoRoute,
+  AuthenticatedEstoqueRecebimentosIndexRoute:
+    AuthenticatedEstoqueRecebimentosIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

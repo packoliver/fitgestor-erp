@@ -53,6 +53,7 @@ const groups: { label: string; items: NavItem[] }[] = [
       { title: "Produtos", url: "/produtos", icon: Package, perm: "product.view" },
       { title: "Estoque", url: "/estoque", icon: Boxes, perm: "stock.view" },
       { title: "Entrada de mercadorias", url: "/estoque/entrada", icon: ArrowDownToLine, perm: "goods_receipt.create" },
+      { title: "Receber mercadoria", url: "/estoque/recebimentos", icon: ArrowDownToLine, perm: "goods_receipt.create" },
       { title: "Inventário", url: "/estoque/inventario", icon: ClipboardList, perm: "inventory.manage" },
       { title: "Etiquetas", url: "/etiquetas", icon: Tag, perm: "label.print" },
     ],

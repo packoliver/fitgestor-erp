@@ -1123,6 +1123,152 @@ export type Database = {
           },
         ]
       }
+      goods_receipt_draft_items: {
+        Row: {
+          cells: Json
+          created_at: string
+          draft_id: string
+          id: string
+          mode: string
+          new_product_data: Json | null
+          new_variant_data: Json | null
+          notes: string | null
+          organization_id: string
+          position: number
+          product_id: string | null
+          total_quantity: number
+          updated_at: string
+        }
+        Insert: {
+          cells?: Json
+          created_at?: string
+          draft_id: string
+          id?: string
+          mode: string
+          new_product_data?: Json | null
+          new_variant_data?: Json | null
+          notes?: string | null
+          organization_id: string
+          position?: number
+          product_id?: string | null
+          total_quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          cells?: Json
+          created_at?: string
+          draft_id?: string
+          id?: string
+          mode?: string
+          new_product_data?: Json | null
+          new_variant_data?: Json | null
+          notes?: string | null
+          organization_id?: string
+          position?: number
+          product_id?: string | null
+          total_quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goods_receipt_draft_items_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "goods_receipt_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goods_receipt_draft_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goods_receipt_draft_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goods_receipt_drafts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_number: string | null
+          location_id: string | null
+          notes: string | null
+          order_number: string | null
+          organization_id: string
+          receipt_date: string
+          status: string
+          supplier_id: string | null
+          total_items: number
+          total_quantity: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_number?: string | null
+          location_id?: string | null
+          notes?: string | null
+          order_number?: string | null
+          organization_id: string
+          receipt_date?: string
+          status?: string
+          supplier_id?: string | null
+          total_items?: number
+          total_quantity?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_number?: string | null
+          location_id?: string | null
+          notes?: string | null
+          order_number?: string | null
+          organization_id?: string
+          receipt_date?: string
+          status?: string
+          supplier_id?: string | null
+          total_items?: number
+          total_quantity?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goods_receipt_drafts_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goods_receipt_drafts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goods_receipt_drafts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_events: {
         Row: {
           attempts: number
@@ -2689,6 +2835,7 @@ export type Database = {
           test_name: string
         }[]
       }
+      save_goods_receipt_draft: { Args: { _payload: Json }; Returns: string }
     }
     Enums: {
       cheaper_balance_action:
