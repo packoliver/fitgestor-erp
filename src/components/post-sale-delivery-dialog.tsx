@@ -122,16 +122,7 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
     });
   }, [step, method, client]);
 
-  const openRoutes = useQuery({
-    queryKey: ["open-routes-today"],
-    enabled: overrideOpen,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("list_open_routes_today");
-      if (error) throw error;
-      return (data ?? []) as { id: string; route_number: number; courier_id: string; courier_name: string;
-        planned_departure: string | null; total_stops: number; status: string }[];
-    },
-  });
+  // Kept for backwards compatibility, unused now that OverrideScheduleDialog owns the flow.
 
   function validate(): string | null {
     if (method !== "motoboy") return null;
