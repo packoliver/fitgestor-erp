@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Truck, Store, Package, Mail, MoreHorizontal, Loader2 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { money } from "@/lib/pos";
+import { OverrideScheduleDialog } from "@/components/shipping/override-schedule-dialog";
 
 type DeliveryMethod = "pickup" | "motoboy" | "correios" | "carrier" | "other";
 
