@@ -2618,6 +2618,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _filter_exchanges: {
+        Args: { _filters: Json; _org: string }
+        Returns: {
+          id: string
+        }[]
+      }
       apply_stock_movement: {
         Args: {
           _location_id: string
@@ -2647,6 +2653,7 @@ export type Database = {
         Returns: string
       }
       current_org_id: { Args: never; Returns: string }
+      export_exchanges_report: { Args: { _filters: Json }; Returns: Json }
       has_permission: { Args: { _code: string }; Returns: boolean }
       has_role: { Args: { _role_name: string }; Returns: boolean }
       is_active: { Args: never; Returns: boolean }
@@ -2669,6 +2676,7 @@ export type Database = {
         }
         Returns: string
       }
+      report_exchanges: { Args: { _filters: Json }; Returns: Json }
       reverse_exchange: {
         Args: { _exchange_id: string; _reason: string }
         Returns: Json
