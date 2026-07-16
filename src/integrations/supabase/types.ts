@@ -1533,6 +1533,7 @@ export type Database = {
           color_snapshot: string | null
           created_at: string
           id: string
+          position: number
           price_snapshot: number | null
           print_job_id: string
           product_id: string | null
@@ -1547,6 +1548,7 @@ export type Database = {
           color_snapshot?: string | null
           created_at?: string
           id?: string
+          position?: number
           price_snapshot?: number | null
           print_job_id: string
           product_id?: string | null
@@ -1561,6 +1563,7 @@ export type Database = {
           color_snapshot?: string | null
           created_at?: string
           id?: string
+          position?: number
           price_snapshot?: number | null
           print_job_id?: string
           product_id?: string | null
@@ -1596,47 +1599,86 @@ export type Database = {
       }
       label_print_jobs: {
         Row: {
+          client_request_id: string | null
           completed_at: string | null
           created_at: string
           error_message: string | null
           generated_file_url: string | null
+          goods_receipt_draft_id: string | null
           id: string
+          location_id: string | null
+          notes: string | null
           organization_id: string
+          origin: string
           status: string
+          supplier_id: string | null
           template_id: string | null
           total_labels: number
           user_id: string | null
         }
         Insert: {
+          client_request_id?: string | null
           completed_at?: string | null
           created_at?: string
           error_message?: string | null
           generated_file_url?: string | null
+          goods_receipt_draft_id?: string | null
           id?: string
+          location_id?: string | null
+          notes?: string | null
           organization_id: string
+          origin?: string
           status?: string
+          supplier_id?: string | null
           template_id?: string | null
           total_labels?: number
           user_id?: string | null
         }
         Update: {
+          client_request_id?: string | null
           completed_at?: string | null
           created_at?: string
           error_message?: string | null
           generated_file_url?: string | null
+          goods_receipt_draft_id?: string | null
           id?: string
+          location_id?: string | null
+          notes?: string | null
           organization_id?: string
+          origin?: string
           status?: string
+          supplier_id?: string | null
           template_id?: string | null
           total_labels?: number
           user_id?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "label_print_jobs_goods_receipt_draft_id_fkey"
+            columns: ["goods_receipt_draft_id"]
+            isOneToOne: false
+            referencedRelation: "goods_receipt_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_print_jobs_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "label_print_jobs_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_print_jobs_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
           {
@@ -2819,6 +2861,10 @@ export type Database = {
       }
       current_org_id: { Args: never; Returns: string }
       export_exchanges_report: { Args: { _filters: Json }; Returns: Json }
+      generate_goods_receipt_labels: {
+        Args: { _client_request_id: string; _receipt_id: string }
+        Returns: Json
+      }
       has_permission: { Args: { _code: string }; Returns: boolean }
       has_role: { Args: { _role_name: string }; Returns: boolean }
       is_active: { Args: never; Returns: boolean }
