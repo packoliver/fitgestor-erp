@@ -104,13 +104,13 @@ function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border h-16 justify-center">
         <div className="flex items-center gap-2.5 px-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-white shadow-glow">
             <span className="font-display text-lg font-bold leading-none">F</span>
           </div>
           {!collapsed && (
             <div className="flex flex-col leading-tight min-w-0">
               <span className="font-display text-[15px] font-semibold text-sidebar-foreground truncate">FitGestor</span>
-              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">ERP</span>
+              <span className="text-[10.5px] font-medium uppercase tracking-[0.14em] text-sidebar-foreground/50">ERP Premium</span>
             </div>
           )}
         </div>
@@ -121,7 +121,7 @@ function AppSidebar() {
           if (items.length === 0) return null;
           return (
             <SidebarGroup key={g.label} className="py-1">
-              <SidebarGroupLabel className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground px-2">
+              <SidebarGroupLabel className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/45 px-2">
                 {g.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -134,7 +134,7 @@ function AppSidebar() {
                           asChild
                           isActive={active}
                           tooltip={item.title}
-                          className="h-9 rounded-lg text-[13.5px] font-medium data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-semibold hover:bg-sidebar-accent transition-colors"
+                          className="h-9 rounded-lg text-[13.5px] font-medium text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold data-[active=true]:shadow-[inset_2px_0_0_0_var(--sidebar-primary)] transition-colors"
                         >
                           <Link to={item.url} className="flex items-center gap-2.5">
                             <item.icon className="h-4 w-4 shrink-0" />
