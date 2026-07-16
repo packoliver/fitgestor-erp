@@ -92,7 +92,7 @@ function PosVendaFila() {
   const reviewReject = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
       const { error } = await supabase.rpc("post_sale_review_reject", {
-        _task_id: id, _reason: reason ?? null,
+        _task_id: id, _reason: reason ?? undefined,
       });
       if (error) throw error;
     },
