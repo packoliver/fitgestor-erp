@@ -352,7 +352,7 @@ function ReportInner() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button asChild size="sm" variant="ghost"><Link to="/trocas/$id" params={{ id: r.id }}><ExternalLink className="h-4 w-4" /></Link></Button>
+                  <Button asChild size="sm" variant="ghost"><Link to="/trocas/$id" params={{ id: r.id }} aria-label={`Abrir troca #${r.exchange_number}`}><ExternalLink className="h-4 w-4" aria-hidden /></Link></Button>
                 </TableCell>
               </TableRow>
             ))}
