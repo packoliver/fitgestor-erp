@@ -229,14 +229,19 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
 
   const totals = useMemo(() => {
     let qty = 0;
-    let restock = 0, newVar = 0, newProd = 0;
+    let restock = 0, newVar = 0, newProd = 0, counting = 0;
+    let unresolved = 0;
     for (const it of items) {
       for (const c of it.cells) qty += c.quantity || 0;
       if (it.mode === "restock") restock++;
       else if (it.mode === "new_variant") newVar++;
-      else newProd++;
+      else if (it.mode === "new_product") newProd++;
+      else counting++;
+      if (it.mode === "count_only" || (it.resolution_status && it.resolution_status !== "resolved")) {
+        unresolved++;
+      }
     }
-    return { qty, restock, newVar, newProd, itemCount: items.length };
+    return { qty, restock, newVar, newProd, counting, unresolved, itemCount: items.length };
   }, [items]);
 
   const save = useMutation({
