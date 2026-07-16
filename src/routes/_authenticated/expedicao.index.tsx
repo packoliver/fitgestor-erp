@@ -121,7 +121,7 @@ function ExpedicaoPanel() {
           <div className="font-semibold mb-2 flex items-center gap-2"><Search className="h-4 w-4" />Fila e busca</div>
           <div className="flex flex-col gap-2">
             <Button asChild variant="outline"><Link to="/expedicao/fila">Abrir fila</Link></Button>
-            <Button asChild variant="outline"><Link to="/expedicao/fila" search={{ awaiting_delivery: "1" }}>Vendas sem entrega definida</Link></Button>
+            <Button asChild variant="outline"><Link to="/expedicao/fila">Vendas sem entrega definida</Link></Button>
           </div>
         </Card>
       </div>
