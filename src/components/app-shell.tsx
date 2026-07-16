@@ -50,6 +50,7 @@ const groups: { label: string; items: NavItem[] }[] = [
   {
     label: "Operação",
     items: [
+      { title: "Área de trabalho", url: "/trabalho", icon: LayoutDashboard },
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
       { title: "Produtos", url: "/produtos", icon: Package, perm: "product.view" },
       { title: "Estoque", url: "/estoque", icon: Boxes, perm: "stock.view" },
