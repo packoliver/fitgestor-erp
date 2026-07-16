@@ -234,7 +234,7 @@ export const PERMISSION_GROUPS: { id: string; label: string; codes: string[] }[]
   { id: "estoque", label: "Estoque", codes: [
     "stock.view","stock.adjust","stock.allow_negative","inventory.manage",
   ] },
-  { id: "recebimentos", label: "Recebimentos", codes: ["goods_receipt.create"] },
+  { id: "recebimentos", label: "Entrada de mercadoria", codes: ["goods_receipt.create"] },
   { id: "etiquetas", label: "Etiquetas", codes: ["label.print"] },
   { id: "trocas", label: "Trocas e estornos", codes: [
     "exchange.create","exchanges.view","exchanges.create","exchanges.approve","exchanges.cancel",
