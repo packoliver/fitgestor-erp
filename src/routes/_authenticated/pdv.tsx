@@ -543,6 +543,16 @@ function PdvPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {postSale && (
+        <PostSaleDeliveryDialog
+          saleId={postSale.saleId}
+          saleNumber={postSale.saleNumber}
+          clientId={postSale.clientId}
+          onClose={() => setPostSale(null)}
+        />
+      )}
     </div>
   );
 }
+
