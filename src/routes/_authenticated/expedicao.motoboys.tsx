@@ -59,12 +59,6 @@ function CouriersPage() {
     },
   });
 
-  const linkedUsers = useQuery({
-    queryKey: ["courier-linked-user-info"],
-    enabled: (list => list.data?.some((c) => !!c.user_id))(useQuery),
-    queryFn: async () => ({}),
-  });
-  // Fetch profile info for linked couriers via a lightweight join, done inline below.
 
   const list = useQuery({
     queryKey: ["couriers"],
