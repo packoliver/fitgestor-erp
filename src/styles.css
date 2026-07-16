@@ -120,43 +120,43 @@
 
 /* ============ Brand tokens — DARK (landing/login/premium surfaces) ============ */
 .dark {
-  --background: #08070D;
-  --foreground: #F7F5FC;
+  --background: #0D0D10;
+  --foreground: #F4F1ED;
 
-  --surface: #151220;
-  --surface-elevated: #1C172A;
+  --surface: #151419;
+  --surface-elevated: #1B1A20;
 
-  --card: #151220;
-  --card-foreground: #F7F5FC;
+  --card: #151419;
+  --card-foreground: #F4F1ED;
 
-  --popover: #1C172A;
-  --popover-foreground: #F7F5FC;
+  --popover: #1B1A20;
+  --popover-foreground: #F4F1ED;
 
   --primary: #8B5CF6;
   --primary-hover: #7C3AED;
   --primary-foreground: #FFFFFF;
-  --primary-glow: #C084FC;
+  --primary-glow: #A78BFA;
 
-  --secondary: #1C172A;
-  --secondary-foreground: #F7F5FC;
+  --secondary: #1B1A20;
+  --secondary-foreground: #F4F1ED;
 
-  --muted: #1C172A;
-  --muted-foreground: #A9A3B7;
+  --muted: #1B1A20;
+  --muted-foreground: #A6A1AA;
 
-  --accent: rgba(139, 92, 246, 0.14);
+  --accent: rgba(139, 92, 246, 0.10);
   --accent-foreground: #E9DDFF;
 
   --destructive: #F97066;
   --destructive-foreground: #FFFFFF;
 
   --success: #32D583;
-  --success-foreground: #08070D;
+  --success-foreground: #0D0D10;
 
   --warning: #FDB022;
-  --warning-foreground: #08070D;
+  --warning-foreground: #0D0D10;
 
-  --border: rgba(255, 255, 255, 0.09);
-  --input: rgba(255, 255, 255, 0.09);
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
   --ring: #A78BFA;
 
   --gradient-primary: linear-gradient(135deg, #7C3AED 0%, #A855F7 55%, #D946EF 100%);
