@@ -417,13 +417,24 @@ function PdvPage() {
           <DialogHeader><DialogTitle>Pagamento</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="rounded border p-3 text-sm space-y-1">
-              <div className="flex justify-between"><span>Total</span><b>{money(total)}</b></div>
-              <div className="flex justify-between"><span>Informado</span><b>{money(paid)}</b></div>
-              <div className="flex justify-between"><span>Restante</span><b className={remaining > 0 ? "text-destructive" : ""}>{money(remaining)}</b></div>
+              <div className="flex justify-between"><span>Total da venda</span><b>{money(total)}</b></div>
+              {(() => {
+                const creditUsed = payments.filter((p) => p.payment_method === "store_credit").reduce((s, p) => s + p.amount, 0);
+                const voucherUsed = payments.filter((p) => p.payment_method === "exchange_voucher").reduce((s, p) => s + p.amount, 0);
+                const otherUsed = paid - creditUsed - voucherUsed;
+                return (
+                  <>
+                    {creditUsed > 0 && <div className="flex justify-between text-muted-foreground"><span>Crédito da loja</span><b>-{money(creditUsed)}</b></div>}
+                    {voucherUsed > 0 && <div className="flex justify-between text-muted-foreground"><span>Vale-troca</span><b>-{money(voucherUsed)}</b></div>}
+                    {otherUsed > 0 && <div className="flex justify-between text-muted-foreground"><span>Outras formas</span><b>-{money(otherUsed)}</b></div>}
+                  </>
+                );
+              })()}
+              <div className="flex justify-between border-t pt-1"><span>Pendente</span><b className={remaining > 0 ? "text-destructive" : "text-green-600"}>{money(remaining)}</b></div>
               {change > 0 && <div className="flex justify-between"><span>Troco</span><b>{money(change)}</b></div>}
             </div>
             <div className="grid grid-cols-[1fr_120px_auto] gap-2">
-              <Select value={payMethod} onValueChange={(v) => setPayMethod(v as PaymentMethod)}>
+              <Select value={payMethod} onValueChange={(v) => { setPayMethod(v as PaymentMethod); setPayAmount(""); setPayRef(""); setVoucherInfo(null); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{AVAILABLE_METHODS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
               </Select>
@@ -437,24 +448,69 @@ function PdvPage() {
               </div>
             )}
             {payMethod === "exchange_voucher" && (
-              <div className="flex items-center gap-2 text-sm">
-                <Input placeholder="Código do vale" value={payRef} onChange={(e) => setPayRef(e.target.value.toUpperCase())} className="h-8" />
-                <Button size="sm" variant="outline" onClick={lookupVoucher}>Consultar</Button>
-                {voucherInfo && <span className="text-xs">Saldo: <b>{money(voucherInfo.balance)}</b></span>}
+              <div className="rounded border p-2 space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Input placeholder="Código do vale ou QR" value={payRef} onChange={(e) => setPayRef(e.target.value.toUpperCase())} className="h-8" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); lookupVoucher(); } }} />
+                  <Button size="sm" variant="outline" onClick={lookupVoucher} disabled={voucherLookupPending}>{voucherLookupPending ? "…" : "Consultar"}</Button>
+                </div>
+                {voucherInfo && (() => {
+                  const alreadyOnThisVoucher = payments.filter((p) => p.payment_method === "exchange_voucher" && p.reference === voucherInfo.code).reduce((s, p) => s + p.amount, 0);
+                  const availableNow = Math.max(voucherInfo.balance - alreadyOnThisVoucher, 0);
+                  const usableNow = Math.min(availableNow, remaining);
+                  const typedAmount = Number(payAmount) || 0;
+                  const balanceAfter = availableNow - Math.min(typedAmount, availableNow);
+                  return (
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between"><span>Titular</span><b>{voucherInfo.holder ?? "Não identificado"}</b></div>
+                      <div className="flex justify-between"><span>Saldo do vale</span><b>{money(availableNow)}</b></div>
+                      {voucherInfo.expires_at && <div className="flex justify-between"><span>Validade</span><b>{new Date(voucherInfo.expires_at).toLocaleDateString("pt-BR")}</b></div>}
+                      <div className="flex justify-between"><span>Após esta venda</span><b>{money(balanceAfter)}</b></div>
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setPayAmount(usableNow.toFixed(2))}>Usar disponível ({money(usableNow)})</Button>
+                    </div>
+                  );
+                })()}
               </div>
             )}
             {payMethod === "store_credit" && (
-              <div className="flex items-center gap-2 text-sm">
-                <Button size="sm" variant="outline" onClick={lookupCredit} disabled={!clientId}>Consultar saldo do cliente</Button>
-                {creditBalance !== null && <span className="text-xs">Saldo: <b>{money(creditBalance)}</b></span>}
-                {!clientId && <span className="text-xs text-muted-foreground">Selecione um cliente</span>}
+              <div className="rounded border p-2 space-y-2 text-sm">
+                {!clientId && (
+                  <div className="flex items-center gap-2">
+                    <Input placeholder="CPF do cliente" value={creditCpfTerm} onChange={(e) => setCreditCpfTerm(e.target.value)} className="h-8" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); lookupCreditByCpf(); } }} />
+                    <Button size="sm" variant="outline" onClick={lookupCreditByCpf} disabled={creditLookupPending}>{creditLookupPending ? "…" : "Buscar"}</Button>
+                  </div>
+                )}
+                {clientId && (
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs flex-1">Cliente: <b>{clientName}</b></div>
+                    <Button size="sm" variant="outline" onClick={() => lookupCredit()} disabled={creditLookupPending}>Atualizar saldo</Button>
+                  </div>
+                )}
+                {creditBalance !== null && (() => {
+                  const alreadyOnThisAccount = payments.filter((p) => p.payment_method === "store_credit").reduce((s, p) => s + p.amount, 0);
+                  const availableNow = Math.max(creditBalance - alreadyOnThisAccount, 0);
+                  const usableNow = Math.min(availableNow, remaining);
+                  const typedAmount = Number(payAmount) || 0;
+                  const balanceAfter = availableNow - Math.min(typedAmount, availableNow);
+                  return (
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between"><span>Saldo disponível</span><b>{money(availableNow)}</b></div>
+                      <div className="flex justify-between"><span>Após esta venda</span><b>{money(balanceAfter)}</b></div>
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setPayAmount(usableNow.toFixed(2))}>Usar disponível ({money(usableNow)})</Button>
+                    </div>
+                  );
+                })()}
               </div>
             )}
-            <Button variant="ghost" size="sm" onClick={() => setPayAmount(remaining.toFixed(2))}>Preencher restante</Button>
+            {payMethod !== "store_credit" && payMethod !== "exchange_voucher" && (
+              <Button variant="ghost" size="sm" onClick={() => setPayAmount(remaining.toFixed(2))}>Preencher restante ({money(remaining)})</Button>
+            )}
             <div className="divide-y border-t">
               {payments.map((p, i) => (
                 <div key={i} className="flex items-center justify-between py-2 text-sm">
-                  <span>{PAYMENT_LABELS[p.payment_method]} {p.installments > 1 ? `${p.installments}x` : ""}</span>
+                  <span>
+                    {PAYMENT_LABELS[p.payment_method]} {p.installments > 1 ? `${p.installments}x` : ""}
+                    {p.reference && (p.payment_method === "exchange_voucher") ? <span className="text-xs text-muted-foreground ml-1">({p.reference})</span> : null}
+                  </span>
                   <div className="flex items-center gap-2">
                     <b>{money(p.amount)}</b>
                     <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => setPayments((prev) => prev.filter((_, ix) => ix !== i))}><Trash2 className="h-3 w-3" /></Button>
