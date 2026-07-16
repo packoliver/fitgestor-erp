@@ -89,7 +89,7 @@ function PendenciasPage() {
                 <td className="text-right">{money(r.total)}</td>
                 <td><Badge variant={REASON_VARIANT[r.reason] ?? "outline"}>{REASON_LABEL[r.reason] ?? r.reason}</Badge></td>
                 <td className="flex gap-1">
-                  <Button size="sm" onClick={() => setOpenSale(r.sale_id)}>
+                  <Button size="sm" onClick={() => setOpenSale({ id: r.sale_id, number: r.sale_number, clientId: r.client_id })}>
                     Definir entrega
                   </Button>
                   <Button size="sm" variant="ghost" asChild>
