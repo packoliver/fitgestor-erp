@@ -132,6 +132,23 @@ function ValesPage() {
           </Table>
         </Card>
       )}
+      {printVoucher && (
+        <PrintDialog
+          open={!!printVoucher}
+          onOpenChange={(v) => !v && setPrintVoucher(null)}
+          title={`Vale ${printVoucher.code}`}
+        >
+          <VoucherReceipt
+            data={{
+              org,
+              voucher: printVoucher,
+              client: printVoucher.client,
+              originalExchangeNumber: printVoucher.exchange?.exchange_number ?? null,
+              settings: settings ?? null,
+            }}
+          />
+        </PrintDialog>
+      )}
     </div>
   );
 }
