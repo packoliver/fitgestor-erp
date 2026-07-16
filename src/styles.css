@@ -157,3 +157,41 @@
     font-optical-sizing: auto;
   }
 }
+
+/* ============ Print styles (Sub-fatia 3) ============ */
+@media screen {
+  #print-root { display: none; }
+}
+
+@media print {
+  @page { margin: 12mm; }
+  html.print-80mm @page { size: 80mm auto; margin: 3mm; }
+  html.print-a4 @page { size: A4; margin: 12mm; }
+
+  body * { visibility: hidden !important; }
+  #print-root, #print-root * { visibility: visible !important; }
+  #print-root {
+    position: absolute; inset: 0; display: block;
+    background: #fff; color: #000;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+  }
+
+  html.print-80mm #print-root {
+    width: 74mm; font-size: 11px; line-height: 1.35;
+  }
+  html.print-80mm #print-root .receipt-title { font-size: 13px; font-weight: 700; text-align: center; }
+  html.print-80mm #print-root table { width: 100%; border-collapse: collapse; }
+  html.print-80mm #print-root th, html.print-80mm #print-root td { padding: 2px 0; font-size: 10.5px; }
+  html.print-80mm #print-root .a4-only { display: none !important; }
+  html.print-80mm #print-root .item-row { page-break-inside: avoid; break-inside: avoid; }
+
+  html.print-a4 #print-root { width: 100%; font-size: 12px; line-height: 1.45; }
+  html.print-a4 #print-root .thermal-only { display: none !important; }
+  html.print-a4 #print-root .receipt-title { font-size: 20px; font-weight: 700; }
+  html.print-a4 #print-root table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+  html.print-a4 #print-root th, html.print-a4 #print-root td { padding: 4px 6px; border-bottom: 1px solid #ddd; font-size: 11px; text-align: left; }
+  html.print-a4 #print-root th { background: #f4f4f4; }
+  html.print-a4 #print-root .doc-footer { position: running(footer); text-align: center; font-size: 10px; color: #555; }
+  html.print-a4 #print-root .page-break { page-break-after: always; }
+}
+
