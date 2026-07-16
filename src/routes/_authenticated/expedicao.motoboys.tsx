@@ -82,7 +82,7 @@ function CouriersPage() {
 
   const linkMut = useMutation({
     mutationFn: async ({ courierId, userId }: { courierId: string; userId: string | null }) => {
-      const { error } = await supabase.rpc("link_courier_user", { _courier_id: courierId, _user_id: userId });
+      const { error } = await supabase.rpc("link_courier_user", { _courier_id: courierId, _user_id: userId as any });
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Vínculo atualizado."); setLinkFor(null); qc.invalidateQueries({ queryKey: ["couriers"] }); },
