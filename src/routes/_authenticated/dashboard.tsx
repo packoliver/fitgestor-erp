@@ -70,25 +70,33 @@ function Dashboard() {
       <PageHeader title="Dashboard" description="Visão geral da operação da sua loja." />
 
       <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-        {cards.map((c) => (
-          <Card key={c.label}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{c.label}</CardTitle>
-              <c.icon className={
-                c.tone === "warning" ? "h-4 w-4 text-warning" :
-                c.tone === "destructive" ? "h-4 w-4 text-destructive" :
-                "h-4 w-4 text-muted-foreground"
-              } />
-            </CardHeader>
-            <CardContent><div className="text-2xl font-semibold">{c.value}</div></CardContent>
-          </Card>
-        ))}
+        {cards.map((c) => {
+          const toneClasses =
+            c.tone === "warning"
+              ? "bg-warning/10 text-warning"
+              : c.tone === "destructive"
+              ? "bg-destructive/10 text-destructive"
+              : "bg-primary/10 text-primary";
+          return (
+            <Card key={c.label} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${toneClasses}`}>
+                    <c.icon className="h-4 w-4" />
+                  </div>
+                </div>
+                <div className="mt-4 text-3xl font-semibold tracking-tight tabular-nums">{c.value}</div>
+                <div className="mt-1 text-xs font-medium text-muted-foreground">{c.label}</div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle className="text-base">Alertas de qualidade</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
+          <CardHeader><CardTitle>Alertas de qualidade</CardTitle></CardHeader>
+          <CardContent className="space-y-1 text-sm">
             <AlertRow icon={Tag} label="Variações sem SKU" value={alerts.data?.noSku ?? 0} />
             <AlertRow icon={Tag} label="Variações sem código de barras" value={alerts.data?.noBarcode ?? 0} />
             <AlertRow icon={ImageOff} label="Produtos sem foto" value={alerts.data?.noImage ?? 0} />
@@ -96,21 +104,21 @@ function Dashboard() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Últimas movimentações</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Últimas movimentações</CardTitle></CardHeader>
           <CardContent>
             {(stats.data?.movements ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhuma movimentação ainda. Comece cadastrando produtos e registrando entradas.</p>
             ) : (
-              <ul className="divide-y">
+              <ul className="divide-y divide-border">
                 {stats.data!.movements.map((m: any) => (
-                  <li key={m.id} className="flex items-center justify-between py-2 text-sm">
-                    <div>
-                      <div className="font-medium">
+                  <li key={m.id} className="flex items-center justify-between py-3 text-sm">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">
                         {m.product_variants?.products?.name} · {m.product_variants?.products?.color} · {m.product_variants?.size}
                       </div>
-                      <div className="text-xs text-muted-foreground">{formatDateTime(m.created_at)}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{formatDateTime(m.created_at)}</div>
                     </div>
-                    <Badge variant="secondary">{m.movement_type} · {m.quantity}</Badge>
+                    <Badge variant="secondary" className="shrink-0">{m.movement_type} · {m.quantity}</Badge>
                   </li>
                 ))}
               </ul>
@@ -124,8 +132,8 @@ function Dashboard() {
 
 function AlertRow({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number }) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2"><Icon className="h-4 w-4 text-muted-foreground" /><span>{label}</span></div>
+    <div className="flex items-center justify-between py-2">
+      <div className="flex items-center gap-2.5 text-foreground"><Icon className="h-4 w-4 text-muted-foreground" /><span>{label}</span></div>
       <Badge variant={value > 0 ? "destructive" : "secondary"}>{value}</Badge>
     </div>
   );
