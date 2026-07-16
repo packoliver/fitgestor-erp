@@ -18,6 +18,7 @@ import {
   LayoutDashboard, Package, Boxes, ArrowDownToLine, ClipboardList, Tag,
   Users, ShieldCheck, Truck, FolderTree, Sparkles, Settings, ScrollText, LogOut,
   ShoppingCart, Wallet, Receipt, UserSquare2, RefreshCw, Ticket, PiggyBank, FileBarChart,
+  Search, Bell,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -100,39 +101,49 @@ function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b">
-        <div className="flex items-center gap-2 px-2 py-1.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="font-display text-lg font-semibold">F</span>
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+      <SidebarHeader className="border-b border-sidebar-border h-16 justify-center">
+        <div className="flex items-center gap-2.5 px-2">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
+            <span className="font-display text-lg font-bold leading-none">F</span>
           </div>
           {!collapsed && (
-            <div className="flex flex-col leading-tight">
-              <span className="font-display text-base font-semibold">FitGestor</span>
-              <span className="text-xs text-muted-foreground">ERP</span>
+            <div className="flex flex-col leading-tight min-w-0">
+              <span className="font-display text-[15px] font-semibold text-sidebar-foreground truncate">FitGestor</span>
+              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">ERP</span>
             </div>
           )}
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-2 py-3 gap-1">
         {groups.map((g) => {
           const items = isLoading ? g.items : g.items.filter(canSee);
           if (items.length === 0) return null;
           return (
-            <SidebarGroup key={g.label}>
-              <SidebarGroupLabel>{g.label}</SidebarGroupLabel>
+            <SidebarGroup key={g.label} className="py-1">
+              <SidebarGroupLabel className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground px-2">
+                {g.label}
+              </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
-                  {items.map((item) => (
-                    <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                        <Link to={item.url} className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                <SidebarMenu className="gap-0.5">
+                  {items.map((item) => {
+                    const active = isActive(item.url);
+                    return (
+                      <SidebarMenuItem key={item.url}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={active}
+                          tooltip={item.title}
+                          className="h-9 rounded-lg text-[13.5px] font-medium data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-semibold hover:bg-sidebar-accent transition-colors"
+                        >
+                          <Link to={item.url} className="flex items-center gap-2.5">
+                            <item.icon className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -163,18 +174,36 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center gap-2 border-b bg-card/50 px-4 sticky top-0 z-10 backdrop-blur">
-            <SidebarTrigger />
-            <div className="flex-1" />
+          <header className="h-16 flex items-center gap-3 border-b border-border bg-background/80 px-4 sm:px-6 sticky top-0 z-20 backdrop-blur-md">
+            <SidebarTrigger className="h-9 w-9 rounded-lg hover:bg-muted" />
+            <div className="hidden md:flex relative flex-1 max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="search"
+                placeholder="Buscar produtos, clientes, vendas…"
+                className="w-full h-10 rounded-xl border border-border bg-muted/40 pl-9 pr-14 text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:bg-card focus:ring-4 focus:ring-primary/10 transition-all"
+              />
+              <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 hidden lg:inline-flex h-6 items-center rounded-md border border-border bg-card px-1.5 text-[10.5px] font-medium text-muted-foreground">⌘K</kbd>
+            </div>
+            <div className="flex-1 md:hidden" />
+            <Button variant="ghost" size="icon" aria-label="Notificações" className="relative">
+              <Bell className="h-4 w-4" />
+              <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-primary" />
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-9 gap-2 pl-2 pr-3">
-                  <Avatar className="h-7 w-7"><AvatarFallback>{initials}</AvatarFallback></Avatar>
-                  <span className="hidden sm:inline text-sm">{userEmail}</span>
+                <Button variant="ghost" className="h-10 gap-2 pl-1.5 pr-3 rounded-xl">
+                  <Avatar className="h-7 w-7"><AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{initials}</AvatarFallback></Avatar>
+                  <span className="hidden sm:inline text-sm font-medium max-w-[160px] truncate">{userEmail}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Minha conta</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-56 rounded-xl">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs text-muted-foreground">Conectado como</span>
+                    <span className="text-sm font-medium truncate">{userEmail}</span>
+                  </div>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to="/configuracoes"><Settings className="mr-2 h-4 w-4" />Configurações</Link>
@@ -186,8 +215,10 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
               </DropdownMenuContent>
             </DropdownMenu>
           </header>
-          <main className="flex-1 p-4 sm:p-6 min-w-0">
-            {children}
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0">
+            <div className="mx-auto w-full max-w-7xl">
+              {children}
+            </div>
           </main>
         </div>
       </div>
