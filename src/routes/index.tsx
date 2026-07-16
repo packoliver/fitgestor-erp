@@ -392,6 +392,7 @@ function HeroMockup() {
           </div>
         </AppFrame>
       </BrowserChrome>
+      </div>
     </div>
   );
 }
