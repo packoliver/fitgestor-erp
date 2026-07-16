@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedPdvRouteImport } from './routes/_authenticated/pdv'
+import { Route as AuthenticatedMotoboyRouteImport } from './routes/_authenticated/motoboy'
 import { Route as AuthenticatedMarcasRouteImport } from './routes/_authenticated/marcas'
 import { Route as AuthenticatedFuncionariosRouteImport } from './routes/_authenticated/funcionarios'
 import { Route as AuthenticatedFornecedoresRouteImport } from './routes/_authenticated/fornecedores'
@@ -82,6 +83,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedPdvRoute = AuthenticatedPdvRouteImport.update({
   id: '/pdv',
   path: '/pdv',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMotoboyRoute = AuthenticatedMotoboyRouteImport.update({
+  id: '/motoboy',
+  path: '/motoboy',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMarcasRoute = AuthenticatedMarcasRouteImport.update({
@@ -322,6 +328,7 @@ export interface FileRoutesByFullPath {
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/marcas': typeof AuthenticatedMarcasRoute
+  '/motoboy': typeof AuthenticatedMotoboyRoute
   '/pdv': typeof AuthenticatedPdvRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
@@ -368,6 +375,7 @@ export interface FileRoutesByTo {
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/marcas': typeof AuthenticatedMarcasRoute
+  '/motoboy': typeof AuthenticatedMotoboyRoute
   '/pdv': typeof AuthenticatedPdvRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
@@ -416,6 +424,7 @@ export interface FileRoutesById {
   '/_authenticated/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/_authenticated/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/_authenticated/marcas': typeof AuthenticatedMarcasRoute
+  '/_authenticated/motoboy': typeof AuthenticatedMotoboyRoute
   '/_authenticated/pdv': typeof AuthenticatedPdvRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/_authenticated/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
@@ -464,6 +473,7 @@ export interface FileRouteTypes {
     | '/fornecedores'
     | '/funcionarios'
     | '/marcas'
+    | '/motoboy'
     | '/pdv'
     | '/clientes/$id'
     | '/configuracoes/trocas'
@@ -510,6 +520,7 @@ export interface FileRouteTypes {
     | '/fornecedores'
     | '/funcionarios'
     | '/marcas'
+    | '/motoboy'
     | '/pdv'
     | '/clientes/$id'
     | '/configuracoes/trocas'
@@ -557,6 +568,7 @@ export interface FileRouteTypes {
     | '/_authenticated/fornecedores'
     | '/_authenticated/funcionarios'
     | '/_authenticated/marcas'
+    | '/_authenticated/motoboy'
     | '/_authenticated/pdv'
     | '/_authenticated/clientes/$id'
     | '/_authenticated/configuracoes/trocas'
@@ -639,6 +651,13 @@ declare module '@tanstack/react-router' {
       path: '/pdv'
       fullPath: '/pdv'
       preLoaderRoute: typeof AuthenticatedPdvRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/motoboy': {
+      id: '/_authenticated/motoboy'
+      path: '/motoboy'
+      fullPath: '/motoboy'
+      preLoaderRoute: typeof AuthenticatedMotoboyRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/marcas': {
@@ -957,6 +976,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFornecedoresRoute: typeof AuthenticatedFornecedoresRoute
   AuthenticatedFuncionariosRoute: typeof AuthenticatedFuncionariosRoute
   AuthenticatedMarcasRoute: typeof AuthenticatedMarcasRoute
+  AuthenticatedMotoboyRoute: typeof AuthenticatedMotoboyRoute
   AuthenticatedPdvRoute: typeof AuthenticatedPdvRoute
   AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRoute
   AuthenticatedEstoqueEntradaRoute: typeof AuthenticatedEstoqueEntradaRoute
@@ -998,6 +1018,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFornecedoresRoute: AuthenticatedFornecedoresRoute,
   AuthenticatedFuncionariosRoute: AuthenticatedFuncionariosRoute,
   AuthenticatedMarcasRoute: AuthenticatedMarcasRoute,
+  AuthenticatedMotoboyRoute: AuthenticatedMotoboyRoute,
   AuthenticatedPdvRoute: AuthenticatedPdvRoute,
   AuthenticatedClientesIdRoute: AuthenticatedClientesIdRoute,
   AuthenticatedEstoqueEntradaRoute: AuthenticatedEstoqueEntradaRoute,
