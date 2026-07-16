@@ -385,4 +385,3 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
 }
 
 // Keep NAV_GROUPS export referenced to avoid unused import warning in strict mode.
-void NAV_GROUPS;
