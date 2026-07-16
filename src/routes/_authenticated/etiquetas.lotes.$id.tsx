@@ -136,9 +136,18 @@ function LabelBatchPage() {
     return { totalOriginal, totalPrinted, totalReserved, totalReprinted, totalPending, selected };
   }, [items.data, qtyMap]);
 
+  // Relógio para reavaliar expiração da tentativa preparada sem precisar de refetch
+  const [nowTs, setNowTs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowTs(Date.now()), 15000);
+    return () => clearInterval(id);
+  }, []);
+
   const activePrepared = useMemo(() => {
-    return (events.data ?? []).find((e) => e.status === "prepared" && (!e.expires_at || new Date(e.expires_at) > new Date()));
-  }, [events.data]);
+    return (events.data ?? []).find(
+      (e) => e.status === "prepared" && !!e.expires_at && new Date(e.expires_at).getTime() > nowTs,
+    );
+  }, [events.data, nowTs]);
 
   // Estado do fluxo de impressão
   const [prepared, setPrepared] = useState<PreparedEvent | null>(null);
