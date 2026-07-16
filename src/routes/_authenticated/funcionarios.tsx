@@ -177,8 +177,10 @@ function Funcionarios() {
             <SelectContent>
               <SelectItem value="all">Todas as situações</SelectItem>
               <SelectItem value="ativo">Ativo</SelectItem>
+              <SelectItem value="convite_pendente">Convite pendente</SelectItem>
               <SelectItem value="bloqueado">Bloqueado</SelectItem>
-              <SelectItem value="inativo">Acesso removido</SelectItem>
+              <SelectItem value="acesso_removido">Acesso removido</SelectItem>
+              <SelectItem value="inativo">Inativo</SelectItem>
             </SelectContent>
           </Select>
           <Select value={roleFilter} onValueChange={setRoleFilter}>
