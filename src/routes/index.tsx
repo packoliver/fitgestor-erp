@@ -114,25 +114,9 @@ function Hero() {
           <div aria-hidden className="pointer-events-none absolute -inset-10 rounded-[40px] bg-[radial-gradient(circle_at_50%_40%,rgba(139,92,246,0.35),transparent_60%)] blur-2xl" />
           <div className="relative">
             <HeroMockup />
-            {/* Cards flutuantes Liquid Glass */}
-            <FloatingChip
-              className="absolute -left-6 top-10 hidden md:flex"
-              label="Vendas do dia"
-              value="R$ 4.820"
-              accent="+12%"
-            />
-            <FloatingChip
-              className="absolute -right-6 top-1/2 hidden -translate-y-1/2 md:flex"
-              label="Entregas em rota"
-              value="14"
-              accent="3 concluídas"
-            />
-            <FloatingChip
-              className="absolute -bottom-6 left-8 hidden md:flex"
-              label="Pós-venda"
-              value="6"
-              accent="pendentes"
-            />
+          </div>
+        </div>
+
           </div>
         </div>
       </div>
