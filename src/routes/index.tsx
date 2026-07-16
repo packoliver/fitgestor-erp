@@ -23,7 +23,7 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="dark min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-foreground">
+    <div className="dark fit-aurora min-h-screen text-foreground selection:bg-primary/30 selection:text-foreground">
       <SiteHeader />
       <main>
         <Hero />
