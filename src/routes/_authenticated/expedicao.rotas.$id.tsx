@@ -10,13 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   ArrowLeft, ArrowDown, ArrowUp, ExternalLink, MapPin, MessageCircle, Truck,
-  PlayCircle, CheckCircle2, Loader2, Copy,
+  CheckCircle2, Loader2, Copy, Plus, XCircle,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import {
   ROUTE_STATUS_LABEL, SHIPMENT_STATUS_LABEL, formatAddress, mapsUrl, waUrl,
   statusVariant, DEFAULT_WHATSAPP_TEMPLATE, renderTemplate,
 } from "@/lib/shipping";
+import { AddShipmentToRouteDialog, CancelRouteDialog } from "@/components/shipping/route-dialogs";
 
 const money = (v: any) => Number(v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
