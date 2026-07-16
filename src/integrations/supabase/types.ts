@@ -1195,6 +1195,7 @@ export type Database = {
       }
       goods_receipt_drafts: {
         Row: {
+          client_request_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -1212,6 +1213,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          client_request_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -1229,6 +1231,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          client_request_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
