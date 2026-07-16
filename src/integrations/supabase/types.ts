@@ -2089,6 +2089,7 @@ export type Database = {
           review_required: boolean
           sales_channels: Json
           template_id: string | null
+          timezone: string
           trigger_type: Database["public"]["Enums"]["post_sale_trigger"]
           updated_at: string
           updated_by: string | null
@@ -2119,6 +2120,7 @@ export type Database = {
           review_required?: boolean
           sales_channels?: Json
           template_id?: string | null
+          timezone?: string
           trigger_type?: Database["public"]["Enums"]["post_sale_trigger"]
           updated_at?: string
           updated_by?: string | null
@@ -2149,6 +2151,7 @@ export type Database = {
           review_required?: boolean
           sales_channels?: Json
           template_id?: string | null
+          timezone?: string
           trigger_type?: Database["public"]["Enums"]["post_sale_trigger"]
           updated_at?: string
           updated_by?: string | null
@@ -2250,11 +2253,15 @@ export type Database = {
           opened_at: string | null
           opted_out_at: string | null
           organization_id: string
+          original_message: string | null
           phone: string | null
           post_sale_type: Database["public"]["Enums"]["post_sale_type"]
           recipient_name: string | null
           rendered_message: string
           responsible_user_id: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           route_id: string | null
           rule_id: string | null
           sale_id: string
@@ -2265,6 +2272,7 @@ export type Database = {
           source: Database["public"]["Enums"]["post_sale_source"]
           status: Database["public"]["Enums"]["post_sale_status"]
           template_id: string | null
+          trigger_event: string | null
           updated_at: string
         }
         Insert: {
@@ -2280,11 +2288,15 @@ export type Database = {
           opened_at?: string | null
           opted_out_at?: string | null
           organization_id: string
+          original_message?: string | null
           phone?: string | null
           post_sale_type: Database["public"]["Enums"]["post_sale_type"]
           recipient_name?: string | null
           rendered_message: string
           responsible_user_id?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           route_id?: string | null
           rule_id?: string | null
           sale_id: string
@@ -2295,6 +2307,7 @@ export type Database = {
           source?: Database["public"]["Enums"]["post_sale_source"]
           status?: Database["public"]["Enums"]["post_sale_status"]
           template_id?: string | null
+          trigger_event?: string | null
           updated_at?: string
         }
         Update: {
@@ -2310,11 +2323,15 @@ export type Database = {
           opened_at?: string | null
           opted_out_at?: string | null
           organization_id?: string
+          original_message?: string | null
           phone?: string | null
           post_sale_type?: Database["public"]["Enums"]["post_sale_type"]
           recipient_name?: string | null
           rendered_message?: string
           responsible_user_id?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           route_id?: string | null
           rule_id?: string | null
           sale_id?: string
@@ -2325,6 +2342,7 @@ export type Database = {
           source?: Database["public"]["Enums"]["post_sale_source"]
           status?: Database["public"]["Enums"]["post_sale_status"]
           template_id?: string | null
+          trigger_event?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -3899,6 +3917,14 @@ export type Database = {
       _next_route_number: { Args: { _org: string }; Returns: number }
       _next_shipment_number: { Args: { _org: string }; Returns: number }
       _org_admin_count: { Args: { _org: string }; Returns: number }
+      _post_sale_calc_scheduled: {
+        Args: {
+          _base: string
+          _delay: number
+          _unit: Database["public"]["Enums"]["post_sale_delay_unit"]
+        }
+        Returns: string
+      }
       _post_sale_get_task: {
         Args: { _task_id: string }
         Returns: {
@@ -3914,11 +3940,15 @@ export type Database = {
           opened_at: string | null
           opted_out_at: string | null
           organization_id: string
+          original_message: string | null
           phone: string | null
           post_sale_type: Database["public"]["Enums"]["post_sale_type"]
           recipient_name: string | null
           rendered_message: string
           responsible_user_id: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           route_id: string | null
           rule_id: string | null
           sale_id: string
@@ -3929,6 +3959,7 @@ export type Database = {
           source: Database["public"]["Enums"]["post_sale_source"]
           status: Database["public"]["Enums"]["post_sale_status"]
           template_id: string | null
+          trigger_event: string | null
           updated_at: string
         }
         SetofOptions: {
@@ -3975,6 +4006,10 @@ export type Database = {
           _to: Database["public"]["Enums"]["shipment_status"]
         }
         Returns: undefined
+      }
+      apply_post_sale_rules_for_event: {
+        Args: { _event: string; _sale_id: string }
+        Returns: Json
       }
       apply_stock_movement: {
         Args: {
@@ -4243,9 +4278,21 @@ export type Database = {
         Args: { _reason?: string; _task_id: string }
         Returns: undefined
       }
+      post_sale_preview_message: {
+        Args: { _sale_id: string; _template: string }
+        Returns: Json
+      }
       post_sale_queue_stats: { Args: never; Returns: Json }
       post_sale_reschedule: {
         Args: { _new_at: string; _task_id: string }
+        Returns: undefined
+      }
+      post_sale_review_approve: {
+        Args: { _edited_message?: string; _task_id: string }
+        Returns: undefined
+      }
+      post_sale_review_reject: {
+        Args: { _reason?: string; _task_id: string }
         Returns: undefined
       }
       post_sale_save_rule: {
@@ -4261,6 +4308,10 @@ export type Database = {
         Returns: undefined
       }
       post_sale_upsert_settings: { Args: { _data: Json }; Returns: undefined }
+      post_sale_validate_placeholders: {
+        Args: { _template: string }
+        Returns: Json
+      }
       prepare_goods_receipt_label_print: {
         Args: {
           _client_request_id: string
@@ -4271,6 +4322,7 @@ export type Database = {
         }
         Returns: Json
       }
+      process_due_post_sale_rules: { Args: never; Returns: Json }
       record_payment_refund: {
         Args: { _amount: number; _payment_id: string; _reason?: string }
         Returns: undefined
