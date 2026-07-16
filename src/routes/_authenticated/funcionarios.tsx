@@ -136,7 +136,7 @@ function Funcionarios() {
     if (roleFilter !== "all" && !p.roles.some((r) => r.id === roleFilter)) return false;
     if (search) {
       const t = search.toLowerCase();
-      if (!(p.full_name ?? "").toLowerCase().includes(t) && !p.email.toLowerCase().includes(t)) return false;
+      if (!(p.full_name ?? "").toLowerCase().includes(t) && !(p.email ?? "").toLowerCase().includes(t)) return false;
     }
     return true;
   });
@@ -147,7 +147,7 @@ function Funcionarios() {
         <PageHeader
           title="Funcionários"
           description="Convide, atribua cargos e gerencie o acesso dos usuários da sua loja."
-          action={
+          actions={
             <Button onClick={() => setInviteOpen(true)}>
               <UserPlus className="h-4 w-4 mr-2" /> Convidar funcionário
             </Button>
@@ -232,7 +232,7 @@ function Funcionarios() {
                           {p.status === "ativo" && (
                             <DropdownMenuItem onClick={() => setStatus.mutate({ id: p.id, status: "bloqueado" })}>Bloquear</DropdownMenuItem>
                           )}
-                          <DropdownMenuItem onClick={() => doResend.mutate(p.email)}>Reenviar convite</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => p.email && doResend.mutate(p.email)}>Reenviar convite</DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive"
