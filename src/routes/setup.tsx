@@ -51,7 +51,7 @@ function SetupPage() {
       toast.error("Não foi possível criar a loja", { description: error.message });
       return;
     }
-    toast.success("Loja criada! Bem-vinda ao sistema QSF.");
+    toast.success("Loja criada! Bem-vinda ao FitGestor.");
     navigate({ to: "/dashboard" });
   }
 
