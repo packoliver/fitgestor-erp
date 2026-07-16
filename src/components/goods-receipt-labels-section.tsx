@@ -8,14 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Tag, ExternalLink } from "lucide-react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { formatDateTime, SIZE_SINGLE, SIZE_SINGLE_LABEL } from "@/lib/erp";
 
@@ -25,8 +19,14 @@ type Preview = {
   color: string | null;
   size: string;
   sku: string | null;
-  barcode: string | null;
   quantity: number;
+};
+
+type JobItem = {
+  quantity: number;
+  printed_quantity: number;
+  reprinted_quantity: number;
+  reserved_quantity: number;
 };
 
 export function GoodsReceiptLabelsSection({ draftId }: { draftId: string }) {
@@ -34,13 +34,12 @@ export function GoodsReceiptLabelsSection({ draftId }: { draftId: string }) {
   const [reviewOpen, setReviewOpen] = useState(false);
   const clientRequestIdRef = useRef<string>("");
 
-  // Existing original batch (if any)
-  const existingJob = useQuery({
+  const jobQuery = useQuery({
     queryKey: ["labels-job-by-receipt", draftId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("label_print_jobs")
-        .select("id, status, total_labels, created_at, user_id")
+        .select("id, status, total_labels, created_at, completed_at, items:label_print_items(quantity, printed_quantity, reprinted_quantity, reserved_quantity)")
         .eq("goods_receipt_draft_id", draftId)
         .eq("origin", "goods_receipt")
         .maybeSingle();
@@ -49,9 +48,9 @@ export function GoodsReceiptLabelsSection({ draftId }: { draftId: string }) {
     },
   });
 
-  // Preview computed from confirmed items + variants
   const preview = useQuery({
     queryKey: ["labels-preview", draftId],
+    enabled: !jobQuery.data,
     queryFn: async () => {
       const { data: items, error } = await supabase
         .from("goods_receipt_draft_items")
@@ -73,7 +72,7 @@ export function GoodsReceiptLabelsSection({ draftId }: { draftId: string }) {
       if (ids.length === 0) return [] as Preview[];
       const { data: variants, error: e2 } = await supabase
         .from("product_variants")
-        .select("id, size, sku, barcode, product:products!inner(name, color)")
+        .select("id, size, sku, product:products!inner(name, color)")
         .in("id", ids);
       if (e2) throw e2;
       const rows: Preview[] = (variants ?? []).map((v) => ({
@@ -82,30 +81,29 @@ export function GoodsReceiptLabelsSection({ draftId }: { draftId: string }) {
         color: v.product?.color ?? null,
         size: v.size,
         sku: v.sku,
-        barcode: v.barcode || v.sku || null,
         quantity: agg.get(v.id) ?? 0,
       }));
-      rows.sort((a, b) =>
-        a.product_name.localeCompare(b.product_name) || a.size.localeCompare(b.size),
-      );
+      rows.sort((a, b) => a.product_name.localeCompare(b.product_name) || a.size.localeCompare(b.size));
       return rows;
     },
   });
 
-  const total = useMemo(
-    () => (preview.data ?? []).reduce((s, r) => s + r.quantity, 0),
-    [preview.data],
-  );
-  const missingSku = useMemo(
-    () => (preview.data ?? []).filter((r) => !r.sku || r.sku.trim() === ""),
-    [preview.data],
-  );
+  const previewTotal = useMemo(() => (preview.data ?? []).reduce((s, r) => s + r.quantity, 0), [preview.data]);
+  const missingSku = useMemo(() => (preview.data ?? []).filter((r) => !r.sku || r.sku.trim() === ""), [preview.data]);
+
+  const jobTotals = useMemo(() => {
+    const items = (jobQuery.data?.items ?? []) as JobItem[];
+    const original = items.reduce((s, i) => s + i.quantity, 0);
+    const printed = items.reduce((s, i) => s + i.printed_quantity, 0);
+    const reserved = items.reduce((s, i) => s + i.reserved_quantity, 0);
+    const reprinted = items.reduce((s, i) => s + i.reprinted_quantity, 0);
+    const pending = items.reduce((s, i) => s + Math.max(0, i.quantity - i.printed_quantity - i.reserved_quantity), 0);
+    return { original, printed, reserved, reprinted, pending };
+  }, [jobQuery.data]);
 
   const generate = useMutation({
     mutationFn: async () => {
-      if (!clientRequestIdRef.current) {
-        clientRequestIdRef.current = crypto.randomUUID();
-      }
+      if (!clientRequestIdRef.current) clientRequestIdRef.current = crypto.randomUUID();
       const { data, error } = await supabase.rpc("generate_goods_receipt_labels", {
         _receipt_id: draftId,
         _client_request_id: clientRequestIdRef.current,
@@ -116,20 +114,21 @@ export function GoodsReceiptLabelsSection({ draftId }: { draftId: string }) {
     onSuccess: async (data) => {
       setReviewOpen(false);
       clientRequestIdRef.current = "";
-      if (data.already_existed) {
-        toast.info("Lote de etiquetas já existia. Abrindo o lote atual.");
-      } else {
-        toast.success(`${data.total_labels} etiqueta(s) gerada(s).`);
-      }
+      if (data.already_existed) toast.info("Lote de etiquetas já existia. Abrindo o lote atual.");
+      else toast.success(`${data.total_labels} etiqueta(s) gerada(s).`);
       await qc.invalidateQueries({ queryKey: ["labels-job-by-receipt", draftId] });
     },
-    onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : "Não foi possível gerar as etiquetas.";
-      toast.error(msg);
-    },
+    onError: (err: unknown) => toast.error(err instanceof Error ? err.message : "Não foi possível gerar as etiquetas."),
   });
 
-  const job = existingJob.data;
+  const job = jobQuery.data;
+  const statusBadge = job?.status === "impresso"
+    ? { label: "Impresso", variant: "default" as const }
+    : job?.status === "parcial"
+    ? { label: "Impressão parcial", variant: "secondary" as const }
+    : job
+    ? { label: "Aguardando impressão", variant: "outline" as const }
+    : { label: "Etiquetas pendentes", variant: "outline" as const };
 
   return (
     <Card>
@@ -137,96 +136,80 @@ export function GoodsReceiptLabelsSection({ draftId }: { draftId: string }) {
         <CardTitle className="flex items-center gap-2">
           <Tag className="h-4 w-4" /> Etiquetas do recebimento
         </CardTitle>
-        {job ? (
-          <Badge variant="secondary">Aguardando impressão</Badge>
-        ) : (
-          <Badge variant="outline">Etiquetas pendentes</Badge>
-        )}
+        <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
-        {preview.isLoading ? (
+        {job ? (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              <MiniStat label="Original" value={jobTotals.original} />
+              <MiniStat label="Impresso" value={jobTotals.printed} />
+              <MiniStat label="Reservado" value={jobTotals.reserved} />
+              <MiniStat label="Pendente" value={jobTotals.pending} />
+              <MiniStat label="Reimpresso" value={jobTotals.reprinted} />
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Lote <span className="font-mono">{job.id.slice(0, 8)}</span> · gerado em {formatDateTime(job.created_at)}
+              {job.completed_at && <> · concluído em {formatDateTime(job.completed_at)}</>}
+            </div>
+            <div className="flex justify-end">
+              <Button asChild size="sm">
+                <Link to="/etiquetas/lotes/$id" params={{ id: job.id }}>
+                  <ExternalLink className="h-4 w-4 mr-1" /> Abrir lote de etiquetas
+                </Link>
+              </Button>
+            </div>
+          </>
+        ) : preview.isLoading ? (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Calculando etiquetas…
           </div>
         ) : (
           <>
             <div className="text-muted-foreground">
-              Total de peças recebidas: <strong className="text-foreground">{total}</strong> · Uma
-              etiqueta por peça.
+              Total de peças recebidas: <strong className="text-foreground">{previewTotal}</strong> · Uma etiqueta por peça.
             </div>
             <div className="rounded border divide-y">
               {(preview.data ?? []).map((r) => (
-                <div
-                  key={r.variant_id}
-                  className="flex items-center justify-between px-3 py-2"
-                >
+                <div key={r.variant_id} className="flex items-center justify-between px-3 py-2">
                   <div className="min-w-0">
                     <div className="font-medium truncate">{r.product_name}</div>
                     <div className="text-xs text-muted-foreground truncate">
                       {r.color ? `${r.color} · ` : ""}
                       {r.size === SIZE_SINGLE ? SIZE_SINGLE_LABEL : r.size}
-                      {" · "}
-                      SKU {r.sku ?? "—"}
+                      {" · "}SKU {r.sku ?? "—"}
                     </div>
                   </div>
                   <div className="text-sm tabular-nums shrink-0 pl-3">×{r.quantity}</div>
                 </div>
               ))}
               {(preview.data ?? []).length === 0 && (
-                <div className="px-3 py-2 text-muted-foreground">
-                  Nenhuma peça positiva encontrada.
-                </div>
+                <div className="px-3 py-2 text-muted-foreground">Nenhuma peça positiva encontrada.</div>
               )}
             </div>
 
-            {missingSku.length > 0 && !job && (
+            {missingSku.length > 0 && (
               <div className="rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
-                As variantes abaixo não possuem SKU e precisam ser corrigidas antes de gerar as
-                etiquetas:
+                As variantes abaixo não possuem SKU e precisam ser corrigidas antes de gerar as etiquetas:
                 <ul className="list-disc pl-4 mt-1">
                   {missingSku.map((r) => (
-                    <li key={r.variant_id}>
-                      {r.product_name} — {r.size === SIZE_SINGLE ? SIZE_SINGLE_LABEL : r.size}
-                    </li>
+                    <li key={r.variant_id}>{r.product_name} — {r.size === SIZE_SINGLE ? SIZE_SINGLE_LABEL : r.size}</li>
                   ))}
                 </ul>
               </div>
             )}
 
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              {job ? (
-                <>
-                  <div className="text-xs text-muted-foreground">
-                    Lote <span className="font-mono">{job.id.slice(0, 8)}</span> ·{" "}
-                    {job.total_labels} etiqueta(s) · gerado em{" "}
-                    {formatDateTime(job.created_at)}.
-                  </div>
-                  <Button asChild size="sm" className="ml-auto">
-                    <Link
-                      to="/etiquetas/lotes/$id"
-                      params={{ id: job.id }}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-1" /> Abrir etiquetas
-                    </Link>
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    if (!clientRequestIdRef.current) {
-                      clientRequestIdRef.current = crypto.randomUUID();
-                    }
-                    setReviewOpen(true);
-                  }}
-                  disabled={
-                    total === 0 || missingSku.length > 0 || preview.isLoading
-                  }
-                  className="ml-auto"
-                >
-                  <Tag className="h-4 w-4 mr-1" /> Gerar etiquetas
-                </Button>
-              )}
+            <div className="flex justify-end pt-1">
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (!clientRequestIdRef.current) clientRequestIdRef.current = crypto.randomUUID();
+                  setReviewOpen(true);
+                }}
+                disabled={previewTotal === 0 || missingSku.length > 0 || preview.isLoading}
+              >
+                <Tag className="h-4 w-4 mr-1" /> Gerar etiquetas
+              </Button>
             </div>
           </>
         )}
@@ -235,28 +218,15 @@ export function GoodsReceiptLabelsSection({ draftId }: { draftId: string }) {
       <AlertDialog open={reviewOpen} onOpenChange={setReviewOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Gerar {total} etiquetas para este recebimento?</AlertDialogTitle>
+            <AlertDialogTitle>Gerar {previewTotal} etiquetas para este recebimento?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <div>
-                  Um lote será criado no sistema de etiquetas. A quantidade é calculada pelo
-                  backend a partir do recebimento confirmado.
-                </div>
-                <div className="max-h-56 overflow-auto rounded border divide-y text-xs">
-                  {(preview.data ?? []).map((r) => (
-                    <div key={r.variant_id} className="flex justify-between px-2 py-1">
-                      <span className="truncate pr-2">
-                        {r.product_name} · {r.color ?? "—"} ·{" "}
-                        {r.size === SIZE_SINGLE ? SIZE_SINGLE_LABEL : r.size} · SKU {r.sku}
-                      </span>
-                      <span className="tabular-nums">×{r.quantity}</span>
-                    </div>
-                  ))}
+                  Um lote será criado no sistema de etiquetas. A quantidade é calculada pelo backend a partir do recebimento confirmado.
+                  A impressão em si é feita na página do lote e exige confirmação manual do operador.
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  O código de barras codifica sempre o <strong>SKU</strong> da variação em
-                  formato Code 128 (mesmo texto exibido abaixo). Nenhuma impressão será iniciada
-                  nesta etapa.
+                  O código de barras codifica o <strong>SKU</strong> em Code 128. Nenhuma impressão será iniciada nesta etapa.
                 </div>
               </div>
             </AlertDialogDescription>
@@ -265,22 +235,22 @@ export function GoodsReceiptLabelsSection({ draftId }: { draftId: string }) {
             <AlertDialogCancel disabled={generate.isPending}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               disabled={generate.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                generate.mutate();
-              }}
+              onClick={(e) => { e.preventDefault(); generate.mutate(); }}
             >
-              {generate.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Gerando…
-                </>
-              ) : (
-                <>Confirmar geração</>
-              )}
+              {generate.isPending ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Gerando…</> : "Confirmar geração"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </Card>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded border px-2 py-1">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-lg font-semibold tabular-nums">{value}</div>
+    </div>
   );
 }
