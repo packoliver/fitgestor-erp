@@ -3557,6 +3557,11 @@ export type Database = {
         Args: { _job_id: string }
         Returns: string
       }
+      _sale_effective_paid: { Args: { _sale_id: string }; Returns: number }
+      _sale_effective_payments_json: {
+        Args: { _sale_id: string }
+        Returns: Json
+      }
       _shipment_log: {
         Args: {
           _event: string
@@ -3566,6 +3571,10 @@ export type Database = {
           _shipment_id: string
           _to: Database["public"]["Enums"]["shipment_status"]
         }
+        Returns: undefined
+      }
+      add_shipment_to_route: {
+        Args: { _route_id: string; _shipment_id: string }
         Returns: undefined
       }
       advance_shipment_status: {
@@ -3700,6 +3709,18 @@ export type Database = {
           total_stops: number
         }[]
       }
+      mark_shipment_absent: {
+        Args: { _notes: string; _shipment_id: string }
+        Returns: undefined
+      }
+      mark_shipment_delivered: {
+        Args: { _notes?: string; _shipment_id: string }
+        Returns: undefined
+      }
+      mark_shipment_failed: {
+        Args: { _notes: string; _shipment_id: string }
+        Returns: undefined
+      }
       next_business_day: {
         Args: { _from: string; _org: string }
         Returns: string
@@ -3721,6 +3742,10 @@ export type Database = {
         }
         Returns: Json
       }
+      refresh_shipment_payment_summary: {
+        Args: { _shipment_id: string }
+        Returns: undefined
+      }
       register_cash_movement: {
         Args: {
           _amount: number
@@ -3730,9 +3755,17 @@ export type Database = {
         }
         Returns: string
       }
+      remove_shipment_from_route: {
+        Args: { _shipment_id: string }
+        Returns: undefined
+      }
+      reorder_route_stops: {
+        Args: { _ordered_shipment_ids: string[]; _route_id: string }
+        Returns: undefined
+      }
       report_exchanges: { Args: { _filters: Json }; Returns: Json }
       reschedule_shipment: {
-        Args: { _new_date: string; _reason: string; _shipment_id: string }
+        Args: { _new_date: string; _notes: string; _shipment_id: string }
         Returns: undefined
       }
       resolve_goods_receipt_scan: { Args: { _code: string }; Returns: Json }
@@ -3753,6 +3786,7 @@ export type Database = {
         Args: { _active: boolean; _id: string }
         Returns: undefined
       }
+      start_route: { Args: { _route_id: string }; Returns: undefined }
       update_courier: {
         Args: {
           _document?: string
