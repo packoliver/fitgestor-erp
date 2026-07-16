@@ -84,7 +84,8 @@ function CargosPage() {
   }, {});
 
   return (
-    <div>
+    <RequirePermission code="role.manage"><div>
+
       <PageHeader title="Cargos e permissões" description="Crie cargos personalizados e defina o que cada um pode fazer." actions={
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />Novo cargo</Button></DialogTrigger>
