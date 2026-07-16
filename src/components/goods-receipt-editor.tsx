@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Minus, Trash2, Search, Save, Package } from "lucide-react";
+import { Loader2, Plus, Minus, Trash2, Search, Save, Package, CheckCircle2, Lock } from "lucide-react";
 import { formatDateTime } from "@/lib/erp";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 type Mode = "restock" | "new_variant" | "new_product";
 
