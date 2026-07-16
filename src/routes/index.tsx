@@ -28,33 +28,10 @@ function Landing() {
       <main>
         <Hero />
         <OperationOverview />
-        <ModuleSection index="01" eyebrow="Recebimento"
-          title="Da chegada da mercadoria ao estoque, em um único fluxo."
-          body="Escaneie o código de barras, confira a quantidade e feche o recebimento com histórico completo, controle de concorrência e etiquetas prontas para impressão."
-          reverse={false} mockup={<ReceivingMockup />} />
-        <ModuleSection index="02" eyebrow="Estoque"
-          title="Cada cor um produto. Cada tamanho uma variação."
-          body="Grade de tamanhos, SKU próprio por variação, saldo em tempo real, alertas de baixa e auditoria de cada movimentação."
-          reverse mockup={<StockMockup />} />
-        <ModuleSection index="03" eyebrow="Etiquetas"
-          title="CODE128 impresso no seu ritmo."
-          body="Gere lotes de etiquetas em PDF com o seu próprio SKU, sem retrabalho, prontos para a impressora térmica."
-          reverse={false} mockup={<LabelsMockup />} />
-        <ModuleSection index="04" eyebrow="PDV"
-          title="Venda pelo balcão sem perder o controle."
-          body="Ponto de venda direto ao ponto: leitor, pagamento, recibo e baixa de estoque instantânea, com permissões por cargo."
-          reverse mockup={<PdvMockup />} />
-        <ModuleSection index="05" eyebrow="Trocas e crédito"
-          title="Trocas organizadas, vale-crédito rastreável."
-          body="Registre trocas com origem, motivo e crédito por cliente. Consulta e uso do saldo sem planilhas paralelas."
-          reverse={false} mockup={<ExchangeMockup />} />
-        <ModuleSection index="06" eyebrow="Relatórios"
-          title="Números claros para decidir sem achismo."
-          body="Vendas por período, produtos parados, curva de estoque, trocas e créditos — a operação em uma única leitura."
-          reverse mockup={<ReportsMockup />} />
         <ClosingCta />
       </main>
       <SiteFooter />
+
     </div>
   );
 }
@@ -137,31 +114,14 @@ function Hero() {
           <div aria-hidden className="pointer-events-none absolute -inset-10 rounded-[40px] bg-[radial-gradient(circle_at_50%_40%,rgba(139,92,246,0.35),transparent_60%)] blur-2xl" />
           <div className="relative">
             <HeroMockup />
-            {/* Cards flutuantes Liquid Glass */}
-            <FloatingChip
-              className="absolute -left-6 top-10 hidden md:flex"
-              label="Vendas do dia"
-              value="R$ 4.820"
-              accent="+12%"
-            />
-            <FloatingChip
-              className="absolute -right-6 top-1/2 hidden -translate-y-1/2 md:flex"
-              label="Entregas em rota"
-              value="14"
-              accent="3 concluídas"
-            />
-            <FloatingChip
-              className="absolute -bottom-6 left-8 hidden md:flex"
-              label="Pós-venda"
-              value="6"
-              accent="pendentes"
-            />
           </div>
         </div>
       </div>
     </section>
   );
 }
+
+
 
 function FloatingChip({ className, label, value, accent }: { className?: string; label: string; value: string; accent: string }) {
   return (
