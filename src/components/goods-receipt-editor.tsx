@@ -482,37 +482,66 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         </CardContent>
       </Card>
 
-      <ProductSearchCard
-        onPickRestock={(p) => addItemFromProduct("restock", p)}
-        onPickNewVariant={(p) => addItemFromProduct("new_variant", p)}
-        onPickBrandNew={addBrandNewProduct}
-        disabled={readOnly}
-        searchRef={searchRef}
-      />
+      <Tabs defaultValue="grid" className="w-full">
+        <TabsList>
+          <TabsTrigger value="grid">Lançamento por grade</TabsTrigger>
+          <TabsTrigger value="scanner" disabled={readOnly}>Recebimento por leitor</TabsTrigger>
+        </TabsList>
 
-      {items.length === 0 ? (
-        <Card><CardContent className="py-10 text-center text-muted-foreground">
-          Nenhum produto adicionado ainda. Use a busca acima para localizar um produto existente ou cadastre um totalmente novo.
-        </CardContent></Card>
-      ) : (
-        <div className="space-y-3">
-          {items.map((it) => (
-            <ItemBlock
-              key={it.local_id}
-              item={it}
-              categories={categories.data ?? []}
-              brands={brands.data ?? []}
-              suppliers={suppliers.data ?? []}
-              disabled={readOnly}
-              onRemove={() => removeItem(it.local_id)}
-              onUpdateCell={(idx, patch) => updateCell(it.local_id, idx, patch)}
-              onAddSize={(sz) => addCellRow(it.local_id, sz)}
-              onUpdateNewProduct={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_product_data: { ...(i.new_product_data ?? { name: "" }), ...patch } } : i)); markDirty(); }}
-              onUpdateNewVariant={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_variant_data: { ...(i.new_variant_data ?? { size: "" }), ...patch } } : i)); markDirty(); }}
-            />
-          ))}
-        </div>
-      )}
+        <TabsContent value="grid" className="space-y-3 mt-3">
+          <ProductSearchCard
+            onPickRestock={(p) => addItemFromProduct("restock", p)}
+            onPickNewVariant={(p) => addItemFromProduct("new_variant", p)}
+            onPickBrandNew={addBrandNewProduct}
+            disabled={readOnly}
+            searchRef={searchRef}
+          />
+
+          {items.length === 0 ? (
+            <Card><CardContent className="py-10 text-center text-muted-foreground">
+              Nenhum produto adicionado ainda. Use a busca acima para localizar um produto existente ou cadastre um totalmente novo.
+            </CardContent></Card>
+          ) : (
+            <div className="space-y-3">
+              {items.map((it) => (
+                <ItemBlock
+                  key={it.local_id}
+                  item={it}
+                  categories={categories.data ?? []}
+                  brands={brands.data ?? []}
+                  suppliers={suppliers.data ?? []}
+                  disabled={readOnly}
+                  onRemove={() => removeItem(it.local_id)}
+                  onUpdateCell={(idx, patch) => updateCell(it.local_id, idx, patch)}
+                  onAddSize={(sz) => addCellRow(it.local_id, sz)}
+                  onUpdateNewProduct={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_product_data: { ...(i.new_product_data ?? { name: "" }), ...patch } } : i)); markDirty(); }}
+                  onUpdateNewVariant={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_variant_data: { ...(i.new_variant_data ?? { size: "" }), ...patch } } : i)); markDirty(); }}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="scanner" className="mt-3">
+          <ReceiptScannerPanel
+            disabled={readOnly}
+            onIncrement={incrementRestockByVariant}
+            onDecrement={decrementRestockByVariant}
+            onSaveDraft={() => save.mutate()}
+            saving={save.isPending}
+            dirty={dirty}
+            totalPieces={totals.qty}
+            distinctVariantsCount={distinctScannedVariants}
+          />
+          {items.length > 0 && (
+            <div className="mt-3 text-xs text-muted-foreground">
+              O modo leitor edita o mesmo rascunho. Volte à aba <strong>Lançamento por grade</strong> para editar quantidades manualmente,
+              remover blocos ou cadastrar produtos novos e novas variações.
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
 
       <Card className="sticky bottom-0 border-t-2">
         <CardContent className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 py-4">
