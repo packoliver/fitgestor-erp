@@ -236,6 +236,15 @@ function VendaDetalhe() {
           }}
         />
       </PrintDialog>
+
+      {deliveryOpen && (
+        <PostSaleDeliveryDialog
+          saleId={sale.id}
+          saleNumber={sale.sale_number}
+          clientId={sale.client_id}
+          onClose={() => { setDeliveryOpen(false); delivery.refetch(); }}
+        />
+      )}
     </div>
   );
 }
