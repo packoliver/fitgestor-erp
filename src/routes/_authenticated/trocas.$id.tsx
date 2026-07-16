@@ -11,8 +11,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from "@/components/ui/textarea";
 import { money, PAYMENT_LABELS } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
-import { Printer, Undo2 } from "lucide-react";
+import { Printer, Undo2, Receipt } from "lucide-react";
 import { toast } from "sonner";
+import { PrintDialog } from "@/components/print/print-dialog";
+import { ExchangeReceipt } from "@/components/print/exchange-receipt";
+import { VoucherReceipt } from "@/components/print/voucher-receipt";
 
 export const Route = createFileRoute("/_authenticated/trocas/$id")({
   component: TrocaDetalhe,
@@ -20,6 +23,7 @@ export const Route = createFileRoute("/_authenticated/trocas/$id")({
 
 function TrocaDetalhe() {
   const { id } = Route.useParams();
+
   const qc = useQueryClient();
   const [reverseReason, setReverseReason] = useState("");
   const [reverseOpen, setReverseOpen] = useState(false);
