@@ -89,10 +89,30 @@ export function formatPhoneDisplay(raw: string | null | undefined): string {
 export const POST_SALE_PLACEHOLDERS: { key: string; label: string }[] = [
   { key: "{{cliente}}", label: "Nome completo" },
   { key: "{{primeiro_nome}}", label: "Primeiro nome" },
+  { key: "{{loja}}", label: "Nome da loja" },
   { key: "{{venda}}", label: "Nº da venda" },
   { key: "{{data_compra}}", label: "Data da compra" },
+  { key: "{{data_saida}}", label: "Data de saída (despacho)" },
+  { key: "{{data_entrega}}", label: "Data de entrega" },
   { key: "{{vendedor}}", label: "Vendedor" },
   { key: "{{produtos}}", label: "Produtos" },
   { key: "{{valor}}", label: "Valor total" },
   { key: "{{canal}}", label: "Canal" },
+  { key: "{{forma_entrega}}", label: "Forma de entrega" },
+  { key: "{{rota}}", label: "Rota" },
+  { key: "{{motoboy}}", label: "Motoboy" },
+  { key: "{{link_site}}", label: "Link do site" },
 ];
+
+export const POST_SALE_KNOWN_PLACEHOLDERS = new Set(
+  POST_SALE_PLACEHOLDERS.map((p) => p.key.replace(/[{}]/g, "")),
+);
+
+/** Extrai placeholders desconhecidos de um template — usar antes de salvar. */
+export function findUnknownPlaceholders(template: string): string[] {
+  const found = new Set<string>();
+  for (const m of template.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)) {
+    if (!POST_SALE_KNOWN_PLACEHOLDERS.has(m[1])) found.add(m[1]);
+  }
+  return Array.from(found);
+}
