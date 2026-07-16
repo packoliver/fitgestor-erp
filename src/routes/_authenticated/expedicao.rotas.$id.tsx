@@ -94,15 +94,17 @@ function RotaDetalhe() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const dispatchMut = useMutation({
+  // Unified action: dispatch + start ("Motoboy saiu para entrega").
+  const dispatchAndStartMut = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc("dispatch_route", { _route_id: id });
+      const { error } = await supabase.rpc("dispatch_and_start_route", { _route_id: id });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Rota despachada. Motoboy em rota."); qc.invalidateQueries(); },
+    onSuccess: () => { toast.success("Motoboy saiu para entrega."); qc.invalidateQueries(); },
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Fallback for legacy "dispatched" routes that never got started.
   const startMut = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.rpc("start_route", { _route_id: id });
