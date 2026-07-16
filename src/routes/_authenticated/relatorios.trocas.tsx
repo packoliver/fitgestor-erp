@@ -96,10 +96,50 @@ function ReportInner() {
   const [draft, setDraft] = useState<Filters>(search);
   const [openFilters, setOpenFilters] = useState(true);
   const [printOpen, setPrintOpen] = useState(false);
+  const [clientLabel, setClientLabel] = useState("");
+  const [operatorLabel, setOperatorLabel] = useState("");
 
   const setSearch = (next: Partial<Filters>) => {
     navigate({ to: "/relatorios/trocas", search: { ...search, ...next } as any, replace: true });
   };
+
+  // Ao entrar com IDs vindos da URL, buscamos os rótulos apenas uma vez.
+  useEffect(() => {
+    if (search.client_id && !clientLabel) {
+      supabase.from("clients").select("full_name, cpf").eq("id", search.client_id).maybeSingle()
+        .then(({ data }) => data && setClientLabel(data.full_name ?? ""));
+    }
+    if (search.operator_id && !operatorLabel) {
+      supabase.from("profiles").select("full_name").eq("id", search.operator_id).maybeSingle()
+        .then(({ data }) => data && setOperatorLabel(data.full_name ?? ""));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.client_id, search.operator_id]);
+
+  const searchClients = useCallback(async (term: string): Promise<EntityOption[]> => {
+    const digits = normalizeDigits(term);
+    let q = supabase.from("clients").select("id, full_name, cpf, phone").is("deleted_at", null).limit(15);
+    q = digits.length >= 3
+      ? q.or(`cpf.ilike.%${digits}%,phone.ilike.%${digits}%`)
+      : q.ilike("full_name", `%${term}%`);
+    const { data } = await q;
+    return (data ?? []).map((c: any) => ({
+      id: c.id,
+      label: c.full_name ?? "(sem nome)",
+      sublabel: [c.cpf, c.phone].filter(Boolean).join(" · "),
+    }));
+  }, []);
+
+  const searchOperators = useCallback(async (term: string): Promise<EntityOption[]> => {
+    const { data } = await supabase.from("profiles").select("id, full_name, email")
+      .ilike("full_name", `%${term}%`).limit(15);
+    return (data ?? []).map((p: any) => ({
+      id: p.id,
+      label: p.full_name ?? p.email ?? "(sem nome)",
+      sublabel: p.email ?? "",
+    }));
+  }, []);
+
 
   const payload = useMemo(() => buildPayload(search), [search]);
 
