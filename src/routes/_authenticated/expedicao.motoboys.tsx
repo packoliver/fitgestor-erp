@@ -10,9 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Power, Search } from "lucide-react";
+import { Plus, Pencil, Power, Search, Link2, Unlink } from "lucide-react";
 import { toast } from "sonner";
 import { RequirePermission } from "@/components/require-permission";
 
