@@ -11,8 +11,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from "@/components/ui/textarea";
 import { money, PAYMENT_LABELS } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
-import { Printer, Undo2 } from "lucide-react";
+import { Printer, Undo2, Receipt } from "lucide-react";
 import { toast } from "sonner";
+import { PrintDialog } from "@/components/print/print-dialog";
+import { ExchangeReceipt } from "@/components/print/exchange-receipt";
+import { VoucherReceipt } from "@/components/print/voucher-receipt";
 
 export const Route = createFileRoute("/_authenticated/trocas/$id")({
   component: TrocaDetalhe,
@@ -20,9 +23,12 @@ export const Route = createFileRoute("/_authenticated/trocas/$id")({
 
 function TrocaDetalhe() {
   const { id } = Route.useParams();
+
   const qc = useQueryClient();
   const [reverseReason, setReverseReason] = useState("");
   const [reverseOpen, setReverseOpen] = useState(false);
+  const [printExOpen, setPrintExOpen] = useState(false);
+  const [printVoucherOpen, setPrintVoucherOpen] = useState(false);
 
   const { data: ex } = useQuery({
     queryKey: ["exchange", id],
@@ -32,6 +38,23 @@ function TrocaDetalhe() {
   const { data: news = [] } = useQuery({ queryKey: ["ex-new", id], queryFn: async () => (await supabase.from("exchange_new_items").select("*").eq("exchange_id", id)).data ?? [] });
   const { data: pays = [] } = useQuery({ queryKey: ["ex-pay", id], queryFn: async () => (await supabase.from("exchange_payments").select("*").eq("exchange_id", id)).data ?? [] });
   const { data: voucher } = useQuery({ queryKey: ["ex-voucher", id], queryFn: async () => (await supabase.from("exchange_vouchers").select("*").eq("issued_from_exchange_id", id).maybeSingle()).data });
+
+  const { data: org } = useQuery({
+    queryKey: ["print-org", ex?.organization_id],
+    enabled: !!ex?.organization_id,
+    queryFn: async () => (await supabase.from("organizations").select("id,name,document,phone,email,logo_url").eq("id", ex!.organization_id).maybeSingle()).data,
+  });
+  const { data: operator } = useQuery({
+    queryKey: ["print-op", ex?.completed_by ?? ex?.created_by],
+    enabled: !!(ex?.completed_by ?? ex?.created_by),
+    queryFn: async () => (await supabase.from("profiles").select("full_name").eq("id", (ex!.completed_by ?? ex!.created_by)!).maybeSingle()).data,
+  });
+  const { data: settings } = useQuery({
+    queryKey: ["print-settings", ex?.organization_id],
+    enabled: !!ex?.organization_id,
+    queryFn: async () => (await supabase.from("exchange_settings").select("receipt_footer_text").eq("organization_id", ex!.organization_id).maybeSingle()).data,
+  });
+
 
   const reverseMutation = useMutation({
     mutationFn: async () => {
@@ -58,7 +81,10 @@ function TrocaDetalhe() {
         title={`Troca #${ex.exchange_number}`}
         description={formatDateTime(ex.completed_at ?? ex.created_at)}
         actions={<>
-          <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
+          <Button variant="outline" onClick={() => setPrintExOpen(true)}><Printer className="mr-2 h-4 w-4" />Comprovante</Button>
+          {voucher && (
+            <Button variant="outline" onClick={() => setPrintVoucherOpen(true)}><Receipt className="mr-2 h-4 w-4" />Imprimir vale</Button>
+          )}
           {canReverse && (
             <AlertDialog open={reverseOpen} onOpenChange={setReverseOpen}>
               <AlertDialogTrigger asChild>
@@ -177,6 +203,48 @@ function TrocaDetalhe() {
       )}
 
       <p className="text-xs text-muted-foreground mt-4">Comprovante não fiscal.</p>
+
+      <PrintDialog
+        open={printExOpen}
+        onOpenChange={setPrintExOpen}
+        title={`Comprovante de troca #${ex.exchange_number}`}
+      >
+        <ExchangeReceipt
+          data={{
+            org,
+            exchange: ex,
+            client: ex.client,
+            originalSale: ex.sale,
+            location: ex.location,
+            operator: operator ?? null,
+            returnItems: rets,
+            newItems: news,
+            payments: pays,
+            voucher: voucher ?? null,
+            storeCredit: null,
+            settings: settings ?? null,
+            consultUrl: typeof window !== "undefined" ? `${window.location.origin}/trocas/${ex.id}` : `/trocas/${ex.id}`,
+          }}
+        />
+      </PrintDialog>
+
+      {voucher && (
+        <PrintDialog
+          open={printVoucherOpen}
+          onOpenChange={setPrintVoucherOpen}
+          title={`Vale ${voucher.code}`}
+        >
+          <VoucherReceipt
+            data={{
+              org,
+              voucher,
+              client: ex.client,
+              originalExchangeNumber: ex.exchange_number,
+              settings: settings ?? null,
+            }}
+          />
+        </PrintDialog>
+      )}
     </div>
   );
 }

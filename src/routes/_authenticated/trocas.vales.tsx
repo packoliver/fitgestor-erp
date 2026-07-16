@@ -10,7 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { money } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
-import { Search } from "lucide-react";
+import { Search, Printer } from "lucide-react";
+import { PrintDialog } from "@/components/print/print-dialog";
+import { VoucherReceipt } from "@/components/print/voucher-receipt";
 
 export const Route = createFileRoute("/_authenticated/trocas/vales")({
   component: ValesPage,
@@ -19,6 +21,23 @@ export const Route = createFileRoute("/_authenticated/trocas/vales")({
 function ValesPage() {
   const [term, setTerm] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [printVoucher, setPrintVoucher] = useState<any | null>(null);
+
+  const { data: org } = useQuery({
+    queryKey: ["print-org-vales"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data: p } = await supabase.from("profiles").select("organization_id").eq("id", user.id).maybeSingle();
+      if (!p?.organization_id) return null;
+      return (await supabase.from("organizations").select("id,name,document,phone,email,logo_url").eq("id", p.organization_id).maybeSingle()).data;
+    },
+  });
+  const { data: settings } = useQuery({
+    queryKey: ["print-settings-vales", org?.id],
+    enabled: !!org?.id,
+    queryFn: async () => (await supabase.from("exchange_settings").select("receipt_footer_text").eq("organization_id", org!.id).maybeSingle()).data,
+  });
 
   const { data: vouchers = [] } = useQuery({
     queryKey: ["vouchers", term],
@@ -78,7 +97,10 @@ function ValesPage() {
                     <Link to="/trocas/$id" params={{ id: v.issued_from_exchange_id }} className="underline text-sm">#{v.exchange.exchange_number}</Link>
                   ) : "—"}
                 </TableCell>
-                <TableCell><Button size="sm" variant="ghost" onClick={() => setSelected(v.id)}>Histórico</Button></TableCell>
+                <TableCell className="text-right space-x-1">
+                  <Button size="sm" variant="ghost" onClick={() => setSelected(v.id)}>Histórico</Button>
+                  <Button size="sm" variant="outline" onClick={() => setPrintVoucher(v)}><Printer className="h-3 w-3" /></Button>
+                </TableCell>
               </TableRow>
             ))}
             {vouchers.length === 0 && (
@@ -109,6 +131,23 @@ function ValesPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+      {printVoucher && (
+        <PrintDialog
+          open={!!printVoucher}
+          onOpenChange={(v) => !v && setPrintVoucher(null)}
+          title={`Vale ${printVoucher.code}`}
+        >
+          <VoucherReceipt
+            data={{
+              org,
+              voucher: printVoucher,
+              client: printVoucher.client,
+              originalExchangeNumber: printVoucher.exchange?.exchange_number ?? null,
+              settings: settings ?? null,
+            }}
+          />
+        </PrintDialog>
       )}
     </div>
   );
