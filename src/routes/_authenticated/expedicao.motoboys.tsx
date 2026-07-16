@@ -71,10 +71,10 @@ function CouriersPage() {
     mutationFn: async () => {
       const payload = {
         _full_name: form.full_name.trim(),
-        _phone: form.phone.trim() || null,
-        _document: form.document.trim() || null,
-        _vehicle_plate: form.vehicle_plate.trim() || null,
-        _notes: form.notes.trim() || null,
+        _phone: form.phone.trim() || undefined,
+        _document: form.document.trim() || undefined,
+        _vehicle_plate: form.vehicle_plate.trim() || undefined,
+        _notes: form.notes.trim() || undefined,
       };
       if (form.id) {
         const { error } = await supabase.rpc("update_courier", { _id: form.id, ...payload });
