@@ -433,12 +433,54 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
             <Badge variant="outline">{totals.newVar} nova variação</Badge>
             <Badge variant="outline">{totals.newProd} produto novo</Badge>
           </div>
-          <Button size="lg" onClick={() => save.mutate()} disabled={save.isPending || readOnly}>
-            {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Salvar rascunho
-          </Button>
+          <div className="flex gap-2">
+            <Button size="lg" variant="outline" onClick={() => save.mutate()} disabled={save.isPending || readOnly}>
+              {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Salvar rascunho
+            </Button>
+            <Button
+              size="lg"
+              onClick={() => setConfirmOpen(true)}
+              disabled={confirmReceipt.isPending || readOnly || !draftId || dirty || totals.qty === 0}
+              title={dirty ? "Salve as alterações antes de confirmar" : totals.qty === 0 ? "Preencha alguma quantidade" : ""}
+            >
+              {confirmReceipt.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+              Confirmar recebimento
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar recebimento e adicionar as peças ao estoque?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Serão adicionadas <strong>{totals.qty}</strong> peças ao local selecionado.
+                  Produtos e variações marcados como novos serão criados agora.
+                </p>
+                <ul className="list-disc pl-5 text-muted-foreground">
+                  <li>Esta ação alterará o estoque.</li>
+                  <li>O recebimento não poderá voltar ao estado de rascunho.</li>
+                  <li>As etiquetas ainda não serão geradas nesta etapa.</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={confirmReceipt.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmReceipt.mutate(); }}
+              disabled={confirmReceipt.isPending}
+            >
+              {confirmReceipt.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
