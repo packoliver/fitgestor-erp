@@ -82,14 +82,16 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
     queryKey: ["post-sale-info", saleId],
     queryFn: async () => {
       const { data } = await supabase.from("sales")
-        .select("id, sale_number, total_amount, sale_payments(payment_method, amount)")
+        .select("id, sale_number, total, sale_payments(payment_method, amount, status)")
         .eq("id", saleId).maybeSingle();
       return data as any;
     },
   });
 
-  const paid = useMemo(() => (sale?.sale_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0), [sale]);
-  const total = Number(sale?.total_amount ?? 0);
+  const paid = useMemo(() => (sale?.sale_payments ?? [])
+    .filter((p: any) => p.status === "approved")
+    .reduce((s: number, p: any) => s + Number(p.amount || 0), 0), [sale]);
+  const total = Number(sale?.total ?? 0);
   const toCollect = Math.max(total - paid, 0);
 
   const { data: forecast } = useQuery({
