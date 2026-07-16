@@ -93,6 +93,7 @@ function TrocasPage() {
           </TableBody>
         </Table>
       </Card>
-    </div>
+    </div></RequirePermission>
   );
+
 }
