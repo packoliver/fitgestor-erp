@@ -242,7 +242,7 @@ function Funcionarios() {
                           {p.status === "ativo" && (
                             <DropdownMenuItem onClick={() => setStatus.mutate({ id: p.id, status: "bloqueado" })}>Bloquear</DropdownMenuItem>
                           )}
-                          <DropdownMenuItem onClick={() => p.email && doResend.mutate(p.email)}>Reenviar convite</DropdownMenuItem>
+                          <DropdownMenuItem disabled={!p.email} onClick={() => { if (p.email) doResend.mutate(p.email); }}>Reenviar convite</DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive"
