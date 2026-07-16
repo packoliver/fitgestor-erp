@@ -207,9 +207,9 @@ function ClosingCta() {
       <div className="mx-auto max-w-[1200px] px-6 py-28 lg:px-10">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
           <div className="lg:col-span-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">Quero Ser Fit<sup className="text-[0.6em]">®</sup></p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">FitGestor</p>
             <h2 className="mt-4 text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[48px] lg:text-[58px]">
-              A operação da loja funciona melhor <br />
+              A operação da empresa funciona melhor <br />
               <span className="text-muted-foreground">quando o sistema entende o negócio.</span>
             </h2>
           </div>
@@ -237,12 +237,14 @@ function SiteFooter() {
   return (
     <footer>
       <div className="mx-auto flex max-w-[1200px] flex-col items-start justify-between gap-6 px-6 py-12 sm:flex-row sm:items-center lg:px-10">
-        <QsfIdentity size="sm" onDark />
+        <BrandLockup size="sm" onDark />
         <div className="flex flex-col items-start gap-1 sm:items-end">
-          <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-            © {new Date().getFullYear()} Quero Ser Fit<sup className="text-[0.6em]">®</sup>
+          <span className="text-[11px] text-muted-foreground">
+            Desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup>
           </span>
-          <span className="text-[11px] text-muted-foreground">Todos os direitos reservados</span>
+          <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+            © {new Date().getFullYear()} · Todos os direitos reservados
+          </span>
         </div>
       </div>
     </footer>
@@ -258,7 +260,7 @@ function BrowserChrome({ path, children }: { path: string; children: ReactNode }
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
-        <span className="ml-3 truncate text-[11px] text-muted-foreground">qsf.queroserfit.com{path}</span>
+        <span className="ml-3 truncate text-[11px] text-muted-foreground">fitgestor.app{path}</span>
       </div>
       <div className="bg-background">{children}</div>
     </div>
@@ -271,8 +273,8 @@ function AppFrame({ active, children }: { active: string; children: ReactNode })
     <div className="grid grid-cols-12">
       <aside className="col-span-3 hidden border-r border-border bg-[#0D0D10] p-3 text-[11px] sm:block">
         <div className="mb-3 flex items-center gap-2 px-2 py-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-[6px] border border-white/10 bg-white/5 text-[9px] font-semibold text-white">QSF</div>
-          <span className="text-[12px] font-semibold text-white/90">QSF</span>
+          <div className="flex h-6 w-6 items-center justify-center rounded-[6px] bg-primary text-[10px] font-semibold text-white">F</div>
+          <span className="text-[12px] font-semibold text-white/90">FitGestor</span>
         </div>
         <nav className="space-y-0.5">
           {nav.map((l) => (
