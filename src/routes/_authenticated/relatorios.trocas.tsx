@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,14 +12,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { money, PAYMENT_LABELS, AVAILABLE_METHODS } from "@/lib/pos";
+import { money, PAYMENT_LABELS, AVAILABLE_METHODS, normalizeDigits } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
 import { RequirePermission } from "@/components/require-permission";
 import { usePermissions } from "@/hooks/use-permissions";
 import { PrintDialog } from "@/components/print/print-dialog";
 import { ExchangesReportPrint, type ReportRow, type ReportTotals } from "@/components/print/exchanges-report-print";
+import { EntityAutocomplete, type EntityOption } from "@/components/entity-autocomplete";
 import { toast } from "sonner";
-import { ChevronDown, Download, Printer, Eraser, ExternalLink, FileBarChart } from "lucide-react";
+import { AlertTriangle, ChevronDown, Download, Printer, Eraser, ExternalLink, FileBarChart } from "lucide-react";
+
 
 const filtersSchema = z.object({
   date_from: z.string().optional().default(""),
