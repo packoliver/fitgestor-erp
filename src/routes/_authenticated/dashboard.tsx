@@ -169,6 +169,40 @@ function Dashboard() {
           </CardContent>
         </Card>
       </section>
+
+      {canPostSale && (
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pós-venda</h2>
+          <Card>
+            <CardContent className="p-4 flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Fila do WhatsApp</span>
+              </div>
+              <PsStat label="Pendentes hoje" value={ps.pending_today ?? 0} />
+              <PsStat label="Atrasadas" value={ps.overdue ?? 0} tone={(ps.overdue ?? 0) > 0 ? "destructive" : undefined} />
+              <PsStat label="Aguardando revisão" value={ps.pending_review ?? 0} tone={(ps.pending_review ?? 0) > 0 ? "warning" : undefined} />
+              <PsStat label="Abertas" value={ps.opened ?? 0} />
+              <PsStat label="Enviadas hoje" value={ps.sent_today ?? 0} />
+              <PsStat label="Telefones inválidos" value={ps.invalid_phone ?? 0} tone={(ps.invalid_phone ?? 0) > 0 ? "warning" : undefined} />
+              <div className="ml-auto flex gap-2">
+                <ActionLink to="/pos-venda" label="Abrir fila" />
+                <ActionLink to="/pos-venda/sequencial" label="Iniciar" />
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function PsStat({ label, value, tone }: { label: string; value: number; tone?: "warning" | "destructive" }) {
+  const cls = tone === "destructive" ? "text-destructive" : tone === "warning" ? "text-amber-600" : "text-foreground";
+  return (
+    <div>
+      <div className={`text-xl font-semibold tabular-nums ${cls}`}>{value}</div>
+      <div className="text-[11px] text-muted-foreground">{label}</div>
     </div>
   );
 }
