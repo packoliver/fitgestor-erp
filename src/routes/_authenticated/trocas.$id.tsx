@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import { PrintDialog } from "@/components/print/print-dialog";
 import { ExchangeReceipt } from "@/components/print/exchange-receipt";
 import { VoucherReceipt } from "@/components/print/voucher-receipt";
+import { usePermissions } from "@/hooks/use-permissions";
+
 
 export const Route = createFileRoute("/_authenticated/trocas/$id")({
   component: TrocaDetalhe,
