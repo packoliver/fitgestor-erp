@@ -65,6 +65,8 @@ function RotaDetalhe() {
   });
 
   const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const ordered = pendingOrder ?? (shipments.data ?? []).map((s: any) => s.id);
   const orderedShipments = useMemo(() =>
     ordered.map((sid) => (shipments.data ?? []).find((s: any) => s.id === sid)).filter(Boolean) as any[],
