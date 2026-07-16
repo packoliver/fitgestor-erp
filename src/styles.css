@@ -433,14 +433,14 @@ body {
 /* ===== SIDEBAR — Liquid Glass escuro estilo iOS ===== */
 [data-sidebar="sidebar"] {
   position: relative;
-  background: linear-gradient(180deg, rgba(22, 22, 30, 0.72), rgba(14, 14, 21, 0.62)) !important;
+  background: linear-gradient(180deg, rgba(12, 12, 18, 0.94), rgba(8, 8, 14, 0.92)) !important;
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border-right: 1px solid rgba(255,255,255,0.10);
+  border-right: 1px solid rgba(255,255,255,0.08);
   box-shadow:
-    inset -1px 0 0 rgba(255,255,255,0.05),
-    inset 1px 0 0 rgba(255,255,255,0.06),
-    10px 0 40px rgba(15,15,25,0.14);
+    inset -1px 0 0 rgba(255,255,255,0.04),
+    inset 1px 0 0 rgba(255,255,255,0.05),
+    10px 0 40px rgba(0,0,0,0.25);
 }
 [data-sidebar="sidebar"]::before {
   content: "";
