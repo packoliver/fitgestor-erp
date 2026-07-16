@@ -358,6 +358,9 @@ function ReportInner() {
             ))}
           </TableBody>
         </Table>
+        </div>
+
+
 
         <div className="flex flex-wrap items-center justify-between gap-2 p-3 border-t text-sm">
           <div className="text-muted-foreground">
