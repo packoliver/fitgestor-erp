@@ -161,6 +161,8 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     setNotes(d.notes ?? "");
     setStatus(d.status);
     setLastSavedAt(d.updated_at);
+    setConfirmedAt((d as any).confirmed_at ?? null);
+    setConfirmationSummary((d as any).confirmation_summary ?? null);
     setItems(
       d.items.map((it) => ({
         local_id: uid(),
