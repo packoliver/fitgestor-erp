@@ -2,7 +2,6 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 
-const HOME_TARGETS: Record<string, string> = {
   admin: "/dashboard",
   operational: "/trabalho",
   motoboy: "/motoboy",
