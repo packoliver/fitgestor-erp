@@ -88,67 +88,78 @@ export function ReceiptScannerPanel({
 
   async function resolveCode(rawCode: string): Promise<Resolution> {
     const cached = cacheRef.current.get(rawCode);
-    if (cached && cached.kind !== "not_found") return cached;
+    if (cached) return cached;
 
-    // Busca exata via RLS (organização atual já enforced no client).
-    const { data, error } = await supabase
-      .from("product_variants")
-      .select("id, size, sku, barcode, status, deleted_at, product:products!inner(id, name, color, status, deleted_at)")
-      .or(`sku.eq.${rawCode},barcode.eq.${rawCode}`)
-      .limit(5);
-
+    // Chamada única ao RPC backend. Toda a lógica de igualdade exata,
+    // organização, ativo/inativo e ambiguidade é decidida no servidor;
+    // nada da entrada do leitor é interpolado em filtros PostgREST.
+    const { data, error } = await supabase.rpc("resolve_goods_receipt_scan", { _code: rawCode });
     if (error) {
+      // Erros de rede/permissão não devem ser cacheados como "not_found".
       throw new Error(error.message);
     }
 
-    const rows = (data ?? []) as any[];
-    if (rows.length === 0) {
-      const r: Resolution = { kind: "not_found" };
-      // Não cachear "not_found" para permitir novo cadastro sem reiniciar sessão.
-      return r;
-    }
-
-    // Filtra variantes ativas e produto ativo
-    const active = rows.filter(
-      (r) => !r.deleted_at && r.status === "ativo" && r.product && !r.product.deleted_at && r.product.status === "ativo",
-    );
-
-    if (active.length === 0) {
-      const first = rows[0];
-      const r: Resolution = { kind: "inactive", product_name: first?.product?.name ?? "Produto" };
-      cacheRef.current.set(rawCode, r);
-      return r;
-    }
-
-    if (active.length > 1) {
-      const r: Resolution = {
-        kind: "conflict",
-        matches: active.map((v) => ({
-          id: v.id,
-          size: v.size,
-          sku: v.sku,
-          barcode: v.barcode,
-          product: { id: v.product.id, name: v.product.name, color: v.product.color },
-        })),
+    const payload = (data ?? {}) as {
+      status: "found" | "ambiguous" | "inactive" | "not_found";
+      variant?: {
+        variant_id: string;
+        product_id: string;
+        product_name: string;
+        color: string | null;
+        size: string;
+        sku: string | null;
+        barcode: string | null;
       };
+      matches?: Array<{
+        variant_id: string;
+        product_id: string;
+        product_name: string;
+        color: string | null;
+        size: string;
+        sku: string | null;
+        barcode: string | null;
+      }>;
+    };
+
+    if (payload.status === "not_found") {
+      // Não cachear "not_found" para permitir que um cadastro criado
+      // durante a mesma sessão seja localizado sem reiniciar o cache.
+      return { kind: "not_found" };
+    }
+    if (payload.status === "inactive") {
+      const first = payload.matches?.[0];
+      const r: Resolution = { kind: "inactive", product_name: first?.product_name ?? "Produto" };
       cacheRef.current.set(rawCode, r);
       return r;
     }
-
-    const v = active[0];
+    if (payload.status === "ambiguous") {
+      const matches = (payload.matches ?? []).map((m) => ({
+        id: m.variant_id,
+        size: m.size,
+        sku: m.sku,
+        barcode: m.barcode,
+        product: { id: m.product_id, name: m.product_name, color: m.color },
+      }));
+      const r: Resolution = { kind: "conflict", matches };
+      cacheRef.current.set(rawCode, r);
+      return r;
+    }
+    // found
+    const v = payload.variant!;
     const r: Resolution = {
       kind: "ok",
       variant: {
-        id: v.id,
+        id: v.variant_id,
         size: v.size,
         sku: v.sku,
         barcode: v.barcode,
-        product: { id: v.product.id, name: v.product.name, color: v.product.color },
+        product: { id: v.product_id, name: v.product_name, color: v.color },
       },
     };
     cacheRef.current.set(rawCode, r);
     return r;
   }
+
 
   function pushEntry(entry: Omit<SessionEntry, "id" | "at">) {
     setSession((prev) => [
