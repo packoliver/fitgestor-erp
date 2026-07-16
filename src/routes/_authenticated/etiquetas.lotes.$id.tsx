@@ -153,7 +153,9 @@ function LabelPreview({
   showPrice: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const barcodeContent = item.barcode_snapshot ?? item.sku_snapshot ?? "";
+  // Regra oficial: o Code 128 codifica sempre o SKU da variação.
+  // barcode_snapshot é preservado por consistência histórica, mas NÃO alimenta o JsBarcode.
+  const barcodeContent = item.sku_snapshot ?? "";
 
   useEffect(() => {
     if (!canvasRef.current || !barcodeContent) return;

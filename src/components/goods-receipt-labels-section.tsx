@@ -254,8 +254,9 @@ export function GoodsReceiptLabelsSection({ draftId }: { draftId: string }) {
                   ))}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  O código de barras codifica o <strong>SKU</strong> em formato Code 128. Nenhuma
-                  impressão será iniciada nesta etapa.
+                  O código de barras codifica sempre o <strong>SKU</strong> da variação em
+                  formato Code 128 (mesmo texto exibido abaixo). Nenhuma impressão será iniciada
+                  nesta etapa.
                 </div>
               </div>
             </AlertDialogDescription>
