@@ -52,6 +52,22 @@ function WorkspacePage() {
     staleTime: 30_000,
   });
 
+  const canPostSale = perms.has("post_sale.view");
+  const psStats = useQuery({
+    enabled: canPostSale,
+    queryKey: ["post-sale-stats-trabalho"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("post_sale_queue_stats");
+      return (data ?? {}) as Record<string, number>;
+    },
+    staleTime: 30_000,
+  });
+  useEffect(() => {
+    if (canPostSale) supabase.rpc("process_due_post_sale_rules").then(() => {});
+  }, [canPostSale]);
+  const ps = psStats.data ?? {};
+  const psPending = (ps.pending_today ?? 0) + (ps.overdue ?? 0) + (ps.pending_review ?? 0);
+
   if (perms.isLoading || workspace.isLoading) return <div>Carregando…</div>;
 
   return (
