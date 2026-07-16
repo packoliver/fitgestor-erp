@@ -104,16 +104,13 @@ function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border h-16 justify-center">
         <div className="flex items-center gap-2.5 px-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.04] text-white">
-            <span className="text-[11px] font-semibold tracking-[-0.03em] leading-none">QSF</span>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-primary text-primary-foreground">
+            <span className="text-[15px] font-semibold leading-none tracking-[-0.03em]">F</span>
           </div>
           {!collapsed && (
-            <div className="flex flex-col leading-tight min-w-0">
-              <span className="text-[14px] font-semibold tracking-[-0.02em] text-sidebar-foreground truncate">QSF</span>
-              <span className="text-[10.5px] font-medium text-sidebar-foreground/55 truncate">
-                Quero Ser Fit<sup className="text-[0.6em]">®</sup> · Sistema de Gestão
-              </span>
-            </div>
+            <span className="text-[15px] font-semibold tracking-[-0.02em] text-sidebar-foreground truncate">
+              FitGestor
+            </span>
           )}
         </div>
       </SidebarHeader>
@@ -152,6 +149,14 @@ function AppSidebar() {
           );
         })}
       </SidebarContent>
+      {!collapsed && (
+        <div className="mt-auto border-t border-sidebar-border px-4 py-4">
+          <p className="text-[10.5px] font-medium text-sidebar-foreground/50">Desenvolvido pela</p>
+          <p className="text-[11px] font-semibold tracking-[-0.01em] text-sidebar-foreground/80">
+            Quero Ser Fit<sup className="text-[0.6em]">®</sup>
+          </p>
+        </div>
+      )}
     </Sidebar>
   );
 }

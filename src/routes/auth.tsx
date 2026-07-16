@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { QsfIdentity } from "@/components/qsf-logo";
+import { BrandLockup } from "@/components/brand-logo";
 
 const searchSchema = z.object({ mode: z.enum(["signin", "signup"]).optional() });
 
@@ -40,7 +40,7 @@ function AuthPage() {
     <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-[420px]">
         <div className="mb-10 flex justify-center">
-          <QsfIdentity align="center" size="lg" onDark />
+          <BrandLockup align="center" size="lg" onDark />
         </div>
 
         <Card className="border-border bg-card shadow-none">
@@ -62,11 +62,10 @@ function AuthPage() {
               </TabsContent>
             </Tabs>
           </CardContent>
+          <div className="border-t border-border px-6 py-4 text-center text-[11px] text-muted-foreground">
+            Desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup>
+          </div>
         </Card>
-
-        <p className="mt-6 text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          Ambiente corporativo · Quero Ser Fit<sup className="text-[0.6em]">®</sup>
-        </p>
       </div>
     </div>
   );

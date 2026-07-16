@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
-import { QsfMark, QsfIdentity } from "@/components/qsf-logo";
+import { BrandMark, BrandLockup } from "@/components/brand-logo";
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
@@ -59,11 +59,8 @@ function SiteHeader() {
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6 lg:px-10">
         <Link to="/" className="flex items-center gap-2.5">
-          <QsfMark size={32} />
-          <div className="hidden sm:flex flex-col leading-tight">
-            <span className="text-[13.5px] font-semibold tracking-[-0.02em] text-foreground">QSF</span>
-            <span className="text-[10.5px] font-medium text-muted-foreground">Quero Ser Fit<sup className="text-[0.6em]">®</sup></span>
-          </div>
+          <BrandMark size={30} />
+          <span className="text-[15px] font-semibold tracking-[-0.02em] text-foreground">FitGestor</span>
         </Link>
         <div className="flex items-center gap-1">
           <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground hover:bg-white/5">
@@ -87,7 +84,7 @@ function Hero() {
         <div className="lg:col-span-6">
           <div className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
             <span className="h-px w-8 bg-border" />
-            Sistema interno · Quero Ser Fit<sup className="text-[0.6em]">®</sup>
+            FitGestor · Sistema de Gestão
           </div>
 
           <h1 className="mt-8 text-[44px] font-semibold leading-[1.05] tracking-[-0.03em] text-foreground sm:text-[54px] lg:text-[60px]">
@@ -96,10 +93,11 @@ function Hero() {
             <span className="text-muted-foreground">tudo sob controle.</span>
           </h1>
 
-          <p className="mt-7 max-w-[52ch] text-[15.5px] leading-relaxed text-muted-foreground">
-            Sistema desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup> para
-            controlar estoque, recebimentos, etiquetas, PDV, vendas, trocas e toda a
-            operação da loja.
+          <p className="mt-7 max-w-[54ch] text-[15.5px] leading-relaxed text-muted-foreground">
+            O FitGestor foi desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup> para
+            centralizar toda a operação da empresa em uma única plataforma. Controle
+            estoque, recebimentos, etiquetas, vendas, PDV, trocas, relatórios e
+            indicadores com rapidez, organização e segurança.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center gap-3">
@@ -209,9 +207,9 @@ function ClosingCta() {
       <div className="mx-auto max-w-[1200px] px-6 py-28 lg:px-10">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
           <div className="lg:col-span-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">Quero Ser Fit<sup className="text-[0.6em]">®</sup></p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">FitGestor</p>
             <h2 className="mt-4 text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[48px] lg:text-[58px]">
-              A operação da loja funciona melhor <br />
+              A operação da empresa funciona melhor <br />
               <span className="text-muted-foreground">quando o sistema entende o negócio.</span>
             </h2>
           </div>
@@ -239,12 +237,14 @@ function SiteFooter() {
   return (
     <footer>
       <div className="mx-auto flex max-w-[1200px] flex-col items-start justify-between gap-6 px-6 py-12 sm:flex-row sm:items-center lg:px-10">
-        <QsfIdentity size="sm" onDark />
+        <BrandLockup size="sm" onDark />
         <div className="flex flex-col items-start gap-1 sm:items-end">
-          <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-            © {new Date().getFullYear()} Quero Ser Fit<sup className="text-[0.6em]">®</sup>
+          <span className="text-[11px] text-muted-foreground">
+            Desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup>
           </span>
-          <span className="text-[11px] text-muted-foreground">Todos os direitos reservados</span>
+          <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+            © {new Date().getFullYear()} · Todos os direitos reservados
+          </span>
         </div>
       </div>
     </footer>
@@ -260,7 +260,7 @@ function BrowserChrome({ path, children }: { path: string; children: ReactNode }
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
-        <span className="ml-3 truncate text-[11px] text-muted-foreground">qsf.queroserfit.com{path}</span>
+        <span className="ml-3 truncate text-[11px] text-muted-foreground">fitgestor.app{path}</span>
       </div>
       <div className="bg-background">{children}</div>
     </div>
@@ -273,8 +273,8 @@ function AppFrame({ active, children }: { active: string; children: ReactNode })
     <div className="grid grid-cols-12">
       <aside className="col-span-3 hidden border-r border-border bg-[#0D0D10] p-3 text-[11px] sm:block">
         <div className="mb-3 flex items-center gap-2 px-2 py-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-[6px] border border-white/10 bg-white/5 text-[9px] font-semibold text-white">QSF</div>
-          <span className="text-[12px] font-semibold text-white/90">QSF</span>
+          <div className="flex h-6 w-6 items-center justify-center rounded-[6px] bg-primary text-[10px] font-semibold text-white">F</div>
+          <span className="text-[12px] font-semibold text-white/90">FitGestor</span>
         </div>
         <nav className="space-y-0.5">
           {nav.map((l) => (
