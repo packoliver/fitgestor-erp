@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useBlocker } from "@tanstack/react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
@@ -94,9 +94,12 @@ function NovaTrocaPage() {
   const [productTerm, setProductTerm] = useState("");
   const [requestId] = useState(newRequestId());
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
+  const [completed, setCompleted] = useState(false);
 
-  // Confirmação antes de sair com dados preenchidos (recarregar aba/fechar navegador).
-  const isDirty = !!(saleId || returns.length || newItems.length || payments.length || reason || notes);
+  // Confirmação antes de sair com dados preenchidos.
+  const isDirty = !completed && !!(saleId || returns.length || newItems.length || payments.length || reason || notes);
+
+  // beforeunload: proteção contra fechar/recarregar a aba
   useEffect(() => {
     if (!isDirty) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -106,6 +109,15 @@ function NovaTrocaPage() {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
+
+  // Router blocker: navegação interna do TanStack Router
+  useBlocker({
+    shouldBlockFn: () => {
+      if (!isDirty) return false;
+      return !window.confirm("Você tem dados preenchidos nesta troca. Deseja realmente sair e descartar?");
+    },
+    enableBeforeUnload: false, // beforeunload já é tratado acima
+  });
 
   const { data: session } = useQuery({ queryKey: ["pdv-session"], queryFn: () => getOpenSession() });
 
@@ -288,8 +300,10 @@ function NovaTrocaPage() {
       return data as any;
     },
     onSuccess: (data: any) => {
+      setCompleted(true);
       toast.success(`Troca #${data.exchange_number} concluída.`);
-      navigate({ to: "/trocas/$id", params: { id: data.exchange_id } });
+      // pequeno atraso para garantir que o blocker leia o novo estado antes da navegação
+      setTimeout(() => navigate({ to: "/trocas/$id", params: { id: data.exchange_id } }), 0);
     },
     onError: (e: Error) => toast.error(e.message),
   });
