@@ -598,11 +598,21 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="grid" className="w-full">
+      <Tabs defaultValue="counting" className="w-full">
         <TabsList>
-          <TabsTrigger value="grid">Lançamento por grade</TabsTrigger>
+          <TabsTrigger value="counting">Contagem manual</TabsTrigger>
+          <TabsTrigger value="grid">Produtos e grade</TabsTrigger>
           <TabsTrigger value="scanner" disabled={readOnly}>Recebimento por leitor</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="counting" className="mt-3">
+          <GoodsReceiptCountingPanel
+            items={items}
+            setItems={setItems}
+            disabled={readOnly}
+            markDirty={markDirty}
+          />
+        </TabsContent>
 
         <TabsContent value="grid" className="space-y-3 mt-3">
           <ProductSearchCard
