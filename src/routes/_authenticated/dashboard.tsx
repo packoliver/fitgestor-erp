@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
@@ -7,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   TrendingUp, Wallet, Truck, Package, Users, AlertTriangle, ClipboardList,
-  RefreshCw, PiggyBank, ArrowRight,
+  RefreshCw, PiggyBank, ArrowRight, MessageCircle,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 
