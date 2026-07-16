@@ -27,6 +27,8 @@ function TrocaDetalhe() {
   const qc = useQueryClient();
   const [reverseReason, setReverseReason] = useState("");
   const [reverseOpen, setReverseOpen] = useState(false);
+  const [printExOpen, setPrintExOpen] = useState(false);
+  const [printVoucherOpen, setPrintVoucherOpen] = useState(false);
 
   const { data: ex } = useQuery({
     queryKey: ["exchange", id],
@@ -36,6 +38,23 @@ function TrocaDetalhe() {
   const { data: news = [] } = useQuery({ queryKey: ["ex-new", id], queryFn: async () => (await supabase.from("exchange_new_items").select("*").eq("exchange_id", id)).data ?? [] });
   const { data: pays = [] } = useQuery({ queryKey: ["ex-pay", id], queryFn: async () => (await supabase.from("exchange_payments").select("*").eq("exchange_id", id)).data ?? [] });
   const { data: voucher } = useQuery({ queryKey: ["ex-voucher", id], queryFn: async () => (await supabase.from("exchange_vouchers").select("*").eq("issued_from_exchange_id", id).maybeSingle()).data });
+
+  const { data: org } = useQuery({
+    queryKey: ["print-org", ex?.organization_id],
+    enabled: !!ex?.organization_id,
+    queryFn: async () => (await supabase.from("organizations").select("id,name,document,phone,email,logo_url").eq("id", ex!.organization_id).maybeSingle()).data,
+  });
+  const { data: operator } = useQuery({
+    queryKey: ["print-op", ex?.completed_by ?? ex?.created_by],
+    enabled: !!(ex?.completed_by ?? ex?.created_by),
+    queryFn: async () => (await supabase.from("profiles").select("full_name").eq("id", (ex!.completed_by ?? ex!.created_by)!).maybeSingle()).data,
+  });
+  const { data: settings } = useQuery({
+    queryKey: ["print-settings", ex?.organization_id],
+    enabled: !!ex?.organization_id,
+    queryFn: async () => (await supabase.from("exchange_settings").select("receipt_footer_text").eq("organization_id", ex!.organization_id).maybeSingle()).data,
+  });
+
 
   const reverseMutation = useMutation({
     mutationFn: async () => {
