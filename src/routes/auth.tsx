@@ -37,13 +37,15 @@ function AuthPage() {
   const [tab, setTab] = useState<"signin" | "signup">(search.mode ?? "signin");
 
   return (
-    <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-[420px]">
+    <div className="dark fit-aurora relative min-h-screen text-foreground flex items-center justify-center px-4 py-12 overflow-hidden">
+      <div className="fit-aurora-grid pointer-events-none absolute inset-0 opacity-60" aria-hidden />
+      <div className="relative w-full max-w-[420px]">
         <div className="mb-10 flex justify-center">
           <BrandLockup align="center" size="lg" onDark />
         </div>
 
-        <Card className="border-border bg-card shadow-none">
+        <Card className="glass-strong rounded-2xl border-0 shadow-none">
+
           <CardHeader className="pb-2">
             <h2 className="text-[17px] font-semibold tracking-[-0.02em]">Acessar conta</h2>
             <p className="text-[13px] text-muted-foreground">Entre com suas credenciais corporativas.</p>
