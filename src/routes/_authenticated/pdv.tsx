@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AVAILABLE_METHODS, getOpenSession, money, normalizeDigits, PAYMENT_LABELS, PaymentMethod, validCPF } from "@/lib/pos";
 import { Minus, Plus, Search, ShoppingCart, Trash2, User, X } from "lucide-react";
+import { usePermissions } from "@/hooks/use-permissions";
+
 
 export const Route = createFileRoute("/_authenticated/pdv")({
   component: PdvPage,
