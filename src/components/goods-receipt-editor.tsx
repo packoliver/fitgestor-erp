@@ -488,7 +488,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         <div className="rounded-md border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900 flex items-start gap-3">
           <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0" />
           <div className="space-y-1">
-            <div><strong>Recebimento confirmado.</strong> As etiquetas ainda estão pendentes de geração.</div>
+            <div><strong>Recebimento {formatReceiptNumber(receiptNumber)} confirmado.</strong> As etiquetas ainda estão pendentes de geração.</div>
             {confirmedAt && <div className="text-xs">Confirmado em {formatDateTime(confirmedAt)}.</div>}
             {confirmationSummary?.total_quantity != null && (
               <div className="text-xs">
@@ -506,7 +506,18 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       {status === "confirmed" && draftId && (
         <GoodsReceiptLabelsSection draftId={draftId} />
       )}
-      {readOnly && status !== "confirmed" && (
+      {status === "cancelled" && (
+        <div className="rounded-md border border-rose-300 bg-rose-50 p-4 text-sm text-rose-900 flex items-start gap-3">
+          <Lock className="h-5 w-5 mt-0.5 shrink-0" />
+          <div className="space-y-1">
+            <div><strong>Rascunho {formatReceiptNumber(receiptNumber)} cancelado.</strong></div>
+            {cancelledAt && <div className="text-xs">Cancelado em {formatDateTime(cancelledAt)}.</div>}
+            {cancellationReason && <div className="text-xs">Motivo: {cancellationReason}</div>}
+            <div className="text-xs">Somente leitura. O estoque não foi alterado.</div>
+          </div>
+        </div>
+      )}
+      {readOnly && status !== "confirmed" && status !== "cancelled" && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
           Este recebimento está com status <strong>{status}</strong> e não pode ser editado.
         </div>
@@ -514,9 +525,11 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>Cabeçalho</CardTitle>
+          <CardTitle>
+            Recebimento {formatReceiptNumber(receiptNumber)}
+          </CardTitle>
           <div className="text-xs text-muted-foreground flex items-center gap-3">
-            {dirty ? <span className="text-amber-600">Alterações não salvas</span> : lastSavedAt ? <span>Rascunho salvo · {formatDateTime(lastSavedAt)}</span> : null}
+            {dirty ? <span className="text-amber-600">Alterações não salvas</span> : lastSavedAt ? <span>Rascunho salvo · {formatDateTime(lastSavedAt)} · v{version}</span> : null}
           </div>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
