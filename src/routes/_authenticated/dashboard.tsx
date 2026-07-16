@@ -66,9 +66,35 @@ function Dashboard() {
     { icon: AlertTriangle, label: "Sem estoque", value: stats.data?.zeroStock ?? 0, tone: "destructive" as const },
   ];
 
+  const perms = usePermissions();
+  const canSeePendencias = perms.hasAny("shipping.view", "shipping.view_all", "shipping.create");
+  const pending = useQuery({
+    queryKey: ["dashboard-pending-deliveries"],
+    enabled: canSeePendencias,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("list_pending_deliveries");
+      return (data ?? []).length;
+    },
+    staleTime: 30_000,
+  });
+
   return (
     <div>
       <PageHeader title="Dashboard" description="Visão geral da operação da sua loja." />
+
+      {canSeePendencias && (pending.data ?? 0) > 0 && (
+        <Link to="/expedicao/pendencias">
+          <Card className="p-4 mb-4 border-amber-400/50 bg-amber-50 dark:bg-amber-950/20 flex items-center gap-3 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors">
+            <Truck className="h-5 w-5 text-amber-600" />
+            <div className="flex-1">
+              <div className="font-medium">Vendas sem entrega definida</div>
+              <div className="text-xs text-muted-foreground">Regularize as ordens de expedição pendentes.</div>
+            </div>
+            <Badge variant="secondary">{pending.data}</Badge>
+          </Card>
+        </Link>
+      )}
+
 
       <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         {cards.map((c) => {
