@@ -636,7 +636,12 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
             <Badge variant="outline">{totals.newVar} nova variação</Badge>
             <Badge variant="outline">{totals.newProd} produto novo</Badge>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {draftId && status === "draft" && (
+              <Button size="lg" variant="ghost" onClick={() => { setCancelReason(""); setCancelOpen(true); }} disabled={cancelDraft.isPending}>
+                Cancelar rascunho
+              </Button>
+            )}
             <Button size="lg" variant="outline" onClick={() => save.mutate()} disabled={save.isPending || readOnly}>
               {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               Salvar rascunho
@@ -680,6 +685,68 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
             >
               {confirmReceipt.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={cancelOpen} onOpenChange={(o) => { if (!cancelDraft.isPending) setCancelOpen(o); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar este rascunho de recebimento?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <p>O rascunho ficará somente leitura e não poderá mais ser confirmado. O estoque não será alterado.</p>
+                <div className="space-y-2">
+                  <Label htmlFor="cancel-reason">Motivo do cancelamento *</Label>
+                  <Textarea
+                    id="cancel-reason"
+                    rows={3}
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    placeholder="Ex.: rascunho aberto por engano, pedido cancelado com o fornecedor…"
+                    disabled={cancelDraft.isPending}
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelDraft.isPending}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); cancelDraft.mutate(); }}
+              disabled={cancelDraft.isPending || cancelReason.trim().length < 3}
+            >
+              {cancelDraft.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Cancelar rascunho
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={conflictOpen} onOpenChange={setConflictOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Este recebimento foi alterado em outra aba</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Outra pessoa (ou você em outra aba) atualizou este rascunho depois que você abriu esta tela.</p>
+                <p>Para evitar sobrescrever essas alterações, recarregue os dados mais recentes antes de continuar. As alterações locais serão descartadas.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter o que estou vendo</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                setConflictOpen(false);
+                setDirty(false);
+                qc.invalidateQueries({ queryKey: ["goods-receipt-draft", draftId] });
+                existing.refetch();
+              }}
+            >
+              Recarregar versão mais recente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
