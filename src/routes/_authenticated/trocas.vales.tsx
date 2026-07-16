@@ -21,6 +21,23 @@ export const Route = createFileRoute("/_authenticated/trocas/vales")({
 function ValesPage() {
   const [term, setTerm] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [printVoucher, setPrintVoucher] = useState<any | null>(null);
+
+  const { data: org } = useQuery({
+    queryKey: ["print-org-vales"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data: p } = await supabase.from("profiles").select("organization_id").eq("id", user.id).maybeSingle();
+      if (!p?.organization_id) return null;
+      return (await supabase.from("organizations").select("id,name,document,phone,email,logo_url").eq("id", p.organization_id).maybeSingle()).data;
+    },
+  });
+  const { data: settings } = useQuery({
+    queryKey: ["print-settings-vales", org?.id],
+    enabled: !!org?.id,
+    queryFn: async () => (await supabase.from("exchange_settings").select("receipt_footer_text").eq("organization_id", org!.id).maybeSingle()).data,
+  });
 
   const { data: vouchers = [] } = useQuery({
     queryKey: ["vouchers", term],
