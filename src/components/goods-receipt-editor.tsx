@@ -233,6 +233,36 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const confirm = useMutation({
+    mutationFn: async () => {
+      if (!draftId) throw new Error("Salve o rascunho antes de confirmar.");
+      if (dirty) throw new Error("Salve as alterações pendentes antes de confirmar.");
+      if (!confirmRequestIdRef.current) {
+        confirmRequestIdRef.current = globalThis.crypto?.randomUUID?.() ?? uid() + uid() + uid();
+      }
+      const { data, error } = await supabase.rpc("confirm_goods_receipt", {
+        _draft_id: draftId,
+        _client_request_id: confirmRequestIdRef.current,
+      });
+      if (error) throw error;
+      return data as any;
+    },
+    onSuccess: (result) => {
+      toast.success("Recebimento confirmado. As etiquetas ainda estão pendentes de geração.");
+      setStatus("confirmed");
+      setConfirmedAt(new Date().toISOString());
+      setConfirmationSummary(result?.summary ?? result);
+      setConfirmOpen(false);
+      qc.invalidateQueries({ queryKey: ["goods-receipt-drafts"] });
+      if (draftId) qc.invalidateQueries({ queryKey: ["goods-receipt-draft", draftId] });
+      qc.invalidateQueries({ queryKey: ["stock-overview"] });
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+      // Mantém o mesmo request_id para retry idempotente
+    },
+  });
+
   function markDirty() { setDirty(true); }
 
   function addItemFromProduct(mode: Mode, product: any) {
