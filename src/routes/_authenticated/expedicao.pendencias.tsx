@@ -106,8 +106,9 @@ function PendenciasPage() {
 
       {openSale && (
         <PostSaleDeliveryDialog
-          saleId={openSale}
-          open={!!openSale}
+          saleId={openSale.id}
+          saleNumber={openSale.number}
+          clientId={openSale.clientId}
           onClose={() => { setOpenSale(null); q.refetch(); }}
         />
       )}
