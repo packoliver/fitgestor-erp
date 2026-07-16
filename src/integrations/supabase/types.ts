@@ -3034,6 +3034,7 @@ export type Database = {
         Returns: string
       }
       report_exchanges: { Args: { _filters: Json }; Returns: Json }
+      resolve_goods_receipt_scan: { Args: { _code: string }; Returns: Json }
       reverse_exchange: {
         Args: { _exchange_id: string; _reason: string }
         Returns: Json
