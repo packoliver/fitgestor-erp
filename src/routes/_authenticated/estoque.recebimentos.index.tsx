@@ -22,7 +22,7 @@ function List() {
   const { data, isLoading } = useQuery({
     queryKey: ["goods-receipt-drafts"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("goods_receipt_drafts")
         .select("id, receipt_date, invoice_number, order_number, status, total_items, total_quantity, updated_at, supplier:suppliers(name)")
         .order("updated_at", { ascending: false })

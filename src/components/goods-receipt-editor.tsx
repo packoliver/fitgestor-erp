@@ -86,6 +86,11 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [draftId, setDraftId] = useState<string | undefined>(initialId);
+  // client_request_id persists por sessão do editor — protege o primeiro salvamento
+  // contra duplicidade se a resposta do RPC se perder após a criação.
+  const clientRequestIdRef = useRef<string>(
+    initialId ? "" : (globalThis.crypto?.randomUUID?.() ?? uid() + uid() + uid()),
+  );
   const [supplierId, setSupplierId] = useState<string>("");
   const [locationId, setLocationId] = useState<string>("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
@@ -120,20 +125,21 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     queryKey: ["goods-receipt-draft", initialId],
     enabled: !!initialId,
     queryFn: async () => {
-      const { data: header, error: e1 } = await (supabase as any)
+      const id = initialId!;
+      const { data: header, error: e1 } = await supabase
         .from("goods_receipt_drafts")
         .select("*")
-        .eq("id", initialId)
+        .eq("id", id)
         .maybeSingle();
       if (e1) throw e1;
       if (!header) return null;
-      const { data: rows, error: e2 } = await (supabase as any)
+      const { data: rows, error: e2 } = await supabase
         .from("goods_receipt_draft_items")
         .select("id, position, mode, product_id, new_product_data, new_variant_data, cells, product:products(name, color, category_id)")
-        .eq("draft_id", initialId)
+        .eq("draft_id", id)
         .order("position");
       if (e2) throw e2;
-      return { ...header, items: rows ?? [] } as LoadedDraft;
+      return { ...header, items: rows ?? [] } as unknown as LoadedDraft;
     },
   });
 
@@ -186,6 +192,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       if (!locationId) throw new Error("Selecione o local de estoque.");
       const payload = {
         id: draftId,
+        client_request_id: draftId ? null : clientRequestIdRef.current,
         supplier_id: supplierId || null,
         location_id: locationId,
         invoice_number: invoiceNumber || null,
@@ -200,7 +207,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
           cells: it.cells,
         })),
       };
-      const { data, error } = await (supabase as any).rpc("save_goods_receipt_draft", { _payload: payload });
+      const { data, error } = await supabase.rpc("save_goods_receipt_draft", { _payload: payload });
       if (error) throw error;
       return data as string;
     },
