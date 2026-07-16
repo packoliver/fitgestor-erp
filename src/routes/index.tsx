@@ -1,8 +1,9 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
+import { QsfMark, QsfIdentity } from "@/components/qsf-logo";
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
@@ -17,61 +18,35 @@ function Landing() {
   return (
     <div className="dark min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-foreground">
       <SiteHeader />
-
       <main>
         <Hero />
         <OperationOverview />
-        <ModuleSection
-          index="01"
-          eyebrow="Recebimento"
+        <ModuleSection index="01" eyebrow="Recebimento"
           title="Da chegada da mercadoria ao estoque, em um único fluxo."
           body="Escaneie o código de barras, confira a quantidade e feche o recebimento com histórico completo, controle de concorrência e etiquetas prontas para impressão."
-          reverse={false}
-          mockup={<ReceivingMockup />}
-        />
-        <ModuleSection
-          index="02"
-          eyebrow="Estoque"
+          reverse={false} mockup={<ReceivingMockup />} />
+        <ModuleSection index="02" eyebrow="Estoque"
           title="Cada cor um produto. Cada tamanho uma variação."
           body="Grade de tamanhos, SKU próprio por variação, saldo em tempo real, alertas de baixa e auditoria de cada movimentação."
-          reverse
-          mockup={<StockMockup />}
-        />
-        <ModuleSection
-          index="03"
-          eyebrow="Etiquetas"
+          reverse mockup={<StockMockup />} />
+        <ModuleSection index="03" eyebrow="Etiquetas"
           title="CODE128 impresso no seu ritmo."
           body="Gere lotes de etiquetas em PDF com o seu próprio SKU, sem retrabalho, prontos para a impressora térmica."
-          reverse={false}
-          mockup={<LabelsMockup />}
-        />
-        <ModuleSection
-          index="04"
-          eyebrow="PDV"
+          reverse={false} mockup={<LabelsMockup />} />
+        <ModuleSection index="04" eyebrow="PDV"
           title="Venda pelo balcão sem perder o controle."
           body="Ponto de venda direto ao ponto: leitor, pagamento, recibo e baixa de estoque instantânea, com permissões por cargo."
-          reverse
-          mockup={<PdvMockup />}
-        />
-        <ModuleSection
-          index="05"
-          eyebrow="Trocas e crédito"
+          reverse mockup={<PdvMockup />} />
+        <ModuleSection index="05" eyebrow="Trocas e crédito"
           title="Trocas organizadas, vale-crédito rastreável."
           body="Registre trocas com origem, motivo e crédito por cliente. Consulta e uso do saldo sem planilhas paralelas."
-          reverse={false}
-          mockup={<ExchangeMockup />}
-        />
-        <ModuleSection
-          index="06"
-          eyebrow="Relatórios"
+          reverse={false} mockup={<ExchangeMockup />} />
+        <ModuleSection index="06" eyebrow="Relatórios"
           title="Números claros para decidir sem achismo."
           body="Vendas por período, produtos parados, curva de estoque, trocas e créditos — a operação em uma única leitura."
-          reverse
-          mockup={<ReportsMockup />}
-        />
+          reverse mockup={<ReportsMockup />} />
         <ClosingCta />
       </main>
-
       <SiteFooter />
     </div>
   );
@@ -81,14 +56,17 @@ function Landing() {
 
 function SiteHeader() {
   return (
-    <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6 lg:px-10">
         <Link to="/" className="flex items-center gap-2.5">
-          <LogoMark />
-          <span className="text-[15px] font-semibold tracking-tight">FitGestor</span>
+          <QsfMark size={32} />
+          <div className="hidden sm:flex flex-col leading-tight">
+            <span className="text-[13.5px] font-semibold tracking-[-0.02em] text-foreground">QSF</span>
+            <span className="text-[10.5px] font-medium text-muted-foreground">Quero Ser Fit<sup className="text-[0.6em]">®</sup></span>
+          </div>
         </Link>
         <div className="flex items-center gap-1">
-          <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+          <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground hover:bg-white/5">
             <Link to="/auth">Entrar</Link>
           </Button>
           <Button asChild size="sm" className="rounded-[10px] bg-primary text-primary-foreground hover:bg-primary-hover">
@@ -100,35 +78,28 @@ function SiteHeader() {
   );
 }
 
-function LogoMark() {
-  return (
-    <div className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-border bg-surface">
-      <span className="font-serif text-[15px] font-medium leading-none text-foreground">F</span>
-    </div>
-  );
-}
-
 /* --------------------------------- Hero ---------------------------------- */
 
 function Hero() {
   return (
     <section className="relative border-b border-border">
       <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-14 px-6 pb-24 pt-20 lg:grid-cols-12 lg:gap-10 lg:px-10 lg:pb-32 lg:pt-28">
-        <div className="lg:col-span-6 xl:col-span-6">
+        <div className="lg:col-span-6">
           <div className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
             <span className="h-px w-8 bg-border" />
-            FitGestor — Plataforma de operação
+            Sistema interno · Quero Ser Fit<sup className="text-[0.6em]">®</sup>
           </div>
 
-          <h1 className="mt-8 font-serif text-[44px] font-medium leading-[1.05] tracking-tight text-foreground sm:text-[56px] lg:text-[64px]">
-            Da entrada da mercadoria
-            <br />
-            à venda,{" "}
-            <span className="italic text-muted-foreground">tudo sob controle.</span>
+          <h1 className="mt-8 text-[44px] font-semibold leading-[1.05] tracking-[-0.03em] text-foreground sm:text-[54px] lg:text-[60px]">
+            Da entrada da mercadoria<br />
+            à venda,<br />
+            <span className="text-muted-foreground">tudo sob controle.</span>
           </h1>
 
-          <p className="mt-7 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground">
-            Recebimentos, estoque, produtos, etiquetas, PDV, trocas e relatórios em um único sistema, pensado para a rotina da loja.
+          <p className="mt-7 max-w-[52ch] text-[15.5px] leading-relaxed text-muted-foreground">
+            Sistema desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup> para
+            controlar estoque, recebimentos, etiquetas, PDV, vendas, trocas e toda a
+            operação da loja.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center gap-3">
@@ -149,8 +120,7 @@ function Hero() {
           </dl>
         </div>
 
-        <div className="relative lg:col-span-6 xl:col-span-6">
-          <div className="absolute -inset-x-4 -top-6 bottom-0 -z-10 rounded-[20px] bg-surface/40" aria-hidden />
+        <div className="relative lg:col-span-6">
           <HeroMockup />
         </div>
       </div>
@@ -161,7 +131,7 @@ function Hero() {
 function Stat({ kpi, label }: { kpi: string; label: string }) {
   return (
     <div>
-      <dt className="font-serif text-[28px] font-medium leading-none text-foreground">{kpi}</dt>
+      <dt className="text-[26px] font-semibold leading-none tracking-[-0.02em] text-foreground">{kpi}</dt>
       <dd className="mt-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{label}</dd>
     </div>
   );
@@ -183,14 +153,14 @@ function OperationOverview() {
       <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-12 px-6 py-24 lg:grid-cols-12 lg:gap-10 lg:px-10">
         <div className="lg:col-span-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">A operação</p>
-          <h2 className="mt-4 font-serif text-[32px] font-medium leading-[1.15] tracking-tight sm:text-[38px]">
+          <h2 className="mt-4 text-[30px] font-semibold leading-[1.15] tracking-[-0.025em] sm:text-[36px]">
             Um sistema para tudo o que acontece entre a caixa aberta e o cliente na porta.
           </h2>
         </div>
         <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-[14px] border border-border bg-border/60 sm:grid-cols-2 lg:col-span-8 lg:grid-cols-3">
           {items.map((it) => (
             <li key={it.n} className="flex flex-col justify-between bg-background p-6">
-              <span className="font-serif text-sm text-muted-foreground">{it.n}</span>
+              <span className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground">{it.n}</span>
               <div className="mt-8">
                 <p className="text-[15px] font-semibold text-foreground">{it.t}</p>
                 <p className="mt-1 text-[13px] text-muted-foreground">{it.d}</p>
@@ -213,16 +183,16 @@ function ModuleSection({
       <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-12 px-6 py-24 lg:grid-cols-12 lg:gap-14 lg:px-10 lg:py-28">
         <div className={`lg:col-span-5 ${reverse ? "lg:order-2" : ""}`}>
           <div className="flex items-baseline gap-4">
-            <span className="font-serif text-sm text-muted-foreground">{index}</span>
+            <span className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground">{index}</span>
             <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">{eyebrow}</span>
           </div>
-          <h3 className="mt-5 font-serif text-[30px] font-medium leading-[1.15] tracking-tight sm:text-[36px]">
+          <h3 className="mt-5 text-[28px] font-semibold leading-[1.15] tracking-[-0.025em] sm:text-[34px]">
             {title}
           </h3>
           <p className="mt-5 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground">{body}</p>
         </div>
         <div className={`lg:col-span-7 ${reverse ? "lg:order-1" : ""}`}>
-          <div className="overflow-hidden rounded-[14px] border border-border bg-surface">
+          <div className="overflow-hidden rounded-[14px] border border-border bg-card">
             {mockup}
           </div>
         </div>
@@ -239,21 +209,21 @@ function ClosingCta() {
       <div className="mx-auto max-w-[1200px] px-6 py-28 lg:px-10">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
           <div className="lg:col-span-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">FitGestor</p>
-            <h2 className="mt-4 font-serif text-[38px] font-medium leading-[1.1] tracking-tight sm:text-[52px] lg:text-[64px]">
-              A sua loja funciona melhor <br />
-              <span className="italic text-muted-foreground">quando o sistema entende a operação.</span>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">Quero Ser Fit<sup className="text-[0.6em]">®</sup></p>
+            <h2 className="mt-4 text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[48px] lg:text-[58px]">
+              A operação da loja funciona melhor <br />
+              <span className="text-muted-foreground">quando o sistema entende o negócio.</span>
             </h2>
           </div>
           <div className="flex items-end lg:col-span-4">
             <div className="w-full">
               <Button asChild size="lg" className="w-full rounded-[10px] bg-primary text-primary-foreground hover:bg-primary-hover">
                 <Link to="/auth">
-                  Acessar o sistema <ArrowUpRight className="h-4 w-4" />
+                  Entrar no sistema <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground">
-                Ambiente institucional. Acesso restrito à equipe da loja.
+                Ambiente corporativo. Acesso restrito à equipe autorizada da Quero Ser Fit<sup className="text-[0.6em]">®</sup>.
               </p>
             </div>
           </div>
@@ -268,21 +238,20 @@ function ClosingCta() {
 function SiteFooter() {
   return (
     <footer>
-      <div className="mx-auto flex max-w-[1200px] flex-col items-start justify-between gap-4 px-6 py-10 sm:flex-row sm:items-center lg:px-10">
-        <div className="flex items-center gap-2.5">
-          <LogoMark />
-          <span className="text-[13px] text-muted-foreground">© {new Date().getFullYear()} FitGestor</span>
+      <div className="mx-auto flex max-w-[1200px] flex-col items-start justify-between gap-6 px-6 py-12 sm:flex-row sm:items-center lg:px-10">
+        <QsfIdentity size="sm" onDark />
+        <div className="flex flex-col items-start gap-1 sm:items-end">
+          <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+            © {new Date().getFullYear()} Quero Ser Fit<sup className="text-[0.6em]">®</sup>
+          </span>
+          <span className="text-[11px] text-muted-foreground">Todos os direitos reservados</span>
         </div>
-        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-          Operação de varejo de moda
-        </span>
       </div>
     </footer>
   );
 }
 
 /* =============================== Mockups ================================ */
-/* Reconstruções fiéis das telas reais do ERP em SVG/DOM.                   */
 
 function BrowserChrome({ path, children }: { path: string; children: ReactNode }) {
   return (
@@ -291,7 +260,7 @@ function BrowserChrome({ path, children }: { path: string; children: ReactNode }
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
-        <span className="ml-3 truncate text-[11px] text-muted-foreground">fitgestor.app{path}</span>
+        <span className="ml-3 truncate text-[11px] text-muted-foreground">qsf.queroserfit.com{path}</span>
       </div>
       <div className="bg-background">{children}</div>
     </div>
@@ -302,21 +271,17 @@ function AppFrame({ active, children }: { active: string; children: ReactNode })
   const nav = ["Dashboard", "PDV", "Produtos", "Estoque", "Recebimentos", "Etiquetas", "Trocas", "Relatórios"];
   return (
     <div className="grid grid-cols-12">
-      <aside className="col-span-3 hidden border-r border-border bg-[#0E0C16] p-3 text-[11px] sm:block">
+      <aside className="col-span-3 hidden border-r border-border bg-[#0D0D10] p-3 text-[11px] sm:block">
         <div className="mb-3 flex items-center gap-2 px-2 py-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-[6px] border border-white/10 bg-white/5 font-serif text-[11px]">F</div>
-          <span className="text-[12px] font-medium text-white/90">FitGestor</span>
+          <div className="flex h-6 w-6 items-center justify-center rounded-[6px] border border-white/10 bg-white/5 text-[9px] font-semibold text-white">QSF</div>
+          <span className="text-[12px] font-semibold text-white/90">QSF</span>
         </div>
         <nav className="space-y-0.5">
           {nav.map((l) => (
-            <div
-              key={l}
+            <div key={l}
               className={`flex items-center gap-2 rounded-[8px] px-2.5 py-1.5 ${
-                l === active
-                  ? "bg-primary/15 text-white"
-                  : "text-white/55"
-              }`}
-            >
+                l === active ? "bg-primary/15 text-white" : "text-white/55"
+              }`}>
               <span className={`h-1 w-1 rounded-full ${l === active ? "bg-primary-glow" : "bg-white/20"}`} />
               {l}
             </div>
@@ -328,17 +293,16 @@ function AppFrame({ active, children }: { active: string; children: ReactNode })
   );
 }
 
-/* --- Hero: dashboard-like overview using real modules --- */
 function HeroMockup() {
   return (
-    <div className="rounded-[16px] border border-border bg-surface shadow-lg">
+    <div className="rounded-[16px] border border-border bg-card shadow-lg">
       <BrowserChrome path="/dashboard">
         <AppFrame active="Dashboard">
           <div className="space-y-4 p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Visão geral</p>
-                <p className="mt-1 font-serif text-[18px]">Hoje, 16 de julho</p>
+                <p className="mt-1 text-[18px] font-semibold tracking-[-0.02em]">Hoje, 16 de julho</p>
               </div>
               <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">Loja Centro</span>
             </div>
@@ -350,7 +314,7 @@ function HeroMockup() {
               ].map((k) => (
                 <div key={k.l} className="rounded-[10px] border border-border bg-background p-3">
                   <p className="text-[10px] text-muted-foreground">{k.l}</p>
-                  <p className="mt-1.5 font-serif text-[18px] leading-none text-foreground">{k.v}</p>
+                  <p className="mt-1.5 text-[18px] font-semibold leading-none tracking-[-0.02em] text-foreground">{k.v}</p>
                   <p className="mt-1.5 text-[10px] text-primary-glow">{k.d}</p>
                 </div>
               ))}
@@ -389,7 +353,7 @@ function ReceivingMockup() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Recebimento</p>
-              <p className="mt-1 font-serif text-[18px]">RC-0128 · Fornecedor Alfa</p>
+              <p className="mt-1 text-[18px] font-semibold tracking-[-0.02em]">RC-0128 · Fornecedor Alfa</p>
             </div>
             <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] text-primary-glow">Rascunho v3</span>
           </div>
@@ -441,7 +405,7 @@ function StockMockup() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Estoque por variação</p>
-              <p className="mt-1 font-serif text-[18px]">248 SKUs ativos</p>
+              <p className="mt-1 text-[18px] font-semibold tracking-[-0.02em]">248 SKUs ativos</p>
             </div>
             <div className="flex items-center gap-2">
               <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">Todos</span>
@@ -464,13 +428,9 @@ function StockMockup() {
                 <span className="col-span-1 text-muted-foreground">{r[2]}</span>
                 <span className="col-span-3 font-mono text-[10.5px] text-muted-foreground">{r[3]}</span>
                 <span className="col-span-1 text-right text-foreground">{r[4]}</span>
-                <span
-                  className={`col-span-1 text-right text-[10px] ${
-                    r[5] === "OK" ? "text-muted-foreground" : r[5] === "Baixo" ? "text-primary-glow" : "text-destructive"
-                  }`}
-                >
-                  {r[5]}
-                </span>
+                <span className={`col-span-1 text-right text-[10px] ${
+                  r[5] === "OK" ? "text-muted-foreground" : r[5] === "Baixo" ? "text-primary-glow" : "text-destructive"
+                }`}>{r[5]}</span>
               </div>
             ))}
           </div>
@@ -488,7 +448,7 @@ function LabelsMockup() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Lote de etiquetas</p>
-              <p className="mt-1 font-serif text-[18px]">LT-042 · 48 etiquetas</p>
+              <p className="mt-1 text-[18px] font-semibold tracking-[-0.02em]">LT-042 · 48 etiquetas</p>
             </div>
             <span className="rounded-[8px] border border-primary/40 bg-primary/10 px-2 py-1 text-[10px] text-primary-glow">Gerar PDF</span>
           </div>
@@ -499,11 +459,8 @@ function LabelsMockup() {
                 <p className="mt-0.5 text-[8px] text-neutral-600">Preto · M</p>
                 <div className="mt-2 flex h-6 items-end gap-[1px]">
                   {Array.from({ length: 28 }).map((__, j) => (
-                    <span
-                      key={j}
-                      className="w-[2px] bg-[#0D0D10]"
-                      style={{ height: `${40 + ((j * 13) % 60)}%`, opacity: j % 3 === 0 ? 1 : 0.85 }}
-                    />
+                    <span key={j} className="w-[2px] bg-[#0D0D10]"
+                      style={{ height: `${40 + ((j * 13) % 60)}%`, opacity: j % 3 === 0 ? 1 : 0.85 }} />
                   ))}
                 </div>
                 <p className="mt-1 text-center font-mono text-[8px]">CS-PT-M-{100 + i}</p>
@@ -539,7 +496,7 @@ function PdvMockup() {
             <div className="mt-4 border-t border-border pt-3 text-[11px]">
               <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span className="font-mono">R$ 399,60</span></div>
               <div className="mt-1 flex justify-between text-muted-foreground"><span>Desconto</span><span className="font-mono">— R$ 10,00</span></div>
-              <div className="mt-2 flex justify-between font-serif text-[16px] text-foreground"><span>Total</span><span>R$ 389,60</span></div>
+              <div className="mt-2 flex justify-between text-[16px] font-semibold tracking-[-0.02em] text-foreground"><span>Total</span><span>R$ 389,60</span></div>
             </div>
           </div>
           <div className="col-span-2 space-y-3">
@@ -571,7 +528,7 @@ function ExchangeMockup() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Nova troca</p>
-              <p className="mt-1 font-serif text-[18px]">TR-0087 · Maria Andrade</p>
+              <p className="mt-1 text-[18px] font-semibold tracking-[-0.02em]">TR-0087 · Maria Andrade</p>
             </div>
             <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">Venda VD-1204</span>
           </div>
@@ -590,7 +547,7 @@ function ExchangeMockup() {
           <div className="mt-3 flex items-center justify-between rounded-[10px] border border-primary/40 bg-primary/10 p-3">
             <div>
               <p className="text-[10px] uppercase tracking-[0.18em] text-primary-glow">Crédito gerado</p>
-              <p className="mt-1 font-serif text-[16px] text-foreground">R$ 0,00</p>
+              <p className="mt-1 text-[16px] font-semibold tracking-[-0.02em] text-foreground">R$ 0,00</p>
             </div>
             <span className="rounded-[8px] bg-primary px-3 py-1.5 text-[11px] text-primary-foreground">Confirmar troca</span>
           </div>
@@ -609,7 +566,7 @@ function ReportsMockup() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Vendas · últimos 12 dias</p>
-              <p className="mt-1 font-serif text-[18px]">R$ 48.310</p>
+              <p className="mt-1 text-[18px] font-semibold tracking-[-0.02em]">R$ 48.310</p>
             </div>
             <div className="flex gap-1.5 text-[10px]">
               {["7d", "12d", "30d"].map((p, i) => (
@@ -625,9 +582,9 @@ function ReportsMockup() {
             ))}
           </div>
           <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-4 text-[11px]">
-            <div><p className="text-muted-foreground">Peças vendidas</p><p className="font-serif text-[16px] text-foreground">312</p></div>
-            <div><p className="text-muted-foreground">Trocas</p><p className="font-serif text-[16px] text-foreground">14</p></div>
-            <div><p className="text-muted-foreground">Crédito em aberto</p><p className="font-serif text-[16px] text-foreground">R$ 486</p></div>
+            <div><p className="text-muted-foreground">Peças vendidas</p><p className="text-[16px] font-semibold tracking-[-0.02em] text-foreground">312</p></div>
+            <div><p className="text-muted-foreground">Trocas</p><p className="text-[16px] font-semibold tracking-[-0.02em] text-foreground">14</p></div>
+            <div><p className="text-muted-foreground">Crédito em aberto</p><p className="text-[16px] font-semibold tracking-[-0.02em] text-foreground">R$ 486</p></div>
           </div>
         </div>
       </AppFrame>
