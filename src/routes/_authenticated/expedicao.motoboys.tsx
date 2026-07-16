@@ -43,6 +43,28 @@ function CouriersPage() {
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(empty);
+  const [linkFor, setLinkFor] = useState<Courier | null>(null);
+  const [userSearch, setUserSearch] = useState("");
+
+  const users = useQuery({
+    queryKey: ["org-profiles", userSearch],
+    enabled: !!linkFor,
+    queryFn: async () => {
+      let q = supabase.from("profiles").select("id, full_name, email, status").eq("status", "ativo").order("full_name").limit(50);
+      const t = userSearch.trim();
+      if (t) q = q.or(`full_name.ilike.%${t}%,email.ilike.%${t}%`);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as { id: string; full_name: string; email: string; status: string }[];
+    },
+  });
+
+  const linkedUsers = useQuery({
+    queryKey: ["courier-linked-user-info"],
+    enabled: (list => list.data?.some((c) => !!c.user_id))(useQuery),
+    queryFn: async () => ({}),
+  });
+  // Fetch profile info for linked couriers via a lightweight join, done inline below.
 
   const list = useQuery({
     queryKey: ["couriers"],
