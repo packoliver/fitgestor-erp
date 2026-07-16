@@ -198,21 +198,34 @@ function RotaDetalhe() {
                 {reorderMut.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando…</> : "Salvar ordem"}
               </Button>
             )}
+            <Button variant="outline" onClick={() => setAddOpen(true)}>
+              <Plus className="mr-1 h-4 w-4" />Adicionar entrega
+            </Button>
             <Button onClick={() => {
-              if (!confirm(`Despachar rota com ${orderedShipments.length} paradas? Após despacho a rota não poderá mais ser editada.`)) return;
-              dispatchMut.mutate();
-            }} disabled={dispatchMut.isPending || orderedShipments.length === 0}>
-              <Truck className="mr-1 h-4 w-4" />Despachar
+              if (!confirm(`Registrar saída do motoboy com ${orderedShipments.length} paradas? Após essa ação a rota será bloqueada para edição.`)) return;
+              dispatchAndStartMut.mutate();
+            }} disabled={dispatchAndStartMut.isPending || orderedShipments.length === 0}>
+              <Truck className="mr-1 h-4 w-4" />Motoboy saiu para entrega
             </Button>
           </>
         )}
         {r.status === "dispatched" && canDispatch && (
-          <Button variant="outline" onClick={() => startMut.mutate()}><PlayCircle className="mr-1 h-4 w-4" />Iniciar</Button>
+          <Button variant="outline" onClick={() => startMut.mutate()}>
+            <Truck className="mr-1 h-4 w-4" />Marcar em andamento
+          </Button>
         )}
         {["dispatched", "in_progress"].includes(r.status) && canDispatch && allFinal && (
           <Button onClick={() => completeMut.mutate()}><CheckCircle2 className="mr-1 h-4 w-4" />Concluir rota</Button>
         )}
+        {!["completed","cancelled"].includes(r.status) && canDispatch && (
+          <Button variant="destructive" className="ml-auto" onClick={() => setCancelOpen(true)}>
+            <XCircle className="mr-1 h-4 w-4" />Cancelar rota
+          </Button>
+        )}
       </div>
+
+      <AddShipmentToRouteDialog routeId={id} open={addOpen} onClose={() => setAddOpen(false)} />
+      <CancelRouteDialog routeId={id} open={cancelOpen} onClose={() => setCancelOpen(false)} />
 
       <Card className="overflow-x-auto">
         <table className="w-full text-sm">
