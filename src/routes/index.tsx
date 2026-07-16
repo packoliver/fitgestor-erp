@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
-import { QsfMark, QsfIdentity } from "@/components/qsf-logo";
+import { BrandMark, BrandLockup } from "@/components/brand-logo";
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
