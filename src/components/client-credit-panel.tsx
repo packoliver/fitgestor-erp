@@ -277,6 +277,7 @@ export function ClientCreditPanel({ clientId }: { clientId: string }) {
             )}
           </TableBody>
         </Table>
+        </div>
         <div className="flex items-center justify-between p-3 border-t text-sm">
           <div className="text-muted-foreground">Página {page + 1}</div>
           <div className="flex gap-2">
