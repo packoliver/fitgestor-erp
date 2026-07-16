@@ -41,6 +41,7 @@ import { Route as AuthenticatedEstoqueMovimentacoesRouteImport } from './routes/
 import { Route as AuthenticatedEstoqueInventarioRouteImport } from './routes/_authenticated/estoque.inventario'
 import { Route as AuthenticatedEstoqueEntradaRouteImport } from './routes/_authenticated/estoque.entrada'
 import { Route as AuthenticatedConfiguracoesTrocasRouteImport } from './routes/_authenticated/configuracoes.trocas'
+import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -216,6 +217,11 @@ const AuthenticatedConfiguracoesTrocasRoute =
     path: '/trocas',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
+const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
+  id: '/clientes/$id',
+  path: '/clientes/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -233,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/marcas': typeof AuthenticatedMarcasRoute
   '/pdv': typeof AuthenticatedPdvRoute
+  '/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
   '/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
   '/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/marcas': typeof AuthenticatedMarcasRoute
   '/pdv': typeof AuthenticatedPdvRoute
+  '/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
   '/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
   '/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
@@ -301,6 +309,7 @@ export interface FileRoutesById {
   '/_authenticated/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/_authenticated/marcas': typeof AuthenticatedMarcasRoute
   '/_authenticated/pdv': typeof AuthenticatedPdvRoute
+  '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/_authenticated/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
   '/_authenticated/estoque/entrada': typeof AuthenticatedEstoqueEntradaRoute
   '/_authenticated/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
@@ -336,6 +345,7 @@ export interface FileRouteTypes {
     | '/funcionarios'
     | '/marcas'
     | '/pdv'
+    | '/clientes/$id'
     | '/configuracoes/trocas'
     | '/estoque/entrada'
     | '/estoque/inventario'
@@ -369,6 +379,7 @@ export interface FileRouteTypes {
     | '/funcionarios'
     | '/marcas'
     | '/pdv'
+    | '/clientes/$id'
     | '/configuracoes/trocas'
     | '/estoque/entrada'
     | '/estoque/inventario'
@@ -403,6 +414,7 @@ export interface FileRouteTypes {
     | '/_authenticated/funcionarios'
     | '/_authenticated/marcas'
     | '/_authenticated/pdv'
+    | '/_authenticated/clientes/$id'
     | '/_authenticated/configuracoes/trocas'
     | '/_authenticated/estoque/entrada'
     | '/_authenticated/estoque/inventario'
@@ -655,6 +667,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesTrocasRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
+    '/_authenticated/clientes/$id': {
+      id: '/_authenticated/clientes/$id'
+      path: '/clientes/$id'
+      fullPath: '/clientes/$id'
+      preLoaderRoute: typeof AuthenticatedClientesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -685,6 +704,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFuncionariosRoute: typeof AuthenticatedFuncionariosRoute
   AuthenticatedMarcasRoute: typeof AuthenticatedMarcasRoute
   AuthenticatedPdvRoute: typeof AuthenticatedPdvRoute
+  AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRoute
   AuthenticatedEstoqueEntradaRoute: typeof AuthenticatedEstoqueEntradaRoute
   AuthenticatedEstoqueInventarioRoute: typeof AuthenticatedEstoqueInventarioRoute
   AuthenticatedEstoqueMovimentacoesRoute: typeof AuthenticatedEstoqueMovimentacoesRoute
@@ -714,6 +734,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFuncionariosRoute: AuthenticatedFuncionariosRoute,
   AuthenticatedMarcasRoute: AuthenticatedMarcasRoute,
   AuthenticatedPdvRoute: AuthenticatedPdvRoute,
+  AuthenticatedClientesIdRoute: AuthenticatedClientesIdRoute,
   AuthenticatedEstoqueEntradaRoute: AuthenticatedEstoqueEntradaRoute,
   AuthenticatedEstoqueInventarioRoute: AuthenticatedEstoqueInventarioRoute,
   AuthenticatedEstoqueMovimentacoesRoute:
