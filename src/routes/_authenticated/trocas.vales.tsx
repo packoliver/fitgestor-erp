@@ -13,6 +13,8 @@ import { formatDateTime } from "@/lib/erp";
 import { Search, Printer } from "lucide-react";
 import { PrintDialog } from "@/components/print/print-dialog";
 import { VoucherReceipt } from "@/components/print/voucher-receipt";
+import { RequirePermission } from "@/components/require-permission";
+
 
 export const Route = createFileRoute("/_authenticated/trocas/vales")({
   component: ValesPage,
