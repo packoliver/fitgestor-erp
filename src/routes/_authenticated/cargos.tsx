@@ -129,20 +129,22 @@ function CargosPage() {
               <div className="space-y-4">
                 {Object.entries(grouped).map(([module, list]) => (
                   <div key={module}>
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">{module}</h3>
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">{MODULE_LABELS[module] ?? module}</h3>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {list.map((p: any) => (
                         <label key={p.id} className="flex items-start gap-2 rounded-md border p-2 hover:bg-muted/40 cursor-pointer">
                           <Checkbox checked={enabled.has(p.id)} onCheckedChange={(v) => togglePerm(p.id, !!v)} />
                           <div>
                             <div className="text-sm font-medium">{p.name}</div>
-                            <div className="text-xs text-muted-foreground">{p.code}</div>
+                            {p.description && <div className="text-xs text-muted-foreground">{p.description}</div>}
+                            <div className="text-[10px] text-muted-foreground/70 mt-0.5">{p.code}</div>
                           </div>
                         </label>
                       ))}
                     </div>
                   </div>
                 ))}
+
               </div>
             )}
           </CardContent>
