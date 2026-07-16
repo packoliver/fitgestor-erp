@@ -1123,6 +1123,24 @@ export type Database = {
           },
         ]
       }
+      goods_receipt_counters: {
+        Row: {
+          next_number: number
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          next_number?: number
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          next_number?: number
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       goods_receipt_draft_items: {
         Row: {
           cells: Json
@@ -1195,6 +1213,11 @@ export type Database = {
       }
       goods_receipt_drafts: {
         Row: {
+          cancellation_reason: string | null
+          cancellation_request_id: string | null
+          cancellation_summary: Json | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           client_request_id: string | null
           confirmation_request_id: string | null
           confirmation_summary: Json | null
@@ -1209,14 +1232,21 @@ export type Database = {
           order_number: string | null
           organization_id: string
           receipt_date: string
+          receipt_number: number
           status: string
           supplier_id: string | null
           total_items: number
           total_quantity: number
           updated_at: string
           updated_by: string | null
+          version: number
         }
         Insert: {
+          cancellation_reason?: string | null
+          cancellation_request_id?: string | null
+          cancellation_summary?: Json | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           client_request_id?: string | null
           confirmation_request_id?: string | null
           confirmation_summary?: Json | null
@@ -1231,14 +1261,21 @@ export type Database = {
           order_number?: string | null
           organization_id: string
           receipt_date?: string
+          receipt_number: number
           status?: string
           supplier_id?: string | null
           total_items?: number
           total_quantity?: number
           updated_at?: string
           updated_by?: string | null
+          version?: number
         }
         Update: {
+          cancellation_reason?: string | null
+          cancellation_request_id?: string | null
+          cancellation_summary?: Json | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           client_request_id?: string | null
           confirmation_request_id?: string | null
           confirmation_summary?: Json | null
@@ -1253,12 +1290,14 @@ export type Database = {
           order_number?: string | null
           organization_id?: string
           receipt_date?: string
+          receipt_number?: number
           status?: string
           supplier_id?: string | null
           total_items?: number
           total_quantity?: number
           updated_at?: string
           updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -2973,6 +3012,15 @@ export type Database = {
         Args: { _method: string }
         Returns: undefined
       }
+      cancel_goods_receipt_draft: {
+        Args: {
+          _client_request_id: string
+          _draft_id: string
+          _expected_version: number
+          _reason: string
+        }
+        Returns: Json
+      }
       cancel_goods_receipt_label_print: {
         Args: { _event_id: string; _reason: string }
         Returns: Json
@@ -3008,7 +3056,9 @@ export type Database = {
         Args: { _items: Json; _sale_id: string }
         Returns: string
       }
+      list_goods_receipts: { Args: { _filters: Json }; Returns: Json }
       next_exchange_number: { Args: { _org: string }; Returns: number }
+      next_goods_receipt_number: { Args: { _org: string }; Returns: number }
       next_sale_number: { Args: { _org: string }; Returns: number }
       open_cash_session: {
         Args: { _location_id: string; _notes?: string; _opening_amount: number }
@@ -3047,7 +3097,7 @@ export type Database = {
           test_name: string
         }[]
       }
-      save_goods_receipt_draft: { Args: { _payload: Json }; Returns: string }
+      save_goods_receipt_draft: { Args: { _payload: Json }; Returns: Json }
     }
     Enums: {
       cheaper_balance_action:
