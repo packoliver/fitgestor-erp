@@ -174,19 +174,7 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
     onSettled: () => setConfirming(false),
   });
 
-  const includeOverride = useMutation({
-    mutationFn: async (routeId: string) => {
-      if (!createdShipmentId) throw new Error("Ordem não encontrada.");
-      const reason = window.prompt("Justificativa para incluir na saída de hoje:")?.trim();
-      if (!reason) throw new Error("Justificativa obrigatória.");
-      const { error } = await supabase.rpc("include_shipment_in_open_route", {
-        _shipment_id: createdShipmentId, _route_id: routeId, _reason: reason,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Entrega incluída na saída de hoje."); setOverrideOpen(false); },
-    onError: (e: Error) => toast.error(e.message),
-  });
+  // includeOverride replaced by <OverrideScheduleDialog />.
 
   const canOverride = perms.has("shipping.override_schedule");
   const forecastLabel = forecast ? (() => {
