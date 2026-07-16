@@ -259,7 +259,12 @@ function PdvPage() {
     },
     onSuccess: (data: any) => {
       toast.success(`Venda #${data.sale_number ?? ""} concluída.`);
-      navigate({ to: "/vendas/$id", params: { id: data.sale_id } });
+      setPayOpen(false);
+      setPostSale({ saleId: data.sale_id, saleNumber: data.sale_number ?? null, clientId });
+      // Reset cart for next sale
+      setCart([]); setPayments([]); setOrderDiscountType(""); setOrderDiscountValue("0");
+      setClientId(null); setClientName("");
+      setSubmitting(false);
     },
     onError: (e: Error) => { toast.error(e.message); setSubmitting(false); },
   });
