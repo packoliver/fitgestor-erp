@@ -19,3 +19,7 @@ export function formatDateTime(value: string | Date | null | undefined) {
 }
 
 export const SIZE_SUGGESTIONS = ["PP", "P", "M", "G", "GG", "XG", "G1", "G2", "G3", "Único"];
+
+// Valor oficial persistido em product_variants.size para produtos sem grade.
+export const SIZE_SINGLE = "ÚNICO";
+export const SIZE_SINGLE_LABEL = "Tamanho único";
