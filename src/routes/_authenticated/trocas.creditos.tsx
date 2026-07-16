@@ -11,6 +11,8 @@ import { money, normalizeDigits } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
 import { Search, ExternalLink } from "lucide-react";
 import { ClientCreditPanel } from "@/components/client-credit-panel";
+import { RequirePermission } from "@/components/require-permission";
+
 
 export const Route = createFileRoute("/_authenticated/trocas/creditos")({
   component: CreditosPage,
