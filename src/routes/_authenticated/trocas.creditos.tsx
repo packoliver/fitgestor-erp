@@ -42,7 +42,8 @@ function CreditosPage() {
   });
 
   return (
-    <div>
+    <RequirePermission code="credits.view"><div>
+
       <PageHeader title="Créditos da loja" description="Saldos por cliente. O histórico completo abre na tela do cliente." />
       <Card className="p-3 mb-4">
         <div className="relative flex-1">
