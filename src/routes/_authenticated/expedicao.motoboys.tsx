@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Power, Search, Link2, Unlink } from "lucide-react";
+import { Plus, Pencil, Power, Search, Link2, Unlink, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { RequirePermission } from "@/components/require-permission";
 
