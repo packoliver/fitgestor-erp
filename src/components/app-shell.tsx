@@ -68,6 +68,12 @@ const groups: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
+    label: "Expedição",
+    items: [
+      { title: "Motoboys", url: "/expedicao/motoboys", icon: Truck, perm: "shipping.manage_couriers" },
+    ],
+  },
+  {
     label: "Relatórios",
     items: [
       { title: "Relatório de trocas", url: "/relatorios/trocas", icon: FileBarChart, perm: "reports.exchanges.view" },
