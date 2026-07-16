@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
@@ -14,6 +14,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AVAILABLE_METHODS, getOpenSession, money, normalizeDigits, PAYMENT_LABELS, PaymentMethod, validCPF } from "@/lib/pos";
 import { Minus, Plus, Search, ShoppingCart, Trash2, User, X } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
+import { PostSaleDeliveryDialog } from "@/components/post-sale-delivery-dialog";
 
 
 export const Route = createFileRoute("/_authenticated/pdv")({
@@ -42,7 +43,7 @@ function newRequestId() {
 function PdvPage() {
   const perms = usePermissions();
 
-  const navigate = useNavigate();
+  
   const searchRef = useRef<HTMLInputElement>(null);
   const [term, setTerm] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -64,6 +65,7 @@ function PdvPage() {
   const [creditLookupPending, setCreditLookupPending] = useState(false);
   const [requestId] = useState(newRequestId());
   const [submitting, setSubmitting] = useState(false);
+  const [postSale, setPostSale] = useState<{ saleId: string; saleNumber: string | number | null; clientId: string | null } | null>(null);
 
   const { data: session } = useQuery({
     queryKey: ["pdv-session"],
@@ -257,7 +259,12 @@ function PdvPage() {
     },
     onSuccess: (data: any) => {
       toast.success(`Venda #${data.sale_number ?? ""} concluída.`);
-      navigate({ to: "/vendas/$id", params: { id: data.sale_id } });
+      setPayOpen(false);
+      setPostSale({ saleId: data.sale_id, saleNumber: data.sale_number ?? null, clientId });
+      // Reset cart for next sale
+      setCart([]); setPayments([]); setOrderDiscountType(""); setOrderDiscountValue("0");
+      setClientId(null); setClientName("");
+      setSubmitting(false);
     },
     onError: (e: Error) => { toast.error(e.message); setSubmitting(false); },
   });
@@ -536,6 +543,16 @@ function PdvPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {postSale && (
+        <PostSaleDeliveryDialog
+          saleId={postSale.saleId}
+          saleNumber={postSale.saleNumber}
+          clientId={postSale.clientId}
+          onClose={() => setPostSale(null)}
+        />
+      )}
     </div>
   );
 }
+
