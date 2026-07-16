@@ -11,6 +11,8 @@ import { money } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
 import { useState } from "react";
 import { Plus, Settings } from "lucide-react";
+import { RequirePermission } from "@/components/require-permission";
+
 
 export const Route = createFileRoute("/_authenticated/trocas/")({
   component: TrocasPage,
