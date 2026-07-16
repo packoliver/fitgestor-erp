@@ -195,6 +195,11 @@ export const PERMISSION_GROUPS: { id: string; label: string; codes: string[] }[]
   { id: "admin", label: "Administração", codes: [
     "user.manage","role.manage","audit.view",
   ] },
+  { id: "post_sale", label: "Pós-venda", codes: [
+    "post_sale.view","post_sale.send","post_sale.create_manual",
+    "post_sale.manage_templates","post_sale.manage_rules","post_sale.settings",
+    "post_sale.skip","post_sale.cancel","post_sale.assign","post_sale.review",
+  ] },
 ];
 
 // Codes considered sensitive — surfaced with a red highlight in the UI.
