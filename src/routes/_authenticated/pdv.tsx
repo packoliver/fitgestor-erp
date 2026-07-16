@@ -65,6 +65,7 @@ function PdvPage() {
   const [creditLookupPending, setCreditLookupPending] = useState(false);
   const [requestId] = useState(newRequestId());
   const [submitting, setSubmitting] = useState(false);
+  const [postSale, setPostSale] = useState<{ saleId: string; saleNumber: string | number | null; clientId: string | null } | null>(null);
 
   const { data: session } = useQuery({
     queryKey: ["pdv-session"],
