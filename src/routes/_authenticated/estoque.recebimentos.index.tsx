@@ -37,7 +37,7 @@ function List() {
       <PageHeader
         title="Recebimento de mercadorias"
         description="Rascunhos e recebimentos em andamento."
-        action={
+        actions={
           <Button asChild size="lg">
             <Link to="/estoque/recebimentos/novo"><Plus className="mr-2 h-4 w-4" />Novo recebimento</Link>
           </Button>
