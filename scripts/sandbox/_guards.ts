@@ -43,14 +43,9 @@ function extractRef(input: string | undefined): string | null {
   // Compatibilidade com input já sem esquema — tenta regex direta apenas em <ref>.supabase.co
   const mUrl = input.match(/(?:^|[^a-z0-9])([a-z0-9]{20})\.supabase\.(co|in)(?:[^a-z0-9]|$)/i);
   if (mUrl) return mUrl[1].toLowerCase();
-  // postgresql://...@db.<ref>.supabase.co:5432/postgres
-  const mDb = input.match(/@(?:db\.)?([a-z0-9]{20})\.supabase\.(co|in)/i);
-  if (mDb) return mDb[1].toLowerCase();
-  // pooler: aws-0-<region>.pooler.supabase.com?options=project%3D<ref>
-  const mPool = input.match(/project[=%3D]+([a-z0-9]{20})/i);
-  if (mPool) return mPool[1].toLowerCase();
   return null;
 }
+
 
 export function assertSandboxEnv(): SandboxEnv {
   const appEnv = process.env.APP_ENV;
