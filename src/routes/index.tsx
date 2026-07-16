@@ -26,12 +26,12 @@ const features = [
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="dark min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary text-white shadow-glow">
               <span className="font-display text-lg font-bold leading-none">F</span>
             </div>
             <span className="font-display text-lg font-semibold tracking-tight">FitGestor</span>
@@ -40,7 +40,7 @@ function Landing() {
             <Button asChild variant="ghost" size="sm">
               <Link to="/auth">Entrar</Link>
             </Button>
-            <Button asChild size="sm">
+            <Button asChild size="sm" variant="premium">
               <Link to="/auth" search={{ mode: "signup" }}>
                 Começar agora <ArrowRight className="h-4 w-4" />
               </Link>
@@ -52,35 +52,28 @@ function Landing() {
       <main>
         {/* Hero */}
         <section className="relative overflow-hidden">
-          <div
-            aria-hidden
-            className="absolute inset-0 -z-10 opacity-[0.35]"
-            style={{
-              backgroundImage:
-                "radial-gradient(ellipse 60% 50% at 50% 0%, color-mix(in oklab, var(--primary) 22%, transparent), transparent 70%)",
-            }}
-          />
+          <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-hero" />
+          <div aria-hidden className="absolute inset-x-0 top-0 -z-10 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
           <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-20 pb-24 sm:pt-28 sm:pb-32 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-medium text-muted-foreground shadow-xs">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              ERP moderno para moda fitness
+            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3.5 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
+              <Sparkles className="h-3.5 w-3.5 text-primary-glow" />
+              ERP premium para varejo de moda
             </div>
             <h1 className="mt-6 font-display text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Gestão que acompanha
+              Controle sua operação.
               <br className="hidden sm:block" />
-              <span className="text-primary">o ritmo da sua loja.</span>
+              <span className="bg-gradient-primary bg-clip-text text-transparent">Venda com mais inteligência.</span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-muted-foreground leading-relaxed">
-              Produtos, variações por tamanho, estoque unificado entre loja física e online,
-              etiquetas com código de barras e auditoria completa. Tudo em um só lugar.
+              Estoque, PDV, produtos, etiquetas, recebimentos e gestão da loja em uma única plataforma.
             </p>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <Button asChild size="lg">
+              <Button asChild size="lg" variant="premium">
                 <Link to="/auth" search={{ mode: "signup" }}>
                   Criar conta grátis <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
+              <Button asChild size="lg" variant="outline" className="bg-white/5 border-white/15 text-foreground hover:bg-white/10">
                 <Link to="/auth">Já tenho conta</Link>
               </Button>
             </div>
@@ -148,9 +141,9 @@ function Landing() {
               {features.map(({ icon: Icon, title, desc }) => (
                 <div
                   key={title}
-                  className="group rounded-2xl border border-border bg-card p-6 shadow-xs transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                  className="group relative rounded-2xl border border-border bg-surface/60 p-6 backdrop-blur-sm transition-all duration-200 hover:border-primary/40 hover:shadow-glow hover:-translate-y-0.5"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/12 text-primary-glow transition-colors group-hover:bg-gradient-primary group-hover:text-white">
                     <Icon className="h-5 w-5" />
                   </div>
                   <h3 className="mt-5 text-base font-semibold tracking-tight">{title}</h3>
@@ -180,12 +173,12 @@ function Landing() {
                 Comece grátis, sem cartão. Você configura tudo em minutos e escala quando quiser.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
-                <Button asChild size="lg">
+                <Button asChild size="lg" variant="premium">
                   <Link to="/auth" search={{ mode: "signup" }}>
                     Criar conta grátis <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline">
+                <Button asChild size="lg" variant="outline" className="bg-white/5 border-white/15 text-foreground hover:bg-white/10">
                   <Link to="/auth">Fazer login</Link>
                 </Button>
               </div>
@@ -197,7 +190,7 @@ function Landing() {
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-8 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground text-[11px] font-bold">F</div>
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-primary text-white text-[11px] font-bold">F</div>
             <span>© {new Date().getFullYear()} FitGestor</span>
           </div>
           <span className="text-xs">Feito para lojas que vendem melhor.</span>

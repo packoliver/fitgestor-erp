@@ -36,17 +36,19 @@ function AuthPage() {
   const [tab, setTab] = useState<"signin" | "signup">(search.mode ?? "signin");
 
   return (
-    <div className="min-h-screen bg-muted/30 flex items-center justify-center px-4 py-12">
+    <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-hero opacity-80" />
+      <div aria-hidden className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <span className="font-display text-2xl font-semibold">F</span>
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-primary text-white shadow-glow">
+            <span className="font-display text-2xl font-bold">F</span>
           </div>
-          <h1 className="font-display text-3xl font-semibold">FitGestor</h1>
-          <p className="mt-1 text-sm text-muted-foreground">ERP para loja de roupas fitness</p>
+          <h1 className="font-display text-3xl font-semibold tracking-tight">FitGestor</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">Plataforma premium de gestão para o seu varejo</p>
         </div>
 
-        <Card>
+        <Card className="border-border bg-surface/70 backdrop-blur-xl shadow-lg">
           <CardHeader>
             <CardTitle>Acessar conta</CardTitle>
             <CardDescription>Entre ou cadastre-se para começar.</CardDescription>
