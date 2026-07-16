@@ -44,6 +44,7 @@ import { Route as AuthenticatedEstoqueEntradaRouteImport } from './routes/_authe
 import { Route as AuthenticatedConfiguracoesTrocasRouteImport } from './routes/_authenticated/configuracoes.trocas'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedEstoqueRecebimentosIndexRouteImport } from './routes/_authenticated/estoque.recebimentos.index'
+import { Route as AuthenticatedEtiquetasLotesIdRouteImport } from './routes/_authenticated/etiquetas.lotes.$id'
 import { Route as AuthenticatedEstoqueRecebimentosNovoRouteImport } from './routes/_authenticated/estoque.recebimentos.novo'
 import { Route as AuthenticatedEstoqueRecebimentosIdRouteImport } from './routes/_authenticated/estoque.recebimentos.$id'
 
@@ -238,6 +239,12 @@ const AuthenticatedEstoqueRecebimentosIndexRoute =
     path: '/estoque/recebimentos/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedEtiquetasLotesIdRoute =
+  AuthenticatedEtiquetasLotesIdRouteImport.update({
+    id: '/lotes/$id',
+    path: '/lotes/$id',
+    getParentRoute: () => AuthenticatedEtiquetasRoute,
+  } as any)
 const AuthenticatedEstoqueRecebimentosNovoRoute =
   AuthenticatedEstoqueRecebimentosNovoRouteImport.update({
     id: '/estoque/recebimentos/novo',
@@ -262,7 +269,7 @@ export interface FileRoutesByFullPath {
   '/categorias': typeof AuthenticatedCategoriasRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/etiquetas': typeof AuthenticatedEtiquetasRoute
+  '/etiquetas': typeof AuthenticatedEtiquetasRouteWithChildren
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/marcas': typeof AuthenticatedMarcasRoute
@@ -287,6 +294,7 @@ export interface FileRoutesByFullPath {
   '/vendas/': typeof AuthenticatedVendasIndexRoute
   '/estoque/recebimentos/$id': typeof AuthenticatedEstoqueRecebimentosIdRoute
   '/estoque/recebimentos/novo': typeof AuthenticatedEstoqueRecebimentosNovoRoute
+  '/etiquetas/lotes/$id': typeof AuthenticatedEtiquetasLotesIdRoute
   '/estoque/recebimentos/': typeof AuthenticatedEstoqueRecebimentosIndexRoute
 }
 export interface FileRoutesByTo {
@@ -300,7 +308,7 @@ export interface FileRoutesByTo {
   '/categorias': typeof AuthenticatedCategoriasRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/etiquetas': typeof AuthenticatedEtiquetasRoute
+  '/etiquetas': typeof AuthenticatedEtiquetasRouteWithChildren
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/marcas': typeof AuthenticatedMarcasRoute
@@ -325,6 +333,7 @@ export interface FileRoutesByTo {
   '/vendas': typeof AuthenticatedVendasIndexRoute
   '/estoque/recebimentos/$id': typeof AuthenticatedEstoqueRecebimentosIdRoute
   '/estoque/recebimentos/novo': typeof AuthenticatedEstoqueRecebimentosNovoRoute
+  '/etiquetas/lotes/$id': typeof AuthenticatedEtiquetasLotesIdRoute
   '/estoque/recebimentos': typeof AuthenticatedEstoqueRecebimentosIndexRoute
 }
 export interface FileRoutesById {
@@ -340,7 +349,7 @@ export interface FileRoutesById {
   '/_authenticated/categorias': typeof AuthenticatedCategoriasRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/etiquetas': typeof AuthenticatedEtiquetasRoute
+  '/_authenticated/etiquetas': typeof AuthenticatedEtiquetasRouteWithChildren
   '/_authenticated/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/_authenticated/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/_authenticated/marcas': typeof AuthenticatedMarcasRoute
@@ -365,6 +374,7 @@ export interface FileRoutesById {
   '/_authenticated/vendas/': typeof AuthenticatedVendasIndexRoute
   '/_authenticated/estoque/recebimentos/$id': typeof AuthenticatedEstoqueRecebimentosIdRoute
   '/_authenticated/estoque/recebimentos/novo': typeof AuthenticatedEstoqueRecebimentosNovoRoute
+  '/_authenticated/etiquetas/lotes/$id': typeof AuthenticatedEtiquetasLotesIdRoute
   '/_authenticated/estoque/recebimentos/': typeof AuthenticatedEstoqueRecebimentosIndexRoute
 }
 export interface FileRouteTypes {
@@ -405,6 +415,7 @@ export interface FileRouteTypes {
     | '/vendas/'
     | '/estoque/recebimentos/$id'
     | '/estoque/recebimentos/novo'
+    | '/etiquetas/lotes/$id'
     | '/estoque/recebimentos/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -443,6 +454,7 @@ export interface FileRouteTypes {
     | '/vendas'
     | '/estoque/recebimentos/$id'
     | '/estoque/recebimentos/novo'
+    | '/etiquetas/lotes/$id'
     | '/estoque/recebimentos'
   id:
     | '__root__'
@@ -482,6 +494,7 @@ export interface FileRouteTypes {
     | '/_authenticated/vendas/'
     | '/_authenticated/estoque/recebimentos/$id'
     | '/_authenticated/estoque/recebimentos/novo'
+    | '/_authenticated/etiquetas/lotes/$id'
     | '/_authenticated/estoque/recebimentos/'
   fileRoutesById: FileRoutesById
 }
@@ -740,6 +753,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEstoqueRecebimentosIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/etiquetas/lotes/$id': {
+      id: '/_authenticated/etiquetas/lotes/$id'
+      path: '/lotes/$id'
+      fullPath: '/etiquetas/lotes/$id'
+      preLoaderRoute: typeof AuthenticatedEtiquetasLotesIdRouteImport
+      parentRoute: typeof AuthenticatedEtiquetasRoute
+    }
     '/_authenticated/estoque/recebimentos/novo': {
       id: '/_authenticated/estoque/recebimentos/novo'
       path: '/estoque/recebimentos/novo'
@@ -772,6 +792,20 @@ const AuthenticatedConfiguracoesRouteWithChildren =
     AuthenticatedConfiguracoesRouteChildren,
   )
 
+interface AuthenticatedEtiquetasRouteChildren {
+  AuthenticatedEtiquetasLotesIdRoute: typeof AuthenticatedEtiquetasLotesIdRoute
+}
+
+const AuthenticatedEtiquetasRouteChildren: AuthenticatedEtiquetasRouteChildren =
+  {
+    AuthenticatedEtiquetasLotesIdRoute: AuthenticatedEtiquetasLotesIdRoute,
+  }
+
+const AuthenticatedEtiquetasRouteWithChildren =
+  AuthenticatedEtiquetasRoute._addFileChildren(
+    AuthenticatedEtiquetasRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditoriaRoute: typeof AuthenticatedAuditoriaRoute
   AuthenticatedCaixaRoute: typeof AuthenticatedCaixaRoute
@@ -779,7 +813,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCategoriasRoute: typeof AuthenticatedCategoriasRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedEtiquetasRoute: typeof AuthenticatedEtiquetasRoute
+  AuthenticatedEtiquetasRoute: typeof AuthenticatedEtiquetasRouteWithChildren
   AuthenticatedFornecedoresRoute: typeof AuthenticatedFornecedoresRoute
   AuthenticatedFuncionariosRoute: typeof AuthenticatedFuncionariosRoute
   AuthenticatedMarcasRoute: typeof AuthenticatedMarcasRoute
@@ -813,7 +847,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCategoriasRoute: AuthenticatedCategoriasRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedEtiquetasRoute: AuthenticatedEtiquetasRoute,
+  AuthenticatedEtiquetasRoute: AuthenticatedEtiquetasRouteWithChildren,
   AuthenticatedFornecedoresRoute: AuthenticatedFornecedoresRoute,
   AuthenticatedFuncionariosRoute: AuthenticatedFuncionariosRoute,
   AuthenticatedMarcasRoute: AuthenticatedMarcasRoute,

@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Minus, Trash2, Search, Save, Package, CheckCircle2, Lock } from "lucide-react";
 import { formatDateTime } from "@/lib/erp";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { GoodsReceiptLabelsSection } from "@/components/goods-receipt-labels-section";
 
 type Mode = "restock" | "new_variant" | "new_product";
 
@@ -344,6 +345,9 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
             </div>
           </div>
         </div>
+      )}
+      {status === "confirmed" && draftId && (
+        <GoodsReceiptLabelsSection draftId={draftId} />
       )}
       {readOnly && status !== "confirmed" && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
