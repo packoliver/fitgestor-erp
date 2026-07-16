@@ -23,6 +23,7 @@ import { Route as AuthenticatedFornecedoresRouteImport } from './routes/_authent
 import { Route as AuthenticatedEtiquetasRouteImport } from './routes/_authenticated/etiquetas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedConfiguracaoInicialRouteImport } from './routes/_authenticated/configuracao-inicial'
 import { Route as AuthenticatedCategoriasRouteImport } from './routes/_authenticated/categorias'
 import { Route as AuthenticatedCargosRouteImport } from './routes/_authenticated/cargos'
 import { Route as AuthenticatedCaixaRouteImport } from './routes/_authenticated/caixa'
@@ -128,6 +129,12 @@ const AuthenticatedConfiguracoesRoute =
   AuthenticatedConfiguracoesRouteImport.update({
     id: '/configuracoes',
     path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConfiguracaoInicialRoute =
+  AuthenticatedConfiguracaoInicialRouteImport.update({
+    id: '/configuracao-inicial',
+    path: '/configuracao-inicial',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedCategoriasRoute = AuthenticatedCategoriasRouteImport.update({
@@ -335,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/caixa': typeof AuthenticatedCaixaRoute
   '/cargos': typeof AuthenticatedCargosRoute
   '/categorias': typeof AuthenticatedCategoriasRoute
+  '/configuracao-inicial': typeof AuthenticatedConfiguracaoInicialRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/etiquetas': typeof AuthenticatedEtiquetasRouteWithChildren
@@ -384,6 +392,7 @@ export interface FileRoutesByTo {
   '/caixa': typeof AuthenticatedCaixaRoute
   '/cargos': typeof AuthenticatedCargosRoute
   '/categorias': typeof AuthenticatedCategoriasRoute
+  '/configuracao-inicial': typeof AuthenticatedConfiguracaoInicialRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/etiquetas': typeof AuthenticatedEtiquetasRouteWithChildren
@@ -435,6 +444,7 @@ export interface FileRoutesById {
   '/_authenticated/caixa': typeof AuthenticatedCaixaRoute
   '/_authenticated/cargos': typeof AuthenticatedCargosRoute
   '/_authenticated/categorias': typeof AuthenticatedCategoriasRoute
+  '/_authenticated/configuracao-inicial': typeof AuthenticatedConfiguracaoInicialRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/etiquetas': typeof AuthenticatedEtiquetasRouteWithChildren
@@ -486,6 +496,7 @@ export interface FileRouteTypes {
     | '/caixa'
     | '/cargos'
     | '/categorias'
+    | '/configuracao-inicial'
     | '/configuracoes'
     | '/dashboard'
     | '/etiquetas'
@@ -535,6 +546,7 @@ export interface FileRouteTypes {
     | '/caixa'
     | '/cargos'
     | '/categorias'
+    | '/configuracao-inicial'
     | '/configuracoes'
     | '/dashboard'
     | '/etiquetas'
@@ -585,6 +597,7 @@ export interface FileRouteTypes {
     | '/_authenticated/caixa'
     | '/_authenticated/cargos'
     | '/_authenticated/categorias'
+    | '/_authenticated/configuracao-inicial'
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/etiquetas'
@@ -732,6 +745,13 @@ declare module '@tanstack/react-router' {
       path: '/configuracoes'
       fullPath: '/configuracoes'
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/configuracao-inicial': {
+      id: '/_authenticated/configuracao-inicial'
+      path: '/configuracao-inicial'
+      fullPath: '/configuracao-inicial'
+      preLoaderRoute: typeof AuthenticatedConfiguracaoInicialRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/categorias': {
@@ -1009,6 +1029,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCaixaRoute: typeof AuthenticatedCaixaRoute
   AuthenticatedCargosRoute: typeof AuthenticatedCargosRoute
   AuthenticatedCategoriasRoute: typeof AuthenticatedCategoriasRoute
+  AuthenticatedConfiguracaoInicialRoute: typeof AuthenticatedConfiguracaoInicialRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEtiquetasRoute: typeof AuthenticatedEtiquetasRouteWithChildren
@@ -1053,6 +1074,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCaixaRoute: AuthenticatedCaixaRoute,
   AuthenticatedCargosRoute: AuthenticatedCargosRoute,
   AuthenticatedCategoriasRoute: AuthenticatedCategoriasRoute,
+  AuthenticatedConfiguracaoInicialRoute: AuthenticatedConfiguracaoInicialRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEtiquetasRoute: AuthenticatedEtiquetasRouteWithChildren,
