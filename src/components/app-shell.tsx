@@ -71,39 +71,18 @@ function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent className="px-2 py-3 gap-1">
-        {groups.map((g) => {
-          const items = isLoading ? g.items : g.items.filter(canSee);
-          if (items.length === 0) return null;
-          return (
-            <SidebarGroup key={g.label} className="py-1">
-              <SidebarGroupLabel className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/45 px-2">
-                {g.label}
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5">
-                  {items.map((item) => {
-                    const active = isActive(item.url);
-                    return (
-                      <SidebarMenuItem key={item.url}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={active}
-                          tooltip={item.title}
-                          className="h-9 rounded-lg text-[13.5px] font-medium text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold data-[active=true]:shadow-[inset_2px_0_0_0_var(--sidebar-primary)] transition-colors"
-                        >
-                          <Link to={item.url} className="flex items-center gap-2.5">
-                            <item.icon className="h-4 w-4 shrink-0" />
-                            <span className="truncate">{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          );
-        })}
+        {groups.map((g) => (
+          <SidebarGroup key={g.label} className="py-1">
+            <SidebarGroupLabel className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/45 px-2">
+              {g.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0.5">
+                {g.items.map(renderItem)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       {!collapsed && (
         <div className="mt-auto border-t border-sidebar-border px-4 py-4">
