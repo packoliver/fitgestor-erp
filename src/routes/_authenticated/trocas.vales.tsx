@@ -63,7 +63,8 @@ function ValesPage() {
   });
 
   return (
-    <div>
+    <RequirePermission code="vouchers.view"><div>
+
       <PageHeader title="Vales-troca" description="Consulta, histórico e status" />
       <Card className="p-3 mb-4">
         <div className="flex gap-2">
