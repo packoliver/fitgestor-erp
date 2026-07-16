@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { QsfIdentity } from "@/components/qsf-logo";
+import { BrandLockup } from "@/components/brand-logo";
 
 const searchSchema = z.object({ mode: z.enum(["signin", "signup"]).optional() });
 
