@@ -22,7 +22,7 @@ function SetupChecklistPage() {
         supabase.from("stock_locations").select("id", { count: "exact", head: true }),
         supabase.from("cash_sessions").select("id", { count: "exact", head: true }),
         supabase.from("shipping_holidays").select("id", { count: "exact", head: true }),
-        supabase.from("shipping_settings").select("cutoff_hour, working_days").limit(1).maybeSingle(),
+        supabase.from("shipping_settings").select("cutoff_time, working_days").limit(1).maybeSingle(),
         supabase.from("couriers").select("id", { count: "exact", head: true }).eq("active", true),
         supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "ativo"),
       ]);
@@ -31,7 +31,7 @@ function SetupChecklistPage() {
         stockOk: (stock.count ?? 0) > 0,
         cashOk: (cash.count ?? 0) > 0,
         holidaysOk: (holidays.count ?? 0) >= 0,
-        shipOk: !!shipset.data?.cutoff_hour,
+        shipOk: !!shipset.data?.cutoff_time,
         couriersOk: (couriers.count ?? 0) > 0,
         employeesOk: (employees.count ?? 0) > 1,
       };
