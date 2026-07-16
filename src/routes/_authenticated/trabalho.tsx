@@ -4,65 +4,54 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AlertTriangle } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import {
-  ShoppingCart, Wallet, Package, Boxes, ArrowDownToLine, Tag, ClipboardList,
-  Truck, RefreshCw, UserSquare2, Receipt, MapPin, AlertTriangle,
-} from "lucide-react";
+  NAV_ITEMS, filterByPermission, itemsForWorkspace, itemsByGroup,
+  type Workspace,
+} from "@/config/navigation";
 
 export const Route = createFileRoute("/_authenticated/trabalho")({
   component: WorkspacePage,
 });
 
-type Shortcut = {
-  title: string; url: string; icon: React.ComponentType<{ className?: string }>;
-  perm?: string | string[]; group: "Vendas" | "Estoque" | "Expedição" | "Outros";
-  description?: string;
-};
-
-const shortcuts: Shortcut[] = [
-  { title: "Abrir PDV", url: "/pdv", icon: ShoppingCart, perm: "pos.view", group: "Vendas", description: "Registrar uma nova venda" },
-  { title: "Caixa", url: "/caixa", icon: Wallet, perm: ["pos.open_cash","pos.close_cash","pos.view"], group: "Vendas", description: "Abrir ou fechar o caixa" },
-  { title: "Vendas", url: "/vendas", icon: Receipt, group: "Vendas" },
-  { title: "Clientes", url: "/clientes", icon: UserSquare2, group: "Vendas" },
-  { title: "Criar troca", url: "/trocas/nova", icon: RefreshCw, perm: "exchanges.create", group: "Vendas" },
-
-  { title: "Produtos", url: "/produtos", icon: Package, perm: "product.view", group: "Estoque" },
-  { title: "Consultar estoque", url: "/estoque", icon: Boxes, perm: "stock.view", group: "Estoque" },
-  { title: "Receber mercadoria", url: "/estoque/recebimentos", icon: ArrowDownToLine, perm: "goods_receipt.create", group: "Estoque" },
-  { title: "Imprimir etiquetas", url: "/etiquetas", icon: Tag, perm: "label.print", group: "Estoque" },
-  { title: "Inventário", url: "/estoque/inventario", icon: ClipboardList, perm: "inventory.manage", group: "Estoque" },
-
-  { title: "Fila de expedição", url: "/expedicao/fila", icon: ClipboardList, perm: ["shipping.view","shipping.view_all","shipping.pick"], group: "Expedição" },
-  { title: "Rotas", url: "/expedicao/rotas", icon: MapPin, perm: ["shipping.view","shipping.view_all","shipping.dispatch"], group: "Expedição" },
-  { title: "Vendas sem entrega", url: "/expedicao/pendencias", icon: AlertTriangle, perm: ["shipping.view","shipping.view_all","shipping.create"], group: "Expedição" },
-  { title: "Minhas rotas", url: "/motoboy", icon: Truck, perm: ["shipping.view_own","shipping.deliver"], group: "Expedição" },
-];
-
 function WorkspacePage() {
   const perms = usePermissions();
-  const canSee = (s: Shortcut) => {
-    if (!s.perm) return true;
-    return Array.isArray(s.perm) ? perms.hasAny(...s.perm) : perms.has(s.perm);
-  };
-  const visible = shortcuts.filter(canSee);
+
+  // Workspace is derived from server (default_workspace_for_current_user).
+  // We render whichever set the backend authorizes, defaulting to employee.
+  const workspace = useQuery({
+    queryKey: ["default-workspace"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("default_workspace_for_current_user" as any);
+      if (error) throw error;
+      return (data as string) ?? "employee";
+    },
+    staleTime: 60_000,
+  });
+
+  const activeWs: Workspace | null = (() => {
+    const w = workspace.data;
+    if (w === "admin" || w === "employee" || w === "courier") return w;
+    return "employee";
+  })();
+
+  const authorized = filterByPermission(NAV_ITEMS, perms.has, perms.hasAny);
+  const wsItems = itemsForWorkspace(authorized, activeWs);
+  const grouped = itemsByGroup(wsItems);
 
   const pend = useQuery({
     queryKey: ["pending-deliveries-count"],
     enabled: perms.hasAny("shipping.view","shipping.view_all","shipping.create"),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("list_pending_deliveries");
+      const { data, error } = await supabase.rpc("list_pending_deliveries" as any);
       if (error) throw error;
-      return (data ?? []).length;
+      return ((data as unknown[]) ?? []).length;
     },
     staleTime: 30_000,
   });
 
-  const grouped = ["Vendas","Estoque","Expedição","Outros"].map((g) => ({
-    label: g, items: visible.filter((s) => s.group === g),
-  })).filter((x) => x.items.length > 0);
-
-  if (perms.isLoading) return <div>Carregando…</div>;
+  if (perms.isLoading || workspace.isLoading) return <div>Carregando…</div>;
 
   return (
     <div>
@@ -96,7 +85,7 @@ function WorkspacePage() {
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{g.label}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {g.items.map((s) => (
-                <Link key={s.url} to={s.url}>
+                <Link key={s.id} to={s.url}>
                   <Card className="p-4 h-full hover:shadow-md hover:border-primary/40 transition-all cursor-pointer">
                     <s.icon className="h-6 w-6 text-primary mb-2" />
                     <div className="font-semibold text-sm">{s.title}</div>

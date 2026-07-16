@@ -35,8 +35,11 @@ type Employee = {
 function statusBadge(status: string | null) {
   const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
     ativo: { label: "Ativo", variant: "default" },
-    inativo: { label: "Acesso removido", variant: "outline" },
+    inativo: { label: "Inativo", variant: "outline" },
+    acesso_removido: { label: "Acesso removido", variant: "outline" },
     bloqueado: { label: "Bloqueado", variant: "destructive" },
+    convite_pendente: { label: "Convite pendente", variant: "secondary" },
+    pendente: { label: "Pendente", variant: "secondary" },
   };
   const s = map[status ?? ""] ?? { label: status ?? "—", variant: "secondary" as const };
   return <Badge variant={s.variant}>{s.label}</Badge>;
@@ -174,8 +177,10 @@ function Funcionarios() {
             <SelectContent>
               <SelectItem value="all">Todas as situações</SelectItem>
               <SelectItem value="ativo">Ativo</SelectItem>
+              <SelectItem value="convite_pendente">Convite pendente</SelectItem>
               <SelectItem value="bloqueado">Bloqueado</SelectItem>
-              <SelectItem value="inativo">Acesso removido</SelectItem>
+              <SelectItem value="acesso_removido">Acesso removido</SelectItem>
+              <SelectItem value="inativo">Inativo</SelectItem>
             </SelectContent>
           </Select>
           <Select value={roleFilter} onValueChange={setRoleFilter}>

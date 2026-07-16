@@ -16,7 +16,18 @@ export const Route = createFileRoute("/_authenticated")({
       .maybeSingle();
 
     if (!profile || !profile.organization_id) throw redirect({ to: "/setup" });
-    if (profile.status !== "ativo") throw redirect({ to: "/auth" });
+
+    // Bloqueia usuários banidos ou com acesso removido, mas permite convite_pendente
+    // (usuários que acabaram de aceitar o convite) — nesse caso promovemos para ativo.
+    if (profile.status === "bloqueado" || profile.status === "acesso_removido" || profile.status === "inativo") {
+      await supabase.auth.signOut();
+      throw redirect({ to: "/auth" });
+    }
+    if (profile.status === "convite_pendente" || profile.status === "pendente") {
+      await supabase.from("profiles").update({ status: "ativo" }).eq("id", userData.user.id);
+    } else if (profile.status !== "ativo") {
+      throw redirect({ to: "/auth" });
+    }
 
     return { userId: userData.user.id, email: userData.user.email, organizationId: profile.organization_id };
   },

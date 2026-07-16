@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Power, Search, Link2, Unlink } from "lucide-react";
+import { Plus, Pencil, Power, Search, Link2, Unlink, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { RequirePermission } from "@/components/require-permission";
 
@@ -133,6 +133,24 @@ function CouriersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const grantAccess = useMutation({
+    mutationFn: async (c: Courier) => {
+      const { error } = await supabase.rpc("configure_courier_user_access" as any, { _courier_id: c.id, _mode: "assign_model" });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Cargo Motoboy adicionado ao usuário."); qc.invalidateQueries({ queryKey: ["couriers"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const revokeAccess = useMutation({
+    mutationFn: async (c: Courier) => {
+      const { error } = await supabase.rpc("revoke_courier_access" as any, { _courier_id: c.id });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Cargo Motoboy removido do usuário."); qc.invalidateQueries({ queryKey: ["couriers"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   function startCreate() { setForm(empty); setOpen(true); }
   function startEdit(c: Courier) {
     setForm({
@@ -187,6 +205,19 @@ function CouriersPage() {
               <Button size="sm" variant="outline" onClick={() => setLinkFor(c)}>
                 <Link2 className="h-3.5 w-3.5 mr-1" />Vínculo
               </Button>
+              {c.user_id && (
+                <Button size="sm" variant="outline"
+                  onClick={() => grantAccess.mutate(c)} disabled={grantAccess.isPending}
+                  title="Atribui adicionalmente o cargo-modelo Motoboy a este usuário, sem alterar seus outros cargos.">
+                  <ShieldCheck className="h-3.5 w-3.5 mr-1" />Cargo Motoboy
+                </Button>
+              )}
+              {c.user_id && (
+                <Button size="sm" variant="outline"
+                  onClick={() => revokeAccess.mutate(c)} disabled={revokeAccess.isPending}>
+                  Remover cargo
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={() => startEdit(c)}>
                 <Pencil className="h-3.5 w-3.5 mr-1" />Editar
               </Button>
