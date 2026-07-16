@@ -306,7 +306,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     const it = items.find((i) => i.local_id === local_id);
     if (!it) return;
     const hasQty = it.cells.some((c) => c.quantity > 0);
-    if (hasQty && !confirm("Remover este bloco? As quantidades preenchidas serão perdidas.")) return;
+    if (hasQty && !window.confirm("Remover este bloco? As quantidades preenchidas serão perdidas.")) return;
     setItems((prev) => prev.filter((i) => i.local_id !== local_id));
     markDirty();
   }
