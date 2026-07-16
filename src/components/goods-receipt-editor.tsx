@@ -15,9 +15,11 @@ import { formatDateTime } from "@/lib/erp";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { GoodsReceiptLabelsSection } from "@/components/goods-receipt-labels-section";
 import { ReceiptScannerPanel, type ScannedVariant, type IncrementResult } from "@/components/goods-receipt-scanner-panel";
+import { GoodsReceiptCountingPanel } from "@/components/goods-receipt-counting-panel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-type Mode = "restock" | "new_variant" | "new_product";
+type Mode = "restock" | "new_variant" | "new_product" | "count_only";
+type ResolutionStatus = "resolved" | "unresolved" | "pending_registration";
 
 type Cell = {
   variant_id?: string;
@@ -58,6 +60,12 @@ type Item = {
   new_product_data?: NewProductData;
   new_variant_data?: NewVariantData;
   cells: Cell[];
+  raw_description?: string;
+  raw_size_label?: string;
+  raw_color_label?: string;
+  raw_notes?: string;
+  raw_counted_quantity?: number;
+  resolution_status?: ResolutionStatus;
 };
 
 type LoadedDraft = {
@@ -83,6 +91,12 @@ type LoadedDraft = {
     new_product_data: NewProductData | null;
     new_variant_data: NewVariantData | null;
     cells: Cell[];
+    raw_description: string | null;
+    raw_size_label: string | null;
+    raw_color_label: string | null;
+    raw_notes: string | null;
+    raw_counted_quantity: number | null;
+    resolution_status: ResolutionStatus | null;
   }>;
 };
 
@@ -161,7 +175,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       if (!header) return null;
       const { data: rows, error: e2 } = await supabase
         .from("goods_receipt_draft_items")
-        .select("id, position, mode, product_id, new_product_data, new_variant_data, cells, product:products(name, color, category_id)")
+        .select("id, position, mode, product_id, new_product_data, new_variant_data, cells, raw_description, raw_size_label, raw_color_label, raw_notes, raw_counted_quantity, resolution_status, product:products(name, color, category_id)")
         .eq("draft_id", id)
         .order("position");
       if (e2) throw e2;
@@ -196,6 +210,12 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         new_product_data: it.new_product_data ?? undefined,
         new_variant_data: it.new_variant_data ?? undefined,
         cells: Array.isArray(it.cells) ? it.cells : [],
+        raw_description: it.raw_description ?? undefined,
+        raw_size_label: it.raw_size_label ?? undefined,
+        raw_color_label: it.raw_color_label ?? undefined,
+        raw_notes: it.raw_notes ?? undefined,
+        raw_counted_quantity: it.raw_counted_quantity ?? undefined,
+        resolution_status: it.resolution_status ?? (it.mode === "count_only" ? "unresolved" : "resolved"),
       })),
     );
     setDirty(false);
@@ -209,14 +229,19 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
 
   const totals = useMemo(() => {
     let qty = 0;
-    let restock = 0, newVar = 0, newProd = 0;
+    let restock = 0, newVar = 0, newProd = 0, counting = 0;
+    let unresolved = 0;
     for (const it of items) {
       for (const c of it.cells) qty += c.quantity || 0;
       if (it.mode === "restock") restock++;
       else if (it.mode === "new_variant") newVar++;
-      else newProd++;
+      else if (it.mode === "new_product") newProd++;
+      else counting++;
+      if (it.mode === "count_only" || (it.resolution_status && it.resolution_status !== "resolved")) {
+        unresolved++;
+      }
     }
-    return { qty, restock, newVar, newProd, itemCount: items.length };
+    return { qty, restock, newVar, newProd, counting, unresolved, itemCount: items.length };
   }, [items]);
 
   const save = useMutation({
@@ -238,6 +263,13 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
           new_product_data: it.new_product_data ?? null,
           new_variant_data: it.new_variant_data ?? null,
           cells: it.cells,
+          raw_description: it.raw_description ?? null,
+          raw_size_label: it.raw_size_label ?? null,
+          raw_color_label: it.raw_color_label ?? null,
+          raw_notes: it.raw_notes ?? null,
+          raw_counted_quantity: it.raw_counted_quantity ?? null,
+          resolution_status: it.resolution_status
+            ?? (it.mode === "count_only" ? "unresolved" : "resolved"),
         })),
       };
       const { data, error } = await supabase.rpc("save_goods_receipt_draft", { _payload: payload });
@@ -566,11 +598,21 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="grid" className="w-full">
+      <Tabs defaultValue="counting" className="w-full">
         <TabsList>
-          <TabsTrigger value="grid">Lançamento por grade</TabsTrigger>
+          <TabsTrigger value="counting">Contagem manual</TabsTrigger>
+          <TabsTrigger value="grid">Produtos e grade</TabsTrigger>
           <TabsTrigger value="scanner" disabled={readOnly}>Recebimento por leitor</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="counting" className="mt-3">
+          <GoodsReceiptCountingPanel
+            items={items}
+            setItems={setItems}
+            disabled={readOnly}
+            markDirty={markDirty}
+          />
+        </TabsContent>
 
         <TabsContent value="grid" className="space-y-3 mt-3">
           <ProductSearchCard
@@ -587,7 +629,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
             </CardContent></Card>
           ) : (
             <div className="space-y-3">
-              {items.map((it) => (
+              {items.filter((it) => it.mode !== "count_only").map((it) => (
                 <ItemBlock
                   key={it.local_id}
                   item={it}
@@ -602,6 +644,11 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
                   onUpdateNewVariant={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_variant_data: { ...(i.new_variant_data ?? { size: "" }), ...patch } } : i)); markDirty(); }}
                 />
               ))}
+              {items.some((it) => it.mode === "count_only") && (
+                <div className="text-xs text-muted-foreground">
+                  Existem itens em <strong>Contagem manual</strong> que ainda não foram vinculados. Alterne para a aba <em>Contagem manual</em> para organizá-los.
+                </div>
+              )}
             </div>
           )}
         </TabsContent>
@@ -630,11 +677,16 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       <Card className="sticky bottom-0 border-t-2">
         <CardContent className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 py-4">
           <div className="flex flex-wrap gap-3 text-sm">
-            <span><strong>{totals.itemCount}</strong> produtos</span>
+            <span><strong>{totals.itemCount}</strong> linhas</span>
             <span><strong>{totals.qty}</strong> peças</span>
             <Badge variant="outline">{totals.restock} reposição</Badge>
             <Badge variant="outline">{totals.newVar} nova variação</Badge>
             <Badge variant="outline">{totals.newProd} produto novo</Badge>
+            {totals.counting > 0 && (
+              <Badge variant="outline" className="border-amber-400 text-amber-700">
+                {totals.counting} em contagem
+              </Badge>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {draftId && status === "draft" && (
@@ -649,11 +701,16 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
             <Button
               size="lg"
               onClick={() => setConfirmOpen(true)}
-              disabled={confirmReceipt.isPending || readOnly || !draftId || dirty || totals.qty === 0}
-              title={dirty ? "Salve as alterações antes de confirmar" : totals.qty === 0 ? "Preencha alguma quantidade" : ""}
+              disabled={confirmReceipt.isPending || readOnly || !draftId || dirty || totals.qty === 0 || totals.unresolved > 0}
+              title={
+                dirty ? "Salve as alterações antes de confirmar"
+                : totals.unresolved > 0 ? "Existem itens da contagem que ainda não foram vinculados a um produto e uma variação."
+                : totals.qty === 0 ? "Preencha alguma quantidade"
+                : ""
+              }
             >
               {confirmReceipt.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-              Confirmar recebimento
+              Confirmar entrada no estoque
             </Button>
           </div>
         </CardContent>
