@@ -62,6 +62,8 @@ type Item = {
 
 type LoadedDraft = {
   id: string;
+  receipt_number: number;
+  version: number;
   supplier_id: string | null;
   location_id: string | null;
   invoice_number: string | null;
@@ -70,6 +72,8 @@ type LoadedDraft = {
   notes: string | null;
   status: string;
   updated_at: string;
+  cancelled_at: string | null;
+  cancellation_reason: string | null;
   items: Array<{
     id: string;
     position: number;
@@ -84,6 +88,11 @@ type LoadedDraft = {
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+export function formatReceiptNumber(n: number | null | undefined): string {
+  if (n === null || n === undefined) return "—";
+  return "#" + String(n).padStart(6, "0");
 }
 
 export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
@@ -106,10 +115,18 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
   const [lastSavedAt, setLastSavedAt] = useState<string | undefined>();
   const [status, setStatus] = useState<string>("draft");
   const [confirmedAt, setConfirmedAt] = useState<string | null>(null);
+  const [cancelledAt, setCancelledAt] = useState<string | null>(null);
+  const [cancellationReason, setCancellationReason] = useState<string | null>(null);
   const [confirmationSummary, setConfirmationSummary] = useState<any>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [conflictOpen, setConflictOpen] = useState(false);
+  const [receiptNumber, setReceiptNumber] = useState<number | null>(null);
+  const [version, setVersion] = useState<number>(1);
   // Um único UUID por tentativa real de confirmação — reutilizado em retries de rede.
   const confirmRequestIdRef = useRef<string>("");
+  const cancelRequestIdRef = useRef<string>("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   const suppliers = useQuery({
@@ -156,6 +173,8 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     if (!existing.data) return;
     const d = existing.data;
     setDraftId(d.id);
+    setReceiptNumber(d.receipt_number ?? null);
+    setVersion(d.version ?? 1);
     setSupplierId(d.supplier_id ?? "");
     setLocationId(d.location_id ?? "");
     setInvoiceNumber(d.invoice_number ?? "");
@@ -164,8 +183,10 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     setNotes(d.notes ?? "");
     setStatus(d.status);
     setLastSavedAt(d.updated_at);
-    setConfirmedAt((d as any).confirmed_at ?? null);
-    setConfirmationSummary((d as any).confirmation_summary ?? null);
+    setConfirmedAt((d as unknown as { confirmed_at?: string | null }).confirmed_at ?? null);
+    setCancelledAt(d.cancelled_at ?? null);
+    setCancellationReason(d.cancellation_reason ?? null);
+    setConfirmationSummary((d as unknown as { confirmation_summary?: unknown }).confirmation_summary ?? null);
     setItems(
       d.items.map((it) => ({
         local_id: uid(),
@@ -204,6 +225,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       const payload = {
         id: draftId,
         client_request_id: draftId ? null : clientRequestIdRef.current,
+        expected_version: draftId ? version : null,
         supplier_id: supplierId || null,
         location_id: locationId,
         invoice_number: invoiceNumber || null,
@@ -220,20 +242,34 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       };
       const { data, error } = await supabase.rpc("save_goods_receipt_draft", { _payload: payload });
       if (error) throw error;
-      return data as string;
+      return data as {
+        draft_id: string;
+        receipt_number: number;
+        version: number;
+        updated_at: string;
+        idempotent: boolean;
+      };
     },
-    onSuccess: (id) => {
+    onSuccess: (result) => {
       toast.success("Rascunho salvo.");
       setDirty(false);
-      setLastSavedAt(new Date().toISOString());
-      qc.invalidateQueries({ queryKey: ["goods-receipt-drafts"] });
-      qc.invalidateQueries({ queryKey: ["goods-receipt-draft", id] });
+      setLastSavedAt(result.updated_at ?? new Date().toISOString());
+      setVersion(result.version);
+      setReceiptNumber(result.receipt_number);
+      qc.invalidateQueries({ queryKey: ["goods-receipts-list"] });
+      qc.invalidateQueries({ queryKey: ["goods-receipt-draft", result.draft_id] });
       if (!draftId) {
-        setDraftId(id);
-        navigate({ to: "/estoque/recebimentos/$id", params: { id } });
+        setDraftId(result.draft_id);
+        navigate({ to: "/estoque/recebimentos/$id", params: { id: result.draft_id } });
       }
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      if (e.message && e.message.includes("alterado em outra aba")) {
+        setConflictOpen(true);
+        return;
+      }
+      toast.error(e.message);
+    },
   });
 
   const confirmReceipt = useMutation({
@@ -248,7 +284,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         _client_request_id: confirmRequestIdRef.current,
       });
       if (error) throw error;
-      return data as any;
+      return data as { summary?: unknown; total_quantity?: number; created_products?: unknown[]; created_variants?: unknown[] };
     },
     onSuccess: (result) => {
       toast.success("Recebimento confirmado. As etiquetas ainda estão pendentes de geração.");
@@ -256,13 +292,48 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       setConfirmedAt(new Date().toISOString());
       setConfirmationSummary(result?.summary ?? result);
       setConfirmOpen(false);
-      qc.invalidateQueries({ queryKey: ["goods-receipt-drafts"] });
+      qc.invalidateQueries({ queryKey: ["goods-receipts-list"] });
       if (draftId) qc.invalidateQueries({ queryKey: ["goods-receipt-draft", draftId] });
       qc.invalidateQueries({ queryKey: ["stock-overview"] });
     },
     onError: (e: Error) => {
       toast.error(e.message);
-      // Mantém o mesmo request_id para retry idempotente
+    },
+  });
+
+  const cancelDraft = useMutation({
+    mutationFn: async () => {
+      if (!draftId) throw new Error("Rascunho não identificado.");
+      if (status !== "draft") throw new Error("Este recebimento não é mais um rascunho.");
+      const reason = cancelReason.trim();
+      if (reason.length < 3) throw new Error("Informe o motivo do cancelamento.");
+      if (!cancelRequestIdRef.current) {
+        cancelRequestIdRef.current = globalThis.crypto?.randomUUID?.() ?? uid() + uid() + uid();
+      }
+      const { data, error } = await supabase.rpc("cancel_goods_receipt_draft", {
+        _draft_id: draftId,
+        _reason: reason,
+        _expected_version: version,
+        _client_request_id: cancelRequestIdRef.current,
+      });
+      if (error) throw error;
+      return data as { status: string; receipt_number: number };
+    },
+    onSuccess: () => {
+      toast.success("Rascunho cancelado.");
+      setStatus("cancelled");
+      setCancelledAt(new Date().toISOString());
+      setCancellationReason(cancelReason.trim());
+      setCancelOpen(false);
+      qc.invalidateQueries({ queryKey: ["goods-receipts-list"] });
+      if (draftId) qc.invalidateQueries({ queryKey: ["goods-receipt-draft", draftId] });
+    },
+    onError: (e: Error) => {
+      if (e.message && e.message.includes("alterado em outra aba")) {
+        setConflictOpen(true);
+        return;
+      }
+      toast.error(e.message);
     },
   });
 
@@ -417,7 +488,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         <div className="rounded-md border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900 flex items-start gap-3">
           <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0" />
           <div className="space-y-1">
-            <div><strong>Recebimento confirmado.</strong> As etiquetas ainda estão pendentes de geração.</div>
+            <div><strong>Recebimento {formatReceiptNumber(receiptNumber)} confirmado.</strong> As etiquetas ainda estão pendentes de geração.</div>
             {confirmedAt && <div className="text-xs">Confirmado em {formatDateTime(confirmedAt)}.</div>}
             {confirmationSummary?.total_quantity != null && (
               <div className="text-xs">
@@ -435,7 +506,18 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       {status === "confirmed" && draftId && (
         <GoodsReceiptLabelsSection draftId={draftId} />
       )}
-      {readOnly && status !== "confirmed" && (
+      {status === "cancelled" && (
+        <div className="rounded-md border border-rose-300 bg-rose-50 p-4 text-sm text-rose-900 flex items-start gap-3">
+          <Lock className="h-5 w-5 mt-0.5 shrink-0" />
+          <div className="space-y-1">
+            <div><strong>Rascunho {formatReceiptNumber(receiptNumber)} cancelado.</strong></div>
+            {cancelledAt && <div className="text-xs">Cancelado em {formatDateTime(cancelledAt)}.</div>}
+            {cancellationReason && <div className="text-xs">Motivo: {cancellationReason}</div>}
+            <div className="text-xs">Somente leitura. O estoque não foi alterado.</div>
+          </div>
+        </div>
+      )}
+      {readOnly && status !== "confirmed" && status !== "cancelled" && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
           Este recebimento está com status <strong>{status}</strong> e não pode ser editado.
         </div>
@@ -443,9 +525,11 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>Cabeçalho</CardTitle>
+          <CardTitle>
+            Recebimento {formatReceiptNumber(receiptNumber)}
+          </CardTitle>
           <div className="text-xs text-muted-foreground flex items-center gap-3">
-            {dirty ? <span className="text-amber-600">Alterações não salvas</span> : lastSavedAt ? <span>Rascunho salvo · {formatDateTime(lastSavedAt)}</span> : null}
+            {dirty ? <span className="text-amber-600">Alterações não salvas</span> : lastSavedAt ? <span>Rascunho salvo · {formatDateTime(lastSavedAt)} · v{version}</span> : null}
           </div>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
@@ -552,7 +636,12 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
             <Badge variant="outline">{totals.newVar} nova variação</Badge>
             <Badge variant="outline">{totals.newProd} produto novo</Badge>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {draftId && status === "draft" && (
+              <Button size="lg" variant="ghost" onClick={() => { setCancelReason(""); setCancelOpen(true); }} disabled={cancelDraft.isPending}>
+                Cancelar rascunho
+              </Button>
+            )}
             <Button size="lg" variant="outline" onClick={() => save.mutate()} disabled={save.isPending || readOnly}>
               {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               Salvar rascunho
@@ -596,6 +685,68 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
             >
               {confirmReceipt.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={cancelOpen} onOpenChange={(o) => { if (!cancelDraft.isPending) setCancelOpen(o); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar este rascunho de recebimento?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <p>O rascunho ficará somente leitura e não poderá mais ser confirmado. O estoque não será alterado.</p>
+                <div className="space-y-2">
+                  <Label htmlFor="cancel-reason">Motivo do cancelamento *</Label>
+                  <Textarea
+                    id="cancel-reason"
+                    rows={3}
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    placeholder="Ex.: rascunho aberto por engano, pedido cancelado com o fornecedor…"
+                    disabled={cancelDraft.isPending}
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelDraft.isPending}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); cancelDraft.mutate(); }}
+              disabled={cancelDraft.isPending || cancelReason.trim().length < 3}
+            >
+              {cancelDraft.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Cancelar rascunho
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={conflictOpen} onOpenChange={setConflictOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Este recebimento foi alterado em outra aba</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Outra pessoa (ou você em outra aba) atualizou este rascunho depois que você abriu esta tela.</p>
+                <p>Para evitar sobrescrever essas alterações, recarregue os dados mais recentes antes de continuar. As alterações locais serão descartadas.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter o que estou vendo</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                setConflictOpen(false);
+                setDirty(false);
+                qc.invalidateQueries({ queryKey: ["goods-receipt-draft", draftId] });
+                existing.refetch();
+              }}
+            >
+              Recarregar versão mais recente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
