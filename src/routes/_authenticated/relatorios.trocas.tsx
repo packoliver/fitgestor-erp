@@ -305,6 +305,7 @@ function ReportInner() {
 
       {/* Tabela */}
       <Card>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
