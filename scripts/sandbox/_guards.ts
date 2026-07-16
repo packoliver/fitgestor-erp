@@ -2,7 +2,8 @@
 // Uso: import { assertSandboxEnv, SANDBOX_IDS, SANDBOX_USERS } from "./_guards";
 
 const PROD_REF = "crlgixvekzgeizckzxgg"; // Ref de produção deste projeto Lovable — SEMPRE bloqueado.
-const LOCAL_MARKERS = ["localhost", "127.0.0.1", "kong:8000", "host.docker.internal"];
+// Hostnames aceitos como "local" — comparação EXATA, nunca substring.
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "host.docker.internal", "kong"]);
 
 export interface SandboxEnv {
   supabaseUrl: string;
@@ -13,21 +14,38 @@ export interface SandboxEnv {
   isLocal: boolean;
 }
 
+/** Extrai hostname de uma URL http(s) ou string de conexão postgres. */
+function parseHostname(input: string): string | null {
+  try {
+    // URL WHATWG lida com http(s):// e também postgresql:// (host fica em u.hostname).
+    const u = new URL(input);
+    return u.hostname ? u.hostname.toLowerCase() : null;
+  } catch {
+    // Fallback: "user:pass@host:port/..." ou "host:port".
+    const m = input.match(/(?:^|@)([A-Za-z0-9._-]+)(?::\d+)?(?:\/|$)/);
+    return m ? m[1].toLowerCase() : null;
+  }
+}
+
 /** Extrai o project ref de uma URL Supabase ou string de conexão. */
 function extractRef(input: string | undefined): string | null {
   if (!input) return null;
-  if (LOCAL_MARKERS.some((m) => input.includes(m))) return "local";
-  // https://<ref>.supabase.co
-  const mUrl = input.match(/https?:\/\/([a-z0-9]{20})\.supabase\.(co|in)/i);
-  if (mUrl) return mUrl[1].toLowerCase();
-  // postgresql://...@db.<ref>.supabase.co:5432/postgres
-  const mDb = input.match(/@(?:db\.)?([a-z0-9]{20})\.supabase\.(co|in)/i);
-  if (mDb) return mDb[1].toLowerCase();
-  // pooler: aws-0-<region>.pooler.supabase.com?options=project%3D<ref>
+  const host = parseHostname(input);
+  if (host && LOCAL_HOSTS.has(host)) return "local";
+  // Supabase remoto: <ref>.supabase.co  ou  db.<ref>.supabase.co
+  if (host) {
+    const mHost = host.match(/^(?:db\.)?([a-z0-9]{20})\.supabase\.(co|in)$/);
+    if (mHost) return mHost[1];
+  }
+  // Pooler: hostname genérico + ?options=project%3D<ref> na query
   const mPool = input.match(/project[=%3D]+([a-z0-9]{20})/i);
   if (mPool) return mPool[1].toLowerCase();
+  // Compatibilidade com input já sem esquema — tenta regex direta apenas em <ref>.supabase.co
+  const mUrl = input.match(/(?:^|[^a-z0-9])([a-z0-9]{20})\.supabase\.(co|in)(?:[^a-z0-9]|$)/i);
+  if (mUrl) return mUrl[1].toLowerCase();
   return null;
 }
+
 
 export function assertSandboxEnv(): SandboxEnv {
   const appEnv = process.env.APP_ENV;
