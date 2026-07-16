@@ -239,6 +239,53 @@ function CouriersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!linkFor} onOpenChange={(o) => { if (!o) setLinkFor(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Vincular usuário ao motoboy</DialogTitle>
+            <DialogDescription>
+              O usuário selecionado poderá acessar o painel <b>/motoboy</b> e ver apenas as próprias entregas.
+              Este vínculo não altera automaticamente os cargos ou permissões — atribua o cargo Motoboy separadamente.
+            </DialogDescription>
+          </DialogHeader>
+          {linkFor?.user_id ? (
+            <div className="space-y-3">
+              <p className="text-sm">Este motoboy já está vinculado a um usuário.</p>
+              <Button variant="destructive" onClick={() => linkMut.mutate({ courierId: linkFor.id, userId: null })}
+                disabled={linkMut.isPending}>
+                <Unlink className="h-4 w-4 mr-1" />Remover vínculo
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Input placeholder="Buscar por nome ou e-mail" value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)} />
+              <div className="max-h-[300px] overflow-y-auto border rounded-md divide-y">
+                {users.isLoading && <div className="p-3 text-sm text-muted-foreground">Carregando…</div>}
+                {(users.data ?? []).map((u) => (
+                  <button key={u.id}
+                    className="w-full text-left p-3 hover:bg-muted/50 text-sm flex justify-between items-center gap-2"
+                    onClick={() => linkFor && linkMut.mutate({ courierId: linkFor.id, userId: u.id })}
+                    disabled={linkMut.isPending}>
+                    <div>
+                      <div className="font-medium">{u.full_name}</div>
+                      <div className="text-xs text-muted-foreground">{u.email}</div>
+                    </div>
+                    <Link2 className="h-4 w-4 text-primary" />
+                  </button>
+                ))}
+                {!users.isLoading && (users.data ?? []).length === 0 && (
+                  <div className="p-3 text-sm text-muted-foreground">Nenhum usuário encontrado.</div>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkFor(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
