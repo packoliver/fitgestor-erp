@@ -58,6 +58,9 @@ export const NAV_ITEMS: NavItem[] = [
     group: "Vendas", workspaces: ["admin"], priority: 40 },
   { id: "clientes", title: "Clientes", url: "/clientes", icon: UserSquare2,
     group: "Vendas", workspaces: ["employee","admin"], priority: 30 },
+  { id: "pos-venda", title: "Pós-venda", url: "/pos-venda", icon: MessageCircle,
+    perm: "post_sale.view", group: "Vendas", workspaces: ["employee","admin"], priority: 25,
+    description: "Fila de mensagens de WhatsApp", mobile: true },
 
   // ── Operação ──────────────────────────────────────────────
   { id: "dashboard", title: "Dashboard", url: "/dashboard", icon: LayoutDashboard,
