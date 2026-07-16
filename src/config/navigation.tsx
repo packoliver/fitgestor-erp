@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Package, Boxes, ArrowDownToLine, ClipboardList, Tag,
   Users, ShieldCheck, Truck, FolderTree, Sparkles, Settings, ScrollText,
   ShoppingCart, Wallet, Receipt, UserSquare2, RefreshCw, Ticket, PiggyBank, FileBarChart,
-  MapPin, AlertTriangle, Rocket,
+  MapPin, AlertTriangle, Rocket, MessageCircle,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
