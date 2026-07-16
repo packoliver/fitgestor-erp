@@ -178,7 +178,7 @@ function LabelBatchPage() {
         _items,
         _client_request_id: clientReqRef.current,
         _operation_type: opts.operation_type,
-        _reason: opts.reason ?? null,
+        _reason: opts.reason,
       });
       if (error) throw error;
       return data as unknown as PreparedEvent;
