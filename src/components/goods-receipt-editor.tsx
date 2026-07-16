@@ -192,6 +192,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       if (!locationId) throw new Error("Selecione o local de estoque.");
       const payload = {
         id: draftId,
+        client_request_id: draftId ? null : clientRequestIdRef.current,
         supplier_id: supplierId || null,
         location_id: locationId,
         invoice_number: invoiceNumber || null,
@@ -206,7 +207,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
           cells: it.cells,
         })),
       };
-      const { data, error } = await (supabase as any).rpc("save_goods_receipt_draft", { _payload: payload });
+      const { data, error } = await supabase.rpc("save_goods_receipt_draft", { _payload: payload });
       if (error) throw error;
       return data as string;
     },
