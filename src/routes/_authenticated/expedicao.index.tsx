@@ -26,8 +26,7 @@ function ExpedicaoPanel() {
     queryFn: async () => {
       const [
         pending, picking, ready, out_for_delivery, delivered_today, failed, absent,
-        today_all, next_day, routes_draft, routes_progress, pending_pref,
-        overdue,
+        today_all, next_day, routes_draft, routes_progress, overdue,
       ] = await Promise.all([
         supabase.from("shipments").select("id", { count: "exact", head: true }).eq("status", "pending_pick"),
         supabase.from("shipments").select("id", { count: "exact", head: true }).eq("status", "picking"),
@@ -40,7 +39,6 @@ function ExpedicaoPanel() {
         supabase.from("shipments").select("id", { count: "exact", head: true }).gt("scheduled_date", today).neq("status", "cancelled"),
         supabase.from("routes").select("id", { count: "exact", head: true }).eq("status", "draft"),
         supabase.from("routes").select("id", { count: "exact", head: true }).in("status", ["dispatched", "in_progress"]),
-        supabase.rpc("count_sales_without_delivery" as any).then((r) => ({ count: r.error ? null : (r.data as any) })),
         supabase.from("shipments").select("id", { count: "exact", head: true }).lt("scheduled_date", today).not("status", "in", "(delivered,cancelled,failed)"),
       ]);
       return {
@@ -56,7 +54,6 @@ function ExpedicaoPanel() {
         routes_draft: routes_draft.count ?? 0,
         routes_progress: routes_progress.count ?? 0,
         overdue: overdue.count ?? 0,
-        pending_pref: (pending_pref as any)?.count ?? null,
       };
     },
   });
