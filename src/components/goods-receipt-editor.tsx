@@ -86,6 +86,11 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [draftId, setDraftId] = useState<string | undefined>(initialId);
+  // client_request_id persists por sessão do editor — protege o primeiro salvamento
+  // contra duplicidade se a resposta do RPC se perder após a criação.
+  const clientRequestIdRef = useRef<string>(
+    initialId ? "" : (globalThis.crypto?.randomUUID?.() ?? uid() + uid() + uid()),
+  );
   const [supplierId, setSupplierId] = useState<string>("");
   const [locationId, setLocationId] = useState<string>("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
