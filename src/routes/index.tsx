@@ -115,14 +115,11 @@ function Hero() {
           <div className="relative">
             <HeroMockup />
           </div>
-        </div>
-
-          </div>
-        </div>
       </div>
     </section>
   );
 }
+
 
 function FloatingChip({ className, label, value, accent }: { className?: string; label: string; value: string; accent: string }) {
   return (
