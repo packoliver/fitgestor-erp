@@ -210,6 +210,12 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         new_product_data: it.new_product_data ?? undefined,
         new_variant_data: it.new_variant_data ?? undefined,
         cells: Array.isArray(it.cells) ? it.cells : [],
+        raw_description: it.raw_description ?? undefined,
+        raw_size_label: it.raw_size_label ?? undefined,
+        raw_color_label: it.raw_color_label ?? undefined,
+        raw_notes: it.raw_notes ?? undefined,
+        raw_counted_quantity: it.raw_counted_quantity ?? undefined,
+        resolution_status: it.resolution_status ?? (it.mode === "count_only" ? "unresolved" : "resolved"),
       })),
     );
     setDirty(false);
