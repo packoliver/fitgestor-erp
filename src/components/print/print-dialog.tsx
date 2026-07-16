@@ -31,7 +31,17 @@ export function PrintDialog({
     const cls = m === "80mm" ? "print-80mm" : "print-a4";
     document.documentElement.classList.remove("print-80mm", "print-a4");
     document.documentElement.classList.add(cls);
-    // Aguarda repaint antes de imprimir para o CSS aplicar
+    // @page não pode ser aninhado sob seletor; injetamos dinamicamente.
+    let pageStyle = document.getElementById("print-page-rule") as HTMLStyleElement | null;
+    if (!pageStyle) {
+      pageStyle = document.createElement("style");
+      pageStyle.id = "print-page-rule";
+      document.head.appendChild(pageStyle);
+    }
+    pageStyle.textContent =
+      m === "80mm"
+        ? "@media print { @page { size: 80mm auto; margin: 3mm; } }"
+        : "@media print { @page { size: A4; margin: 12mm; } }";
     setTimeout(() => {
       window.print();
       setTimeout(() => {
