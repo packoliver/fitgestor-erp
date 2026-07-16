@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import { PrintDialog } from "@/components/print/print-dialog";
 import { ExchangeReceipt } from "@/components/print/exchange-receipt";
 import { VoucherReceipt } from "@/components/print/voucher-receipt";
+import { usePermissions } from "@/hooks/use-permissions";
+
 
 export const Route = createFileRoute("/_authenticated/trocas/$id")({
   component: TrocaDetalhe,
@@ -73,7 +75,11 @@ function TrocaDetalhe() {
 
   if (!ex) return <div>Carregando…</div>;
 
-  const canReverse = ex.status === "completed";
+  const { has } = usePermissions();
+  const canReverse = ex.status === "completed" && has("exchanges.reverse");
+  const canPrintReceipt = has("exchanges.print_receipt");
+  const canPrintVoucher = has("exchanges.print_voucher");
+
 
   return (
     <div>
@@ -81,10 +87,13 @@ function TrocaDetalhe() {
         title={`Troca #${ex.exchange_number}`}
         description={formatDateTime(ex.completed_at ?? ex.created_at)}
         actions={<>
-          <Button variant="outline" onClick={() => setPrintExOpen(true)}><Printer className="mr-2 h-4 w-4" />Comprovante</Button>
-          {voucher && (
+          {canPrintReceipt && (
+            <Button variant="outline" onClick={() => setPrintExOpen(true)}><Printer className="mr-2 h-4 w-4" />Comprovante</Button>
+          )}
+          {voucher && canPrintVoucher && (
             <Button variant="outline" onClick={() => setPrintVoucherOpen(true)}><Receipt className="mr-2 h-4 w-4" />Imprimir vale</Button>
           )}
+
           {canReverse && (
             <AlertDialog open={reverseOpen} onOpenChange={setReverseOpen}>
               <AlertDialogTrigger asChild>

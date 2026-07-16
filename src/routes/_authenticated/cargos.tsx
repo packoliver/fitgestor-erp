@@ -13,10 +13,30 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { RequirePermission } from "@/components/require-permission";
+
 
 export const Route = createFileRoute("/_authenticated/cargos")({
   component: CargosPage,
 });
+
+const MODULE_LABELS: Record<string, string> = {
+  exchanges: "Trocas",
+  credits_vouchers: "Créditos e vales",
+  pos: "PDV",
+  reports: "Relatórios",
+  produtos: "Produtos",
+  estoque: "Estoque",
+  vendas: "Vendas",
+  trocas: "Trocas (legado)",
+  estornos: "Estornos",
+  etiquetas: "Etiquetas",
+  cadastros: "Cadastros",
+  clients: "Clientes",
+  administracao: "Administração",
+  relatorios: "Relatórios (legado)",
+};
+
 
 function CargosPage() {
   const qc = useQueryClient();
@@ -64,7 +84,8 @@ function CargosPage() {
   }, {});
 
   return (
-    <div>
+    <RequirePermission code="role.manage"><div>
+
       <PageHeader title="Cargos e permissões" description="Crie cargos personalizados e defina o que cada um pode fazer." actions={
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />Novo cargo</Button></DialogTrigger>
@@ -108,25 +129,28 @@ function CargosPage() {
               <div className="space-y-4">
                 {Object.entries(grouped).map(([module, list]) => (
                   <div key={module}>
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">{module}</h3>
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">{MODULE_LABELS[module] ?? module}</h3>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {list.map((p: any) => (
                         <label key={p.id} className="flex items-start gap-2 rounded-md border p-2 hover:bg-muted/40 cursor-pointer">
                           <Checkbox checked={enabled.has(p.id)} onCheckedChange={(v) => togglePerm(p.id, !!v)} />
                           <div>
                             <div className="text-sm font-medium">{p.name}</div>
-                            <div className="text-xs text-muted-foreground">{p.code}</div>
+                            {p.description && <div className="text-xs text-muted-foreground">{p.description}</div>}
+                            <div className="text-[10px] text-muted-foreground/70 mt-0.5">{p.code}</div>
                           </div>
                         </label>
                       ))}
                     </div>
                   </div>
                 ))}
+
               </div>
             )}
           </CardContent>
         </Card>
       </div>
-    </div>
+    </div></RequirePermission>
   );
+
 }

@@ -13,6 +13,8 @@ import { formatDateTime } from "@/lib/erp";
 import { Search, Printer } from "lucide-react";
 import { PrintDialog } from "@/components/print/print-dialog";
 import { VoucherReceipt } from "@/components/print/voucher-receipt";
+import { RequirePermission } from "@/components/require-permission";
+
 
 export const Route = createFileRoute("/_authenticated/trocas/vales")({
   component: ValesPage,
@@ -61,7 +63,8 @@ function ValesPage() {
   });
 
   return (
-    <div>
+    <RequirePermission code="vouchers.view"><div>
+
       <PageHeader title="Vales-troca" description="Consulta, histórico e status" />
       <Card className="p-3 mb-4">
         <div className="flex gap-2">
@@ -149,6 +152,7 @@ function ValesPage() {
           />
         </PrintDialog>
       )}
-    </div>
+    </div></RequirePermission>
   );
+
 }

@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AVAILABLE_METHODS, getOpenSession, money, normalizeDigits, PAYMENT_LABELS, PaymentMethod, validCPF } from "@/lib/pos";
 import { Minus, Plus, Search, ShoppingCart, Trash2, User, X } from "lucide-react";
+import { usePermissions } from "@/hooks/use-permissions";
+
 
 export const Route = createFileRoute("/_authenticated/pdv")({
   component: PdvPage,
@@ -38,6 +40,8 @@ function newRequestId() {
 }
 
 function PdvPage() {
+  const perms = usePermissions();
+
   const navigate = useNavigate();
   const searchRef = useRef<HTMLInputElement>(null);
   const [term, setTerm] = useState("");
@@ -436,8 +440,13 @@ function PdvPage() {
             <div className="grid grid-cols-[1fr_120px_auto] gap-2">
               <Select value={payMethod} onValueChange={(v) => { setPayMethod(v as PaymentMethod); setPayAmount(""); setPayRef(""); setVoucherInfo(null); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{AVAILABLE_METHODS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                <SelectContent>{AVAILABLE_METHODS.filter((m) => {
+                  if (m.value === "store_credit") return perms.has("pos.use_store_credit");
+                  if (m.value === "exchange_voucher") return perms.has("pos.use_voucher");
+                  return true;
+                }).map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
               </Select>
+
               <Input type="number" step="0.01" placeholder="Valor" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} />
               <Button onClick={addPayment}><Plus className="h-4 w-4" /></Button>
             </div>

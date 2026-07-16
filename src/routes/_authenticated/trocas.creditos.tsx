@@ -11,6 +11,8 @@ import { money, normalizeDigits } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
 import { Search, ExternalLink } from "lucide-react";
 import { ClientCreditPanel } from "@/components/client-credit-panel";
+import { RequirePermission } from "@/components/require-permission";
+
 
 export const Route = createFileRoute("/_authenticated/trocas/creditos")({
   component: CreditosPage,
@@ -40,7 +42,8 @@ function CreditosPage() {
   });
 
   return (
-    <div>
+    <RequirePermission code="credits.view"><div>
+
       <PageHeader title="Créditos da loja" description="Saldos por cliente. O histórico completo abre na tela do cliente." />
       <Card className="p-3 mb-4">
         <div className="relative flex-1">
@@ -98,6 +101,7 @@ function CreditosPage() {
           <ClientCreditPanel clientId={selected.client_id} />
         </div>
       )}
-    </div>
+    </div></RequirePermission>
   );
+
 }

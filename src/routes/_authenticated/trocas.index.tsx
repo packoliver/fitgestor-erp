@@ -11,6 +11,8 @@ import { money } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
 import { useState } from "react";
 import { Plus, Settings } from "lucide-react";
+import { RequirePermission } from "@/components/require-permission";
+
 
 export const Route = createFileRoute("/_authenticated/trocas/")({
   component: TrocasPage,
@@ -40,7 +42,8 @@ function TrocasPage() {
   };
 
   return (
-    <div>
+    <RequirePermission code="exchanges.view"><div>
+
       <PageHeader
         title="Trocas e devoluções"
         description="Trocas, devoluções, vale-troca e crédito da loja."
@@ -90,6 +93,7 @@ function TrocasPage() {
           </TableBody>
         </Table>
       </Card>
-    </div>
+    </div></RequirePermission>
   );
+
 }

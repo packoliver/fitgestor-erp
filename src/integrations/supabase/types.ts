@@ -2632,6 +2632,10 @@ export type Database = {
         }
         Returns: string
       }
+      assert_pos_payment_allowed: {
+        Args: { _method: string }
+        Returns: undefined
+      }
       close_cash_session: {
         Args: { _counted_amount: number; _notes?: string; _session_id: string }
         Returns: Json

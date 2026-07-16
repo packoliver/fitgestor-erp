@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { toast } from "sonner";
+import { RequirePermission } from "@/components/require-permission";
+
 
 export const Route = createFileRoute("/_authenticated/funcionarios")({
   component: Funcionarios,
@@ -57,7 +59,8 @@ function Funcionarios() {
   });
 
   return (
-    <div>
+    <RequirePermission code="user.manage"><div>
+
       <PageHeader title="Funcionários" description="Gerencie os usuários da sua loja e seus cargos." />
       <Alert className="mb-4">
         <Info className="h-4 w-4" />
@@ -100,6 +103,7 @@ function Funcionarios() {
           </TableBody>
         </Table>
       </Card>
-    </div>
+    </div></RequirePermission>
   );
+
 }
