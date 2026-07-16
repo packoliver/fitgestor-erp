@@ -3868,6 +3868,10 @@ export type Database = {
         Args: { _exchange_id: string; _reason: string }
         Returns: Json
       }
+      revoke_courier_access: {
+        Args: { _courier_id: string }
+        Returns: undefined
+      }
       revoke_employee_role: {
         Args: { _role_id: string; _user_id: string }
         Returns: undefined
@@ -3993,7 +3997,13 @@ export type Database = {
         | "quarentena_avariado"
         | "quarentena_defeituoso"
         | "perda"
-      user_status: "ativo" | "inativo" | "pendente"
+      user_status:
+        | "ativo"
+        | "inativo"
+        | "pendente"
+        | "bloqueado"
+        | "acesso_removido"
+        | "convite_pendente"
       voucher_status: "active" | "fully_used" | "expired" | "cancelled"
     }
     CompositeTypes: {
@@ -4221,7 +4231,14 @@ export const Constants = {
         "quarentena_defeituoso",
         "perda",
       ],
-      user_status: ["ativo", "inativo", "pendente"],
+      user_status: [
+        "ativo",
+        "inativo",
+        "pendente",
+        "bloqueado",
+        "acesso_removido",
+        "convite_pendente",
+      ],
       voucher_status: ["active", "fully_used", "expired", "cancelled"],
     },
   },
