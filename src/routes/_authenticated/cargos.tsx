@@ -86,11 +86,9 @@ function CargosPage() {
   });
 
   const toggleActive = useMutation({
-    mutationFn: async (r: Role) => {
-      const { error } = await supabase.from("roles").update({ active: !(r.active ?? true) }).eq("id", r.id);
-      if (error) throw error;
+    mutationFn: async (_r: Role) => {
+      throw new Error("A ativação/desativação de cargos requer suporte no backend. Contate o administrador.");
     },
-    onSuccess: () => { toast.success("Atualizado"); qc.invalidateQueries({ queryKey: ["roles-full"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
 
