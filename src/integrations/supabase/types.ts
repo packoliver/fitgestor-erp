@@ -294,6 +294,10 @@ export type Database = {
           notes: string | null
           organization_id: string
           phone: string | null
+          post_sale_preference: Database["public"]["Enums"]["post_sale_client_preference"]
+          post_sale_preference_reason: string | null
+          post_sale_preference_updated_at: string | null
+          post_sale_preference_updated_by: string | null
           state: string | null
           status: string
           updated_at: string
@@ -316,6 +320,10 @@ export type Database = {
           notes?: string | null
           organization_id: string
           phone?: string | null
+          post_sale_preference?: Database["public"]["Enums"]["post_sale_client_preference"]
+          post_sale_preference_reason?: string | null
+          post_sale_preference_updated_at?: string | null
+          post_sale_preference_updated_by?: string | null
           state?: string | null
           status?: string
           updated_at?: string
@@ -338,6 +346,10 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           phone?: string | null
+          post_sale_preference?: Database["public"]["Enums"]["post_sale_client_preference"]
+          post_sale_preference_reason?: string | null
+          post_sale_preference_updated_at?: string | null
+          post_sale_preference_updated_by?: string | null
           state?: string | null
           status?: string
           updated_at?: string
@@ -2051,6 +2063,320 @@ export type Database = {
         }
         Relationships: []
       }
+      post_sale_rules: {
+        Row: {
+          active: boolean
+          allowed_end_time: string | null
+          allowed_start_time: string | null
+          business_days_only: boolean
+          created_at: string
+          created_by: string | null
+          delay_unit: Database["public"]["Enums"]["post_sale_delay_unit"]
+          delay_value: number
+          delivery_methods: Json
+          description: string | null
+          exception_behavior: Json
+          filters: Json
+          id: string
+          locations: Json
+          name: string
+          organization_id: string
+          post_sale_type: Database["public"]["Enums"]["post_sale_type"]
+          preferred_send_time: string | null
+          priority: number
+          responsible_role_id: string | null
+          responsible_user_id: string | null
+          review_required: boolean
+          sales_channels: Json
+          template_id: string | null
+          trigger_type: Database["public"]["Enums"]["post_sale_trigger"]
+          updated_at: string
+          updated_by: string | null
+          working_days: number[] | null
+        }
+        Insert: {
+          active?: boolean
+          allowed_end_time?: string | null
+          allowed_start_time?: string | null
+          business_days_only?: boolean
+          created_at?: string
+          created_by?: string | null
+          delay_unit?: Database["public"]["Enums"]["post_sale_delay_unit"]
+          delay_value?: number
+          delivery_methods?: Json
+          description?: string | null
+          exception_behavior?: Json
+          filters?: Json
+          id?: string
+          locations?: Json
+          name: string
+          organization_id: string
+          post_sale_type?: Database["public"]["Enums"]["post_sale_type"]
+          preferred_send_time?: string | null
+          priority?: number
+          responsible_role_id?: string | null
+          responsible_user_id?: string | null
+          review_required?: boolean
+          sales_channels?: Json
+          template_id?: string | null
+          trigger_type?: Database["public"]["Enums"]["post_sale_trigger"]
+          updated_at?: string
+          updated_by?: string | null
+          working_days?: number[] | null
+        }
+        Update: {
+          active?: boolean
+          allowed_end_time?: string | null
+          allowed_start_time?: string | null
+          business_days_only?: boolean
+          created_at?: string
+          created_by?: string | null
+          delay_unit?: Database["public"]["Enums"]["post_sale_delay_unit"]
+          delay_value?: number
+          delivery_methods?: Json
+          description?: string | null
+          exception_behavior?: Json
+          filters?: Json
+          id?: string
+          locations?: Json
+          name?: string
+          organization_id?: string
+          post_sale_type?: Database["public"]["Enums"]["post_sale_type"]
+          preferred_send_time?: string | null
+          priority?: number
+          responsible_role_id?: string | null
+          responsible_user_id?: string | null
+          review_required?: boolean
+          sales_channels?: Json
+          template_id?: string | null
+          trigger_type?: Database["public"]["Enums"]["post_sale_trigger"]
+          updated_at?: string
+          updated_by?: string | null
+          working_days?: number[] | null
+        }
+        Relationships: []
+      }
+      post_sale_settings: {
+        Row: {
+          allowed_end_time: string
+          allowed_start_time: string
+          created_at: string
+          default_send_time: string
+          default_template_id: string | null
+          enabled: boolean
+          operation_mode: Database["public"]["Enums"]["post_sale_operation_mode"]
+          organization_id: string
+          updated_at: string
+          use_business_days: boolean
+          working_days: number[]
+        }
+        Insert: {
+          allowed_end_time?: string
+          allowed_start_time?: string
+          created_at?: string
+          default_send_time?: string
+          default_template_id?: string | null
+          enabled?: boolean
+          operation_mode?: Database["public"]["Enums"]["post_sale_operation_mode"]
+          organization_id: string
+          updated_at?: string
+          use_business_days?: boolean
+          working_days?: number[]
+        }
+        Update: {
+          allowed_end_time?: string
+          allowed_start_time?: string
+          created_at?: string
+          default_send_time?: string
+          default_template_id?: string | null
+          enabled?: boolean
+          operation_mode?: Database["public"]["Enums"]["post_sale_operation_mode"]
+          organization_id?: string
+          updated_at?: string
+          use_business_days?: boolean
+          working_days?: number[]
+        }
+        Relationships: []
+      }
+      post_sale_task_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          organization_id: string
+          task_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type: string
+          id?: string
+          organization_id: string
+          task_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          organization_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_sale_task_events_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "post_sale_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_sale_tasks: {
+        Row: {
+          cancelled_at: string | null
+          client_id: string | null
+          completed_by: string | null
+          created_at: string
+          edited_message: string | null
+          id: string
+          invalid_phone_at: string | null
+          metadata: Json
+          notes: string | null
+          opened_at: string | null
+          opted_out_at: string | null
+          organization_id: string
+          phone: string | null
+          post_sale_type: Database["public"]["Enums"]["post_sale_type"]
+          recipient_name: string | null
+          rendered_message: string
+          responsible_user_id: string | null
+          route_id: string | null
+          rule_id: string | null
+          sale_id: string
+          scheduled_at: string | null
+          sent_at: string | null
+          shipment_id: string | null
+          skipped_at: string | null
+          source: Database["public"]["Enums"]["post_sale_source"]
+          status: Database["public"]["Enums"]["post_sale_status"]
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          client_id?: string | null
+          completed_by?: string | null
+          created_at?: string
+          edited_message?: string | null
+          id?: string
+          invalid_phone_at?: string | null
+          metadata?: Json
+          notes?: string | null
+          opened_at?: string | null
+          opted_out_at?: string | null
+          organization_id: string
+          phone?: string | null
+          post_sale_type: Database["public"]["Enums"]["post_sale_type"]
+          recipient_name?: string | null
+          rendered_message: string
+          responsible_user_id?: string | null
+          route_id?: string | null
+          rule_id?: string | null
+          sale_id: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          shipment_id?: string | null
+          skipped_at?: string | null
+          source?: Database["public"]["Enums"]["post_sale_source"]
+          status?: Database["public"]["Enums"]["post_sale_status"]
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          client_id?: string | null
+          completed_by?: string | null
+          created_at?: string
+          edited_message?: string | null
+          id?: string
+          invalid_phone_at?: string | null
+          metadata?: Json
+          notes?: string | null
+          opened_at?: string | null
+          opted_out_at?: string | null
+          organization_id?: string
+          phone?: string | null
+          post_sale_type?: Database["public"]["Enums"]["post_sale_type"]
+          recipient_name?: string | null
+          rendered_message?: string
+          responsible_user_id?: string | null
+          route_id?: string | null
+          rule_id?: string | null
+          sale_id?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          shipment_id?: string | null
+          skipped_at?: string | null
+          source?: Database["public"]["Enums"]["post_sale_source"]
+          status?: Database["public"]["Enums"]["post_sale_status"]
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      post_sale_templates: {
+        Row: {
+          active: boolean
+          allowed_channels: Json
+          category: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          internal_notes: string | null
+          is_default: boolean
+          message: string
+          name: string
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          allowed_channels?: Json
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          internal_notes?: string | null
+          is_default?: boolean
+          message: string
+          name: string
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          allowed_channels?: Json
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          internal_notes?: string | null
+          is_default?: boolean
+          message?: string
+          name?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       product_images: {
         Row: {
           created_at: string
@@ -3573,6 +3899,50 @@ export type Database = {
       _next_route_number: { Args: { _org: string }; Returns: number }
       _next_shipment_number: { Args: { _org: string }; Returns: number }
       _org_admin_count: { Args: { _org: string }; Returns: number }
+      _post_sale_get_task: {
+        Args: { _task_id: string }
+        Returns: {
+          cancelled_at: string | null
+          client_id: string | null
+          completed_by: string | null
+          created_at: string
+          edited_message: string | null
+          id: string
+          invalid_phone_at: string | null
+          metadata: Json
+          notes: string | null
+          opened_at: string | null
+          opted_out_at: string | null
+          organization_id: string
+          phone: string | null
+          post_sale_type: Database["public"]["Enums"]["post_sale_type"]
+          recipient_name: string | null
+          rendered_message: string
+          responsible_user_id: string | null
+          route_id: string | null
+          rule_id: string | null
+          sale_id: string
+          scheduled_at: string | null
+          sent_at: string | null
+          shipment_id: string | null
+          skipped_at: string | null
+          source: Database["public"]["Enums"]["post_sale_source"]
+          status: Database["public"]["Enums"]["post_sale_status"]
+          template_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_sale_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _post_sale_normalize_phone: { Args: { p: string }; Returns: string }
+      _post_sale_render_message: {
+        Args: { _client_id: string; _sale_id: string; _template: string }
+        Returns: string
+      }
       _recompute_label_job_status: {
         Args: { _job_id: string }
         Returns: string
@@ -3699,6 +4069,20 @@ export type Database = {
         Args: { _document?: string; _name: string }
         Returns: string
       }
+      create_post_sale_task: {
+        Args: {
+          _force?: boolean
+          _phone_override?: string
+          _post_sale_type: Database["public"]["Enums"]["post_sale_type"]
+          _responsible_user_id?: string
+          _rule_id?: string
+          _sale_id: string
+          _scheduled_at: string
+          _source?: Database["public"]["Enums"]["post_sale_source"]
+          _template_id: string
+        }
+        Returns: string
+      }
       create_shipment_from_sale: {
         Args: {
           _address_override?: Json
@@ -3731,6 +4115,16 @@ export type Database = {
       }
       generate_goods_receipt_labels: {
         Args: { _client_request_id: string; _receipt_id: string }
+        Returns: Json
+      }
+      generate_post_sale_batch: {
+        Args: {
+          _post_sale_type: Database["public"]["Enums"]["post_sale_type"]
+          _responsible_user_id?: string
+          _sale_ids: string[]
+          _scheduled_at: string
+          _template_id: string
+        }
         Returns: Json
       }
       generate_route: {
@@ -3822,6 +4216,51 @@ export type Database = {
         Args: { _location_id: string; _notes?: string; _opening_amount: number }
         Returns: string
       }
+      post_sale_assign: {
+        Args: { _task_id: string; _user_id: string }
+        Returns: undefined
+      }
+      post_sale_cancel: {
+        Args: { _reason?: string; _task_id: string }
+        Returns: undefined
+      }
+      post_sale_change_template: {
+        Args: { _task_id: string; _template_id: string }
+        Returns: undefined
+      }
+      post_sale_edit_message: {
+        Args: { _message: string; _task_id: string }
+        Returns: undefined
+      }
+      post_sale_ensure_defaults: { Args: never; Returns: undefined }
+      post_sale_mark_invalid_phone: {
+        Args: { _task_id: string }
+        Returns: undefined
+      }
+      post_sale_mark_opened: { Args: { _task_id: string }; Returns: undefined }
+      post_sale_mark_sent: { Args: { _task_id: string }; Returns: undefined }
+      post_sale_opt_out_client: {
+        Args: { _reason?: string; _task_id: string }
+        Returns: undefined
+      }
+      post_sale_queue_stats: { Args: never; Returns: Json }
+      post_sale_reschedule: {
+        Args: { _new_at: string; _task_id: string }
+        Returns: undefined
+      }
+      post_sale_save_rule: {
+        Args: { _data: Json; _id: string }
+        Returns: string
+      }
+      post_sale_save_template: {
+        Args: { _data: Json; _id: string }
+        Returns: string
+      }
+      post_sale_skip: {
+        Args: { _reason?: string; _task_id: string }
+        Returns: undefined
+      }
+      post_sale_upsert_settings: { Args: { _data: Json }; Returns: undefined }
       prepare_goods_receipt_label_print: {
         Args: {
           _client_request_id: string
@@ -3949,6 +4388,49 @@ export type Database = {
         | "retorno_fornecedor"
         | "reserva"
         | "liberacao_reserva"
+      post_sale_client_preference: "allowed" | "unknown" | "opted_out"
+      post_sale_delay_unit: "minutes" | "hours" | "days" | "business_days"
+      post_sale_operation_mode:
+        | "manual"
+        | "automatic"
+        | "automatic_review"
+        | "hybrid"
+      post_sale_source: "manual" | "rule" | "import" | "api"
+      post_sale_status:
+        | "draft"
+        | "scheduled"
+        | "pending_review"
+        | "pending"
+        | "opened"
+        | "sent"
+        | "skipped"
+        | "rescheduled"
+        | "cancelled"
+        | "invalid_phone"
+        | "opted_out"
+      post_sale_trigger:
+        | "sale_completed"
+        | "sale_completed_store"
+        | "sale_completed_online"
+        | "pickup_registered"
+        | "shipment_created"
+        | "shipment_added_to_route"
+        | "route_dispatched"
+        | "delivery_completed"
+        | "hours_after_sale"
+        | "next_business_day_after_sale"
+        | "next_business_day_after_dispatch"
+        | "manual"
+        | "custom_date"
+      post_sale_type:
+        | "thanks"
+        | "satisfaction_service"
+        | "satisfaction_delivery"
+        | "arrival_check"
+        | "exchange_followup"
+        | "review_request"
+        | "relationship"
+        | "other"
       product_status: "ativo" | "inativo" | "rascunho"
       receipt_status:
         | "active"
@@ -4176,6 +4658,53 @@ export const Constants = {
         "retorno_fornecedor",
         "reserva",
         "liberacao_reserva",
+      ],
+      post_sale_client_preference: ["allowed", "unknown", "opted_out"],
+      post_sale_delay_unit: ["minutes", "hours", "days", "business_days"],
+      post_sale_operation_mode: [
+        "manual",
+        "automatic",
+        "automatic_review",
+        "hybrid",
+      ],
+      post_sale_source: ["manual", "rule", "import", "api"],
+      post_sale_status: [
+        "draft",
+        "scheduled",
+        "pending_review",
+        "pending",
+        "opened",
+        "sent",
+        "skipped",
+        "rescheduled",
+        "cancelled",
+        "invalid_phone",
+        "opted_out",
+      ],
+      post_sale_trigger: [
+        "sale_completed",
+        "sale_completed_store",
+        "sale_completed_online",
+        "pickup_registered",
+        "shipment_created",
+        "shipment_added_to_route",
+        "route_dispatched",
+        "delivery_completed",
+        "hours_after_sale",
+        "next_business_day_after_sale",
+        "next_business_day_after_dispatch",
+        "manual",
+        "custom_date",
+      ],
+      post_sale_type: [
+        "thanks",
+        "satisfaction_service",
+        "satisfaction_delivery",
+        "arrival_check",
+        "exchange_followup",
+        "review_request",
+        "relationship",
+        "other",
       ],
       product_status: ["ativo", "inativo", "rascunho"],
       receipt_status: [

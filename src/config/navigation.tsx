@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Package, Boxes, ArrowDownToLine, ClipboardList, Tag,
   Users, ShieldCheck, Truck, FolderTree, Sparkles, Settings, ScrollText,
   ShoppingCart, Wallet, Receipt, UserSquare2, RefreshCw, Ticket, PiggyBank, FileBarChart,
-  MapPin, AlertTriangle, Rocket,
+  MapPin, AlertTriangle, Rocket, MessageCircle,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -58,6 +58,9 @@ export const NAV_ITEMS: NavItem[] = [
     group: "Vendas", workspaces: ["admin"], priority: 40 },
   { id: "clientes", title: "Clientes", url: "/clientes", icon: UserSquare2,
     group: "Vendas", workspaces: ["employee","admin"], priority: 30 },
+  { id: "pos-venda", title: "Pós-venda", url: "/pos-venda", icon: MessageCircle,
+    perm: "post_sale.view", group: "Vendas", workspaces: ["employee","admin"], priority: 25,
+    description: "Fila de mensagens de WhatsApp", mobile: true },
 
   // ── Operação ──────────────────────────────────────────────
   { id: "dashboard", title: "Dashboard", url: "/dashboard", icon: LayoutDashboard,
@@ -191,6 +194,11 @@ export const PERMISSION_GROUPS: { id: string; label: string; codes: string[] }[]
   ] },
   { id: "admin", label: "Administração", codes: [
     "user.manage","role.manage","audit.view",
+  ] },
+  { id: "post_sale", label: "Pós-venda", codes: [
+    "post_sale.view","post_sale.send","post_sale.create_manual",
+    "post_sale.manage_templates","post_sale.manage_rules","post_sale.settings",
+    "post_sale.skip","post_sale.cancel","post_sale.assign","post_sale.review",
   ] },
 ];
 
