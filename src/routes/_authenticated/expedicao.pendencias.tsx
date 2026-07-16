@@ -41,7 +41,7 @@ const money = (v: any) =>
   Number(v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function PendenciasPage() {
-  const [openSale, setOpenSale] = useState<string | null>(null);
+  const [openSale, setOpenSale] = useState<OpenSale | null>(null);
 
   const q = useQuery({
     queryKey: ["expedicao-pendencias"],
