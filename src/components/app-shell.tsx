@@ -32,9 +32,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
 import {
-  NAV_ITEMS, NAV_GROUPS, itemsByGroup, filterByPermission,
+  NAV_ITEMS, itemsByGroup, filterByPermission,
   ESSENTIAL_ITEM_IDS, type NavItem, type NavGroup,
 } from "@/config/navigation";
+
 
 const LS_GROUPS = "fg:nav:groups-open";
 const LS_ESSENTIAL = "fg:nav:essential";
