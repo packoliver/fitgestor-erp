@@ -250,42 +250,34 @@ function NavSearchDialog({
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <Command
-        filter={(value, search, keywords) => {
-          const hay = `${value} ${(keywords ?? []).join(" ")}`.toLowerCase();
-          const needle = search.toLowerCase().trim();
-          if (!needle) return 1;
-          return hay.includes(needle) ? 1 : 0;
-        }}
-      >
-        <CommandInput placeholder="Buscar módulo ou ação…" />
-        <CommandList>
-          <CommandEmpty>Nenhum módulo encontrado.</CommandEmpty>
-          {grouped.map((g) => (
-            <CommandGroup key={g.label} heading={g.label}>
-              {g.items.map((it) => (
-                <CommandItem
-                  key={it.id}
-                  value={it.title}
-                  keywords={[...(it.keywords ?? []), it.description ?? "", it.group]}
-                  onSelect={() => go(it.url)}
-                >
-                  <it.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <div className="flex min-w-0 flex-col">
-                    <span className="text-[13px] font-medium truncate">{it.title}</span>
-                    {it.description && (
-                      <span className="text-[11px] text-muted-foreground truncate">{it.description}</span>
-                    )}
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          ))}
-        </CommandList>
-      </Command>
+      <CommandInput placeholder="Buscar módulo ou ação…" />
+      <CommandList>
+        <CommandEmpty>Nenhum módulo encontrado.</CommandEmpty>
+        {grouped.map((g) => (
+          <CommandGroup key={g.label} heading={g.label}>
+            {g.items.map((it) => (
+              <CommandItem
+                key={it.id}
+                value={it.title}
+                keywords={[...(it.keywords ?? []), it.description ?? "", it.group]}
+                onSelect={() => go(it.url)}
+              >
+                <it.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                <div className="flex min-w-0 flex-col">
+                  <span className="text-[13px] font-medium truncate">{it.title}</span>
+                  {it.description && (
+                    <span className="text-[11px] text-muted-foreground truncate">{it.description}</span>
+                  )}
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        ))}
+      </CommandList>
     </CommandDialog>
   );
 }
+
 
 export function AppShell({ children, userEmail }: { children: ReactNode; userEmail: string }) {
   const navigate = useNavigate();
