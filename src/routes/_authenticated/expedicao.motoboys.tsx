@@ -205,6 +205,19 @@ function CouriersPage() {
               <Button size="sm" variant="outline" onClick={() => setLinkFor(c)}>
                 <Link2 className="h-3.5 w-3.5 mr-1" />Vínculo
               </Button>
+              {c.user_id && (
+                <Button size="sm" variant="outline"
+                  onClick={() => grantAccess.mutate(c)} disabled={grantAccess.isPending}
+                  title="Atribui adicionalmente o cargo-modelo Motoboy a este usuário, sem alterar seus outros cargos.">
+                  <ShieldCheck className="h-3.5 w-3.5 mr-1" />Cargo Motoboy
+                </Button>
+              )}
+              {c.user_id && (
+                <Button size="sm" variant="outline"
+                  onClick={() => revokeAccess.mutate(c)} disabled={revokeAccess.isPending}>
+                  Remover cargo
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={() => startEdit(c)}>
                 <Pencil className="h-3.5 w-3.5 mr-1" />Editar
               </Button>
