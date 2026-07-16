@@ -90,6 +90,21 @@ function WorkspacePage() {
         </Link>
       )}
 
+      {canPostSale && psPending > 0 && (
+        <Link to="/pos-venda">
+          <Card className="p-4 mb-4 border-primary/40 bg-primary/5 flex items-center gap-3 hover:bg-primary/10 transition-colors">
+            <MessageCircle className="h-5 w-5 text-primary" />
+            <div className="flex-1">
+              <div className="font-medium">Pós-vendas pendentes</div>
+              <div className="text-xs text-muted-foreground">
+                {ps.pending_today ?? 0} hoje · {ps.overdue ?? 0} atrasadas · {ps.pending_review ?? 0} em revisão
+              </div>
+            </div>
+            <Badge>{psPending}</Badge>
+          </Card>
+        </Link>
+      )}
+
       {grouped.length === 0 && (
         <Card className="p-8 text-center text-muted-foreground text-sm">
           Você ainda não tem permissões atribuídas. Fale com o administrador da loja.
