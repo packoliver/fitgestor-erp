@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/funcionarios")({
 type Employee = {
   id: string;
   full_name: string | null;
-  email: string;
+  email: string | null;
   status: string | null;
   created_at: string;
   roles: { id: string; name: string; code: string | null }[];
