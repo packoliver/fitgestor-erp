@@ -62,6 +62,8 @@ type Item = {
 
 type LoadedDraft = {
   id: string;
+  receipt_number: number;
+  version: number;
   supplier_id: string | null;
   location_id: string | null;
   invoice_number: string | null;
@@ -70,6 +72,8 @@ type LoadedDraft = {
   notes: string | null;
   status: string;
   updated_at: string;
+  cancelled_at: string | null;
+  cancellation_reason: string | null;
   items: Array<{
     id: string;
     position: number;
@@ -84,6 +88,11 @@ type LoadedDraft = {
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+export function formatReceiptNumber(n: number | null | undefined): string {
+  if (n === null || n === undefined) return "—";
+  return "#" + String(n).padStart(6, "0");
 }
 
 export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
@@ -106,10 +115,18 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
   const [lastSavedAt, setLastSavedAt] = useState<string | undefined>();
   const [status, setStatus] = useState<string>("draft");
   const [confirmedAt, setConfirmedAt] = useState<string | null>(null);
+  const [cancelledAt, setCancelledAt] = useState<string | null>(null);
+  const [cancellationReason, setCancellationReason] = useState<string | null>(null);
   const [confirmationSummary, setConfirmationSummary] = useState<any>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [conflictOpen, setConflictOpen] = useState(false);
+  const [receiptNumber, setReceiptNumber] = useState<number | null>(null);
+  const [version, setVersion] = useState<number>(1);
   // Um único UUID por tentativa real de confirmação — reutilizado em retries de rede.
   const confirmRequestIdRef = useRef<string>("");
+  const cancelRequestIdRef = useRef<string>("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   const suppliers = useQuery({
