@@ -204,6 +204,9 @@ function PosVendaFila() {
           description="Fila de mensagens para envio manual pelo WhatsApp."
           actions={
             <div className="flex flex-wrap gap-2">
+              <Button variant="ghost" onClick={() => processDue.mutate()} disabled={processDue.isPending}>
+                <RefreshCw className="h-4 w-4 mr-2" />Processar agora
+              </Button>
               <Button variant="outline" asChild>
                 <Link to="/pos-venda/gerar"><Plus className="h-4 w-4 mr-2" />Gerar pós-vendas</Link>
               </Button>
