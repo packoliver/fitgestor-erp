@@ -225,6 +225,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       const payload = {
         id: draftId,
         client_request_id: draftId ? null : clientRequestIdRef.current,
+        expected_version: draftId ? version : null,
         supplier_id: supplierId || null,
         location_id: locationId,
         invoice_number: invoiceNumber || null,
@@ -241,20 +242,34 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       };
       const { data, error } = await supabase.rpc("save_goods_receipt_draft", { _payload: payload });
       if (error) throw error;
-      return data as string;
+      return data as {
+        draft_id: string;
+        receipt_number: number;
+        version: number;
+        updated_at: string;
+        idempotent: boolean;
+      };
     },
-    onSuccess: (id) => {
+    onSuccess: (result) => {
       toast.success("Rascunho salvo.");
       setDirty(false);
-      setLastSavedAt(new Date().toISOString());
-      qc.invalidateQueries({ queryKey: ["goods-receipt-drafts"] });
-      qc.invalidateQueries({ queryKey: ["goods-receipt-draft", id] });
+      setLastSavedAt(result.updated_at ?? new Date().toISOString());
+      setVersion(result.version);
+      setReceiptNumber(result.receipt_number);
+      qc.invalidateQueries({ queryKey: ["goods-receipts-list"] });
+      qc.invalidateQueries({ queryKey: ["goods-receipt-draft", result.draft_id] });
       if (!draftId) {
-        setDraftId(id);
-        navigate({ to: "/estoque/recebimentos/$id", params: { id } });
+        setDraftId(result.draft_id);
+        navigate({ to: "/estoque/recebimentos/$id", params: { id: result.draft_id } });
       }
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      if (e.message && e.message.includes("alterado em outra aba")) {
+        setConflictOpen(true);
+        return;
+      }
+      toast.error(e.message);
+    },
   });
 
   const confirmReceipt = useMutation({
@@ -269,7 +284,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         _client_request_id: confirmRequestIdRef.current,
       });
       if (error) throw error;
-      return data as any;
+      return data as { summary?: unknown; total_quantity?: number; created_products?: unknown[]; created_variants?: unknown[] };
     },
     onSuccess: (result) => {
       toast.success("Recebimento confirmado. As etiquetas ainda estão pendentes de geração.");
@@ -277,13 +292,48 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       setConfirmedAt(new Date().toISOString());
       setConfirmationSummary(result?.summary ?? result);
       setConfirmOpen(false);
-      qc.invalidateQueries({ queryKey: ["goods-receipt-drafts"] });
+      qc.invalidateQueries({ queryKey: ["goods-receipts-list"] });
       if (draftId) qc.invalidateQueries({ queryKey: ["goods-receipt-draft", draftId] });
       qc.invalidateQueries({ queryKey: ["stock-overview"] });
     },
     onError: (e: Error) => {
       toast.error(e.message);
-      // Mantém o mesmo request_id para retry idempotente
+    },
+  });
+
+  const cancelDraft = useMutation({
+    mutationFn: async () => {
+      if (!draftId) throw new Error("Rascunho não identificado.");
+      if (status !== "draft") throw new Error("Este recebimento não é mais um rascunho.");
+      const reason = cancelReason.trim();
+      if (reason.length < 3) throw new Error("Informe o motivo do cancelamento.");
+      if (!cancelRequestIdRef.current) {
+        cancelRequestIdRef.current = globalThis.crypto?.randomUUID?.() ?? uid() + uid() + uid();
+      }
+      const { data, error } = await supabase.rpc("cancel_goods_receipt_draft", {
+        _draft_id: draftId,
+        _reason: reason,
+        _expected_version: version,
+        _client_request_id: cancelRequestIdRef.current,
+      });
+      if (error) throw error;
+      return data as { status: string; receipt_number: number };
+    },
+    onSuccess: () => {
+      toast.success("Rascunho cancelado.");
+      setStatus("cancelled");
+      setCancelledAt(new Date().toISOString());
+      setCancellationReason(cancelReason.trim());
+      setCancelOpen(false);
+      qc.invalidateQueries({ queryKey: ["goods-receipts-list"] });
+      if (draftId) qc.invalidateQueries({ queryKey: ["goods-receipt-draft", draftId] });
+    },
+    onError: (e: Error) => {
+      if (e.message && e.message.includes("alterado em outra aba")) {
+        setConflictOpen(true);
+        return;
+      }
+      toast.error(e.message);
     },
   });
 
