@@ -162,12 +162,25 @@ function ReportInner() {
   const applyFilters = () => setSearch({ ...draft, page: 1 });
   const clearFilters = () => {
     setDraft(EMPTY);
+    setClientLabel("");
+    setOperatorLabel("");
     navigate({ to: "/relatorios/trocas", search: {} as any, replace: true });
   };
+
+  const [exportInfo, setExportInfo] = useState<{ truncated: boolean; exported: number; total: number; max: number } | null>(null);
 
   const exportCsv = async () => {
     if (!canExport) return;
     const { data, error } = await supabase.rpc("export_exchanges_report", { _filters: payload as any });
+    if (error) return toast.error(error.message);
+    const res = data as { rows: any[]; total_rows: number; exported_rows: number; truncated: boolean; max_export: number };
+    if (!res.rows?.length) { setExportInfo(null); return toast.info("Nenhum registro para exportar."); }
+    downloadCsv(res.rows);
+    setExportInfo({ truncated: res.truncated, exported: res.exported_rows, total: res.total_rows, max: res.max_export });
+    if (res.truncated) toast.warning(`Exportação limitada às ${res.max_export} linhas mais recentes (total filtrado: ${res.total_rows}).`);
+    else toast.success(`Exportadas ${res.exported_rows} linhas.`);
+  };
+
     if (error) return toast.error(error.message);
     const res = data as { rows: any[]; total_rows: number; exported_rows: number; truncated: boolean; max_export: number };
     if (!res.rows?.length) return toast.info("Nenhum registro para exportar.");
