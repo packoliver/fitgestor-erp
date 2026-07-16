@@ -2530,6 +2530,8 @@ export type Database = {
           address: string | null
           address_complement: string | null
           address_number: string | null
+          amount_to_collect: number | null
+          change_for_amount: number | null
           city: string | null
           created_at: string
           delivery_method: Database["public"]["Enums"]["delivery_method"]
@@ -2552,6 +2554,8 @@ export type Database = {
           address?: string | null
           address_complement?: string | null
           address_number?: string | null
+          amount_to_collect?: number | null
+          change_for_amount?: number | null
           city?: string | null
           created_at?: string
           delivery_method: Database["public"]["Enums"]["delivery_method"]
@@ -2574,6 +2578,8 @@ export type Database = {
           address?: string | null
           address_complement?: string | null
           address_number?: string | null
+          amount_to_collect?: number | null
+          change_for_amount?: number | null
           city?: string | null
           created_at?: string
           delivery_method?: Database["public"]["Enums"]["delivery_method"]
@@ -2970,6 +2976,7 @@ export type Database = {
           address_complement: string | null
           address_number: string | null
           amount_to_collect: number
+          change_for_amount: number | null
           city: string | null
           client_id: string | null
           courier_id: string | null
@@ -3008,6 +3015,7 @@ export type Database = {
           address_complement?: string | null
           address_number?: string | null
           amount_to_collect?: number
+          change_for_amount?: number | null
           city?: string | null
           client_id?: string | null
           courier_id?: string | null
@@ -3046,6 +3054,7 @@ export type Database = {
           address_complement?: string | null
           address_number?: string | null
           amount_to_collect?: number
+          change_for_amount?: number | null
           city?: string | null
           client_id?: string | null
           courier_id?: string | null
@@ -3613,6 +3622,7 @@ export type Database = {
       }
       complete_pos_sale: { Args: { _payload: Json }; Returns: Json }
       complete_route: { Args: { _route_id: string }; Returns: undefined }
+      compute_delivery_forecast: { Args: { _at?: string }; Returns: Json }
       compute_scheduled_date: {
         Args: { _at?: string; _org: string }
         Returns: string
@@ -3621,6 +3631,17 @@ export type Database = {
         Args: { _client_request_id: string; _draft_id: string }
         Returns: Json
       }
+      create_courier: {
+        Args: {
+          _document?: string
+          _full_name: string
+          _notes?: string
+          _phone?: string
+          _user_id?: string
+          _vehicle_plate?: string
+        }
+        Returns: string
+      }
       create_organization: {
         Args: { _document?: string; _name: string }
         Returns: string
@@ -3628,6 +3649,7 @@ export type Database = {
       create_shipment_from_sale: {
         Args: {
           _address_override?: Json
+          _change_for_amount?: number
           _delivery_method: Database["public"]["Enums"]["delivery_method"]
           _notes?: string
           _sale_id: string
@@ -3666,6 +3688,18 @@ export type Database = {
         Returns: string
       }
       list_goods_receipts: { Args: { _filters: Json }; Returns: Json }
+      list_open_routes_today: {
+        Args: never
+        Returns: {
+          courier_id: string
+          courier_name: string
+          id: string
+          planned_departure: string
+          route_number: number
+          status: Database["public"]["Enums"]["route_status"]
+          total_stops: number
+        }[]
+      }
       next_business_day: {
         Args: { _from: string; _org: string }
         Returns: string
@@ -3715,6 +3749,22 @@ export type Database = {
         }[]
       }
       save_goods_receipt_draft: { Args: { _payload: Json }; Returns: Json }
+      set_courier_active: {
+        Args: { _active: boolean; _id: string }
+        Returns: undefined
+      }
+      update_courier: {
+        Args: {
+          _document?: string
+          _full_name: string
+          _id: string
+          _notes?: string
+          _phone?: string
+          _user_id?: string
+          _vehicle_plate?: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       cheaper_balance_action:
