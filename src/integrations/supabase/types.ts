@@ -3655,6 +3655,10 @@ export type Database = {
       }
       has_permission: { Args: { _code: string }; Returns: boolean }
       has_role: { Args: { _role_name: string }; Returns: boolean }
+      include_shipment_in_open_route: {
+        Args: { _reason: string; _route_id: string; _shipment_id: string }
+        Returns: string
+      }
       is_active: { Args: never; Returns: boolean }
       is_business_day: { Args: { _d: string; _org: string }; Returns: boolean }
       issue_exchange_receipt: {
