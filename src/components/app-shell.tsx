@@ -64,7 +64,13 @@ const groups: { label: string; items: NavItem[] }[] = [
       { title: "Categorias", url: "/categorias", icon: FolderTree, perm: "category.manage" },
       { title: "Marcas", url: "/marcas", icon: Sparkles, perm: "brand.manage" },
     ],
+  {
+    label: "Relatórios",
+    items: [
+      { title: "Relatório de trocas", url: "/relatorios/trocas", icon: FileBarChart, perm: "reports.exchanges.view" },
+    ],
   },
+
   {
     label: "Administração",
     items: [
