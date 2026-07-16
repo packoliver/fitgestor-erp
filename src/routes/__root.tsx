@@ -79,17 +79,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "QSF — Sistema de Gestão | Quero Ser Fit®" },
+      { title: "FitGestor · Sistema de Gestão" },
       {
         name: "description",
         content:
-          "Sistema interno de gestão da Quero Ser Fit®. Recebimentos, estoque, etiquetas, PDV, vendas, trocas e relatórios em uma única plataforma.",
+          "FitGestor é o sistema de gestão desenvolvido pela Quero Ser Fit® para centralizar estoque, recebimentos, etiquetas, PDV, vendas, trocas e relatórios em uma única plataforma.",
       },
       { name: "author", content: "Quero Ser Fit®" },
-      { property: "og:title", content: "QSF — Sistema de Gestão | Quero Ser Fit®" },
+      { property: "og:title", content: "FitGestor · Sistema de Gestão" },
       {
         property: "og:description",
-        content: "Plataforma proprietária da Quero Ser Fit® para controlar toda a operação da loja.",
+        content: "Desenvolvido pela Quero Ser Fit® para controlar toda a operação da empresa.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

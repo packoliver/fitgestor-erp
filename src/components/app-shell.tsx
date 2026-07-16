@@ -149,6 +149,14 @@ function AppSidebar() {
           );
         })}
       </SidebarContent>
+      {!collapsed && (
+        <div className="mt-auto border-t border-sidebar-border px-4 py-4">
+          <p className="text-[10.5px] font-medium text-sidebar-foreground/50">Desenvolvido pela</p>
+          <p className="text-[11px] font-semibold tracking-[-0.01em] text-sidebar-foreground/80">
+            Quero Ser Fit<sup className="text-[0.6em]">®</sup>
+          </p>
+        </div>
+      )}
     </Sidebar>
   );
 }
