@@ -65,12 +65,21 @@ function CouriersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("couriers")
-        .select("id, full_name, phone, document, vehicle_plate, notes, active, user_id, created_at")
+        .select("id, full_name, phone, document, vehicle_plate, notes, active, user_id, created_at, linked_user:profiles!couriers_user_id_fkey(full_name, email)")
         .order("active", { ascending: false })
         .order("full_name");
       if (error) throw error;
-      return (data ?? []) as Courier[];
+      return (data ?? []) as (Courier & { linked_user?: { full_name: string; email: string } | null })[];
     },
+  });
+
+  const linkMut = useMutation({
+    mutationFn: async ({ courierId, userId }: { courierId: string; userId: string | null }) => {
+      const { error } = await supabase.rpc("link_courier_user", { _courier_id: courierId, _user_id: userId });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Vínculo atualizado."); setLinkFor(null); qc.invalidateQueries({ queryKey: ["couriers"] }); },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const filtered = useMemo(() => {
