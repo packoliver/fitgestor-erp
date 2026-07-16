@@ -53,8 +53,11 @@ function PdvPage() {
   const [payAmount, setPayAmount] = useState("");
   const [payInst, setPayInst] = useState(1);
   const [payRef, setPayRef] = useState("");
-  const [voucherInfo, setVoucherInfo] = useState<{ balance: number; code: string } | null>(null);
+  const [voucherInfo, setVoucherInfo] = useState<{ code: string; balance: number; expires_at: string | null; holder: string | null } | null>(null);
+  const [voucherLookupPending, setVoucherLookupPending] = useState(false);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [creditCpfTerm, setCreditCpfTerm] = useState("");
+  const [creditLookupPending, setCreditLookupPending] = useState(false);
   const [requestId] = useState(newRequestId());
   const [submitting, setSubmitting] = useState(false);
 
