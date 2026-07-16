@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getOpenSession, money, PAYMENT_LABELS, normalizeDigits } from "@/lib/pos";
 import { Search, Trash2, Plus, ChevronLeft, ChevronRight, Check, User as UserIcon, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
