@@ -63,7 +63,7 @@ function Landing() {
 
 function SiteHeader() {
   return (
-    <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md">
+    <header className="glass-soft sticky top-0 z-30 rounded-none border-0 border-b border-white/10">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6 lg:px-10">
         <Link to="/" className="flex items-center gap-2.5">
           <BrandMark size={30} />
