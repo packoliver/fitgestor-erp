@@ -59,7 +59,8 @@ function Funcionarios() {
   });
 
   return (
-    <div>
+    <RequirePermission code="user.manage"><div>
+
       <PageHeader title="Funcionários" description="Gerencie os usuários da sua loja e seus cargos." />
       <Alert className="mb-4">
         <Info className="h-4 w-4" />
