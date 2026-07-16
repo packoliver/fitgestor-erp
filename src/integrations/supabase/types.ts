@@ -1527,6 +1527,117 @@ export type Database = {
           },
         ]
       }
+      label_print_event_items: {
+        Row: {
+          confirmed_quantity: number
+          created_at: string
+          event_id: string
+          id: string
+          print_item_id: string
+          requested_quantity: number
+        }
+        Insert: {
+          confirmed_quantity?: number
+          created_at?: string
+          event_id: string
+          id?: string
+          print_item_id: string
+          requested_quantity: number
+        }
+        Update: {
+          confirmed_quantity?: number
+          created_at?: string
+          event_id?: string
+          id?: string
+          print_item_id?: string
+          requested_quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "label_print_event_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "label_print_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_print_event_items_print_item_id_fkey"
+            columns: ["print_item_id"]
+            isOneToOne: false
+            referencedRelation: "label_print_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      label_print_events: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          client_request_id: string
+          completed_at: string | null
+          confirmed_total: number
+          created_at: string
+          expires_at: string | null
+          id: string
+          operation_type: string
+          organization_id: string
+          print_job_id: string
+          reason: string | null
+          requested_total: number
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          client_request_id: string
+          completed_at?: string | null
+          confirmed_total?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          operation_type: string
+          organization_id: string
+          print_job_id: string
+          reason?: string | null
+          requested_total?: number
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          client_request_id?: string
+          completed_at?: string | null
+          confirmed_total?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          operation_type?: string
+          organization_id?: string
+          print_job_id?: string
+          reason?: string | null
+          requested_total?: number
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "label_print_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_print_events_print_job_id_fkey"
+            columns: ["print_job_id"]
+            isOneToOne: false
+            referencedRelation: "label_print_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       label_print_items: {
         Row: {
           barcode_snapshot: string | null
@@ -1536,9 +1647,12 @@ export type Database = {
           position: number
           price_snapshot: number | null
           print_job_id: string
+          printed_quantity: number
           product_id: string | null
           product_name_snapshot: string
           quantity: number
+          reprinted_quantity: number
+          reserved_quantity: number
           size_snapshot: string | null
           sku_snapshot: string | null
           variant_id: string | null
@@ -1551,9 +1665,12 @@ export type Database = {
           position?: number
           price_snapshot?: number | null
           print_job_id: string
+          printed_quantity?: number
           product_id?: string | null
           product_name_snapshot: string
           quantity?: number
+          reprinted_quantity?: number
+          reserved_quantity?: number
           size_snapshot?: string | null
           sku_snapshot?: string | null
           variant_id?: string | null
@@ -1566,9 +1683,12 @@ export type Database = {
           position?: number
           price_snapshot?: number | null
           print_job_id?: string
+          printed_quantity?: number
           product_id?: string | null
           product_name_snapshot?: string
           quantity?: number
+          reprinted_quantity?: number
+          reserved_quantity?: number
           size_snapshot?: string | null
           sku_snapshot?: string | null
           variant_id?: string | null
@@ -2821,11 +2941,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _expire_stale_label_events: {
+        Args: { _job_id: string }
+        Returns: undefined
+      }
       _filter_exchanges: {
         Args: { _filters: Json; _org: string }
         Returns: {
           id: string
         }[]
+      }
+      _recompute_label_job_status: {
+        Args: { _job_id: string }
+        Returns: string
       }
       apply_stock_movement: {
         Args: {
@@ -2845,11 +2973,19 @@ export type Database = {
         Args: { _method: string }
         Returns: undefined
       }
+      cancel_goods_receipt_label_print: {
+        Args: { _event_id: string; _reason: string }
+        Returns: Json
+      }
       close_cash_session: {
         Args: { _counted_amount: number; _notes?: string; _session_id: string }
         Returns: Json
       }
       complete_exchange: { Args: { _payload: Json }; Returns: Json }
+      complete_goods_receipt_label_print: {
+        Args: { _client_request_id: string; _event_id: string }
+        Returns: Json
+      }
       complete_pos_sale: { Args: { _payload: Json }; Returns: Json }
       confirm_goods_receipt: {
         Args: { _client_request_id: string; _draft_id: string }
@@ -2877,6 +3013,16 @@ export type Database = {
       open_cash_session: {
         Args: { _location_id: string; _notes?: string; _opening_amount: number }
         Returns: string
+      }
+      prepare_goods_receipt_label_print: {
+        Args: {
+          _client_request_id: string
+          _items: Json
+          _job_id: string
+          _operation_type: string
+          _reason?: string
+        }
+        Returns: Json
       }
       register_cash_movement: {
         Args: {
