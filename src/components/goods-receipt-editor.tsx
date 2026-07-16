@@ -91,6 +91,12 @@ type LoadedDraft = {
     new_product_data: NewProductData | null;
     new_variant_data: NewVariantData | null;
     cells: Cell[];
+    raw_description: string | null;
+    raw_size_label: string | null;
+    raw_color_label: string | null;
+    raw_notes: string | null;
+    raw_counted_quantity: number | null;
+    resolution_status: ResolutionStatus | null;
   }>;
 };
 
