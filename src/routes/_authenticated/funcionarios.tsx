@@ -58,15 +58,25 @@ function Funcionarios() {
         supabase.from("roles").select("id, name, code"),
         supabase.from("couriers").select("id, user_id, active"),
       ]);
-      const roleMap = new Map((roles ?? []).map((r) => [r.id, r]));
-      return (profiles ?? []).map((p) => ({
-        ...p,
-        roles: (userRoles ?? [])
-          .filter((ur) => ur.user_id === p.id)
-          .map((ur) => roleMap.get(ur.role_id))
-          .filter(Boolean) as Employee["roles"],
-        courier: (couriers ?? []).find((c) => c.user_id === p.id) ?? null,
-      }));
+      type RoleRef = { id: string; name: string; code: string | null };
+      const roleMap = new Map<string, RoleRef>(
+        (roles ?? []).map((r) => [r.id, { id: r.id, name: r.name, code: r.code ?? null }]),
+      );
+      return (profiles ?? []).map<Employee>((p) => {
+        const c = (couriers ?? []).find((c) => c.user_id === p.id);
+        return {
+          id: p.id,
+          full_name: p.full_name ?? null,
+          email: p.email ?? null,
+          status: (p.status as string | null) ?? null,
+          created_at: p.created_at,
+          roles: (userRoles ?? [])
+            .filter((ur) => ur.user_id === p.id)
+            .map((ur) => roleMap.get(ur.role_id))
+            .filter((r): r is RoleRef => Boolean(r)),
+          courier: c ? { id: c.id, active: c.active } : null,
+        };
+      });
     },
   });
 
