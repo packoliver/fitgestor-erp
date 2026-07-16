@@ -60,6 +60,12 @@ type Item = {
   new_product_data?: NewProductData;
   new_variant_data?: NewVariantData;
   cells: Cell[];
+  raw_description?: string;
+  raw_size_label?: string;
+  raw_color_label?: string;
+  raw_notes?: string;
+  raw_counted_quantity?: number;
+  resolution_status?: ResolutionStatus;
 };
 
 type LoadedDraft = {
