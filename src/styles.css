@@ -165,8 +165,7 @@
 
 @media print {
   @page { margin: 12mm; }
-  html.print-80mm @page { size: 80mm auto; margin: 3mm; }
-  html.print-a4 @page { size: A4; margin: 12mm; }
+
 
   body * { visibility: hidden !important; }
   #print-root, #print-root * { visibility: visible !important; }
