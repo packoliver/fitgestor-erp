@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,14 +12,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { money, PAYMENT_LABELS, AVAILABLE_METHODS } from "@/lib/pos";
+import { money, PAYMENT_LABELS, AVAILABLE_METHODS, normalizeDigits } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
 import { RequirePermission } from "@/components/require-permission";
 import { usePermissions } from "@/hooks/use-permissions";
 import { PrintDialog } from "@/components/print/print-dialog";
 import { ExchangesReportPrint, type ReportRow, type ReportTotals } from "@/components/print/exchanges-report-print";
+import { EntityAutocomplete, type EntityOption } from "@/components/entity-autocomplete";
 import { toast } from "sonner";
-import { ChevronDown, Download, Printer, Eraser, ExternalLink, FileBarChart } from "lucide-react";
+import { AlertTriangle, ChevronDown, Download, Printer, Eraser, ExternalLink, FileBarChart } from "lucide-react";
+
 
 const filtersSchema = z.object({
   date_from: z.string().optional().default(""),
@@ -94,10 +96,50 @@ function ReportInner() {
   const [draft, setDraft] = useState<Filters>(search);
   const [openFilters, setOpenFilters] = useState(true);
   const [printOpen, setPrintOpen] = useState(false);
+  const [clientLabel, setClientLabel] = useState("");
+  const [operatorLabel, setOperatorLabel] = useState("");
 
   const setSearch = (next: Partial<Filters>) => {
     navigate({ to: "/relatorios/trocas", search: { ...search, ...next } as any, replace: true });
   };
+
+  // Ao entrar com IDs vindos da URL, buscamos os rótulos apenas uma vez.
+  useEffect(() => {
+    if (search.client_id && !clientLabel) {
+      supabase.from("clients").select("full_name, cpf").eq("id", search.client_id).maybeSingle()
+        .then(({ data }) => data && setClientLabel(data.full_name ?? ""));
+    }
+    if (search.operator_id && !operatorLabel) {
+      supabase.from("profiles").select("full_name").eq("id", search.operator_id).maybeSingle()
+        .then(({ data }) => data && setOperatorLabel(data.full_name ?? ""));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.client_id, search.operator_id]);
+
+  const searchClients = useCallback(async (term: string): Promise<EntityOption[]> => {
+    const digits = normalizeDigits(term);
+    let q = supabase.from("clients").select("id, full_name, cpf, phone").is("deleted_at", null).limit(15);
+    q = digits.length >= 3
+      ? q.or(`cpf.ilike.%${digits}%,phone.ilike.%${digits}%`)
+      : q.ilike("full_name", `%${term}%`);
+    const { data } = await q;
+    return (data ?? []).map((c: any) => ({
+      id: c.id,
+      label: c.full_name ?? "(sem nome)",
+      sublabel: [c.cpf, c.phone].filter(Boolean).join(" · "),
+    }));
+  }, []);
+
+  const searchOperators = useCallback(async (term: string): Promise<EntityOption[]> => {
+    const { data } = await supabase.from("profiles").select("id, full_name, email")
+      .ilike("full_name", `%${term}%`).limit(15);
+    return (data ?? []).map((p: any) => ({
+      id: p.id,
+      label: p.full_name ?? p.email ?? "(sem nome)",
+      sublabel: p.email ?? "",
+    }));
+  }, []);
+
 
   const payload = useMemo(() => buildPayload(search), [search]);
 
@@ -120,19 +162,26 @@ function ReportInner() {
   const applyFilters = () => setSearch({ ...draft, page: 1 });
   const clearFilters = () => {
     setDraft(EMPTY);
+    setClientLabel("");
+    setOperatorLabel("");
     navigate({ to: "/relatorios/trocas", search: {} as any, replace: true });
   };
+
+  const [exportInfo, setExportInfo] = useState<{ truncated: boolean; exported: number; total: number; max: number } | null>(null);
 
   const exportCsv = async () => {
     if (!canExport) return;
     const { data, error } = await supabase.rpc("export_exchanges_report", { _filters: payload as any });
     if (error) return toast.error(error.message);
     const res = data as { rows: any[]; total_rows: number; exported_rows: number; truncated: boolean; max_export: number };
-    if (!res.rows?.length) return toast.info("Nenhum registro para exportar.");
+    if (!res.rows?.length) { setExportInfo(null); return toast.info("Nenhum registro para exportar."); }
     downloadCsv(res.rows);
+    setExportInfo({ truncated: res.truncated, exported: res.exported_rows, total: res.total_rows, max: res.max_export });
     if (res.truncated) toast.warning(`Exportação limitada às ${res.max_export} linhas mais recentes (total filtrado: ${res.total_rows}).`);
     else toast.success(`Exportadas ${res.exported_rows} linhas.`);
   };
+
+
 
   const filtersSummary = buildSummary(search);
 
@@ -143,17 +192,28 @@ function ReportInner() {
         description="Consulta detalhada com filtros, totais, exportação e impressão."
         actions={
           <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" onClick={() => setPrintOpen(true)}>
-              <Printer className="mr-2 h-4 w-4" />Imprimir
+            <Button variant="outline" onClick={() => setPrintOpen(true)} aria-label="Imprimir página atual do relatório">
+              <Printer className="mr-2 h-4 w-4" aria-hidden />Imprimir página atual
             </Button>
             {canExport && (
-              <Button onClick={exportCsv}>
-                <Download className="mr-2 h-4 w-4" />Exportar CSV
+              <Button onClick={exportCsv} aria-label="Exportar todos os registros filtrados em CSV">
+                <Download className="mr-2 h-4 w-4" aria-hidden />Exportar CSV
               </Button>
             )}
           </div>
         }
       />
+
+      {exportInfo?.truncated && (
+        <Card className="p-3 mb-3 border-yellow-500/40 bg-yellow-500/5 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-600" aria-hidden />
+          <div className="text-sm">
+            A exportação anterior foi limitada às {exportInfo.max.toLocaleString("pt-BR")} linhas mais recentes.
+            O conjunto filtrado tem {exportInfo.total.toLocaleString("pt-BR")} registros — refine os filtros para exportar tudo.
+          </div>
+        </Card>
+      )}
+
 
       {/* Totais */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
@@ -185,6 +245,26 @@ function ReportInner() {
               <Field label="Nº da troca"><Input inputMode="numeric" value={draft.exchange_number} onChange={(e) => setDraft({ ...draft, exchange_number: e.target.value })} /></Field>
               <Field label="Nº da venda"><Input inputMode="numeric" value={draft.sale_number} onChange={(e) => setDraft({ ...draft, sale_number: e.target.value })} /></Field>
               <Field label="CPF do cliente"><Input value={draft.cpf} onChange={(e) => setDraft({ ...draft, cpf: e.target.value })} placeholder="apenas números" /></Field>
+              <Field label="Cliente">
+                <EntityAutocomplete
+                  value={draft.client_id}
+                  label={clientLabel}
+                  onChange={(id, lbl) => { setDraft({ ...draft, client_id: id }); setClientLabel(lbl); }}
+                  fetcher={searchClients}
+                  ariaLabel="cliente"
+                  placeholder="Nome, CPF ou telefone…"
+                />
+              </Field>
+              <Field label="Operador">
+                <EntityAutocomplete
+                  value={draft.operator_id}
+                  label={operatorLabel}
+                  onChange={(id, lbl) => { setDraft({ ...draft, operator_id: id }); setOperatorLabel(lbl); }}
+                  fetcher={searchOperators}
+                  ariaLabel="operador"
+                  placeholder="Nome do operador…"
+                />
+              </Field>
               <Field label="Produto / SKU / cor / tamanho"><Input value={draft.product_query} onChange={(e) => setDraft({ ...draft, product_query: e.target.value })} /></Field>
               <Field label="Motivo"><Input value={draft.reason} onChange={(e) => setDraft({ ...draft, reason: e.target.value })} /></Field>
               <Field label="Status">
@@ -225,6 +305,7 @@ function ReportInner() {
 
       {/* Tabela */}
       <Card>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -271,12 +352,15 @@ function ReportInner() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button asChild size="sm" variant="ghost"><Link to="/trocas/$id" params={{ id: r.id }}><ExternalLink className="h-4 w-4" /></Link></Button>
+                  <Button asChild size="sm" variant="ghost"><Link to="/trocas/$id" params={{ id: r.id }} aria-label={`Abrir troca #${r.exchange_number}`}><ExternalLink className="h-4 w-4" aria-hidden /></Link></Button>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        </div>
+
+
 
         <div className="flex flex-wrap items-center justify-between gap-2 p-3 border-t text-sm">
           <div className="text-muted-foreground">

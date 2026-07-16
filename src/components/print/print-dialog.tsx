@@ -69,13 +69,13 @@ export function PrintDialog({
             <DialogTitle>{title}{triggerLabel ? ` — ${triggerLabel}` : ""}</DialogTitle>
           </DialogHeader>
 
-          <div className="flex gap-2 items-center border-b pb-2">
+          <div className="flex gap-2 items-center border-b pb-2 flex-wrap">
             <span className="text-xs text-muted-foreground mr-2">Formato da prévia:</span>
-            <Button size="sm" variant={mode === "80mm" ? "default" : "outline"} onClick={() => setMode("80mm")}>
-              <Receipt className="mr-1 h-4 w-4" />80 mm
+            <Button size="sm" variant={mode === "80mm" ? "default" : "outline"} onClick={() => setMode("80mm")} aria-label="Ver prévia 80 milímetros" aria-pressed={mode === "80mm"}>
+              <Receipt className="mr-1 h-4 w-4" aria-hidden />80 mm
             </Button>
-            <Button size="sm" variant={mode === "a4" ? "default" : "outline"} onClick={() => setMode("a4")}>
-              <FileText className="mr-1 h-4 w-4" />A4
+            <Button size="sm" variant={mode === "a4" ? "default" : "outline"} onClick={() => setMode("a4")} aria-label="Ver prévia A4" aria-pressed={mode === "a4"}>
+              <FileText className="mr-1 h-4 w-4" aria-hidden />A4
             </Button>
           </div>
 

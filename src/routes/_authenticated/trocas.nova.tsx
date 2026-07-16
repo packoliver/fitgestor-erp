@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getOpenSession, money, PAYMENT_LABELS, normalizeDigits } from "@/lib/pos";
 import { Search, Trash2, Plus, ChevronLeft, ChevronRight, Check, User as UserIcon, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -94,6 +94,18 @@ function NovaTrocaPage() {
   const [productTerm, setProductTerm] = useState("");
   const [requestId] = useState(newRequestId());
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
+
+  // Confirmação antes de sair com dados preenchidos (recarregar aba/fechar navegador).
+  const isDirty = !!(saleId || returns.length || newItems.length || payments.length || reason || notes);
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
 
   const { data: session } = useQuery({ queryKey: ["pdv-session"], queryFn: () => getOpenSession() });
 

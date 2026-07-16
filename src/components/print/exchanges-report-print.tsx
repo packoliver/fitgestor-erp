@@ -54,10 +54,13 @@ export function ExchangesReportPrint({
   return (
     <div className="a4-only">
       <div style={{ borderBottom: "1px solid #333", paddingBottom: 6, marginBottom: 10 }}>
-        <div style={{ fontSize: 16, fontWeight: 700 }}>Relatório de trocas</div>
+        <div style={{ fontSize: 16, fontWeight: 700 }}>Relatório de trocas — página atual</div>
         <div style={{ fontSize: 11 }}>
           {storeName ?? ""} — emitido em {formatDateTime(new Date().toISOString())}
           {emittedBy ? ` por ${emittedBy}` : ""}
+        </div>
+        <div style={{ fontSize: 10, color: "#555" }}>
+          Exibindo {rows.length} registro(s) da página atual. Use a exportação CSV para o conjunto completo filtrado.
         </div>
       </div>
 

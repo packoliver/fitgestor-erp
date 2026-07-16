@@ -207,6 +207,7 @@ export function ClientCreditPanel({ clientId }: { clientId: string }) {
       {/* Histórico */}
       <Card>
         <div className="p-3 font-semibold text-sm">Movimentações</div>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -276,6 +277,7 @@ export function ClientCreditPanel({ clientId }: { clientId: string }) {
             )}
           </TableBody>
         </Table>
+        </div>
         <div className="flex items-center justify-between p-3 border-t text-sm">
           <div className="text-muted-foreground">Página {page + 1}</div>
           <div className="flex gap-2">
