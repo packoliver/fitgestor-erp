@@ -152,6 +152,7 @@ function ValesPage() {
           />
         </PrintDialog>
       )}
-    </div>
+    </div></RequirePermission>
   );
+
 }
