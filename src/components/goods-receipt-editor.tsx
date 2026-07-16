@@ -14,6 +14,8 @@ import { Loader2, Plus, Minus, Trash2, Search, Save, Package, CheckCircle2, Lock
 import { formatDateTime } from "@/lib/erp";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { GoodsReceiptLabelsSection } from "@/components/goods-receipt-labels-section";
+import { ReceiptScannerPanel, type ScannedVariant, type IncrementResult } from "@/components/goods-receipt-scanner-panel";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type Mode = "restock" | "new_variant" | "new_product";
 
@@ -323,7 +325,91 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     markDirty();
   }
 
+  /**
+   * Incrementa em 1 uma variação existente no bloco `restock` do produto correspondente.
+   * Reutiliza a mesma modelagem do fluxo manual (bloco por produto, cell por variação).
+   * - Se o produto já estiver no rascunho em modo `new_variant` ou `new_product`, devolve
+   *   `mode_conflict` para o painel do leitor (não faz fusão silenciosa).
+   * - Se não houver bloco: cria um bloco `restock` novo apenas com a variação escaneada.
+   * - Se o bloco existir mas a célula ainda não: adiciona a célula com quantidade 1.
+   */
+  function incrementRestockByVariant(v: ScannedVariant): IncrementResult {
+    const existing = items.find((i) => i.product_id === v.product.id);
+    if (existing && existing.mode !== "restock") {
+      return {
+        kind: "mode_conflict",
+        product_name: v.product.name,
+        existing_mode: existing.mode as "new_variant" | "new_product",
+      };
+    }
+    let newQty = 0;
+    setItems((prev) => {
+      const idx = prev.findIndex((i) => i.product_id === v.product.id && i.mode === "restock");
+      if (idx === -1) {
+        newQty = 1;
+        return [
+          ...prev,
+          {
+            local_id: uid(),
+            mode: "restock",
+            product_id: v.product.id,
+            product_snapshot: { name: v.product.name, color: v.product.color, category: null },
+            cells: [{ variant_id: v.id, size: v.size, quantity: 1 }],
+          },
+        ];
+      }
+      const next = [...prev];
+      const block = next[idx];
+      const cellIdx = block.cells.findIndex((c) => c.variant_id === v.id);
+      if (cellIdx === -1) {
+        newQty = 1;
+        next[idx] = { ...block, cells: [...block.cells, { variant_id: v.id, size: v.size, quantity: 1 }] };
+      } else {
+        newQty = (block.cells[cellIdx].quantity || 0) + 1;
+        const cells = block.cells.map((c, i) => (i === cellIdx ? { ...c, quantity: newQty } : c));
+        next[idx] = { ...block, cells };
+      }
+      return next;
+    });
+    markDirty();
+    return {
+      kind: "ok",
+      product_name: v.product.name,
+      color: v.product.color,
+      size: v.size,
+      sku: v.sku,
+      new_quantity: newQty,
+    };
+  }
+
+  /** Desfaz exatamente 1 unidade da variação escaneada. Nunca produz negativo. */
+  function decrementRestockByVariant(v: ScannedVariant): { new_quantity: number } | null {
+    const idx = items.findIndex((i) => i.product_id === v.product.id && i.mode === "restock");
+    if (idx === -1) return null;
+    const cellIdx = items[idx].cells.findIndex((c) => c.variant_id === v.id);
+    if (cellIdx === -1) return null;
+    const current = items[idx].cells[cellIdx].quantity || 0;
+    if (current <= 0) return null;
+    const newQty = current - 1;
+    setItems((prev) => {
+      const next = [...prev];
+      const cells = next[idx].cells.map((c, i) => (i === cellIdx ? { ...c, quantity: newQty } : c));
+      next[idx] = { ...next[idx], cells };
+      return next;
+    });
+    markDirty();
+    return { new_quantity: newQty };
+  }
+
+  const distinctScannedVariants = useMemo(() => {
+    let n = 0;
+    for (const it of items) if (it.mode === "restock") for (const c of it.cells) if (c.variant_id && (c.quantity || 0) > 0) n++;
+    return n;
+  }, [items]);
+
   const readOnly = status !== "draft";
+
+
 
   return (
     <div className="space-y-4">
@@ -396,37 +482,66 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         </CardContent>
       </Card>
 
-      <ProductSearchCard
-        onPickRestock={(p) => addItemFromProduct("restock", p)}
-        onPickNewVariant={(p) => addItemFromProduct("new_variant", p)}
-        onPickBrandNew={addBrandNewProduct}
-        disabled={readOnly}
-        searchRef={searchRef}
-      />
+      <Tabs defaultValue="grid" className="w-full">
+        <TabsList>
+          <TabsTrigger value="grid">Lançamento por grade</TabsTrigger>
+          <TabsTrigger value="scanner" disabled={readOnly}>Recebimento por leitor</TabsTrigger>
+        </TabsList>
 
-      {items.length === 0 ? (
-        <Card><CardContent className="py-10 text-center text-muted-foreground">
-          Nenhum produto adicionado ainda. Use a busca acima para localizar um produto existente ou cadastre um totalmente novo.
-        </CardContent></Card>
-      ) : (
-        <div className="space-y-3">
-          {items.map((it) => (
-            <ItemBlock
-              key={it.local_id}
-              item={it}
-              categories={categories.data ?? []}
-              brands={brands.data ?? []}
-              suppliers={suppliers.data ?? []}
-              disabled={readOnly}
-              onRemove={() => removeItem(it.local_id)}
-              onUpdateCell={(idx, patch) => updateCell(it.local_id, idx, patch)}
-              onAddSize={(sz) => addCellRow(it.local_id, sz)}
-              onUpdateNewProduct={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_product_data: { ...(i.new_product_data ?? { name: "" }), ...patch } } : i)); markDirty(); }}
-              onUpdateNewVariant={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_variant_data: { ...(i.new_variant_data ?? { size: "" }), ...patch } } : i)); markDirty(); }}
-            />
-          ))}
-        </div>
-      )}
+        <TabsContent value="grid" className="space-y-3 mt-3">
+          <ProductSearchCard
+            onPickRestock={(p) => addItemFromProduct("restock", p)}
+            onPickNewVariant={(p) => addItemFromProduct("new_variant", p)}
+            onPickBrandNew={addBrandNewProduct}
+            disabled={readOnly}
+            searchRef={searchRef}
+          />
+
+          {items.length === 0 ? (
+            <Card><CardContent className="py-10 text-center text-muted-foreground">
+              Nenhum produto adicionado ainda. Use a busca acima para localizar um produto existente ou cadastre um totalmente novo.
+            </CardContent></Card>
+          ) : (
+            <div className="space-y-3">
+              {items.map((it) => (
+                <ItemBlock
+                  key={it.local_id}
+                  item={it}
+                  categories={categories.data ?? []}
+                  brands={brands.data ?? []}
+                  suppliers={suppliers.data ?? []}
+                  disabled={readOnly}
+                  onRemove={() => removeItem(it.local_id)}
+                  onUpdateCell={(idx, patch) => updateCell(it.local_id, idx, patch)}
+                  onAddSize={(sz) => addCellRow(it.local_id, sz)}
+                  onUpdateNewProduct={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_product_data: { ...(i.new_product_data ?? { name: "" }), ...patch } } : i)); markDirty(); }}
+                  onUpdateNewVariant={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_variant_data: { ...(i.new_variant_data ?? { size: "" }), ...patch } } : i)); markDirty(); }}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="scanner" className="mt-3">
+          <ReceiptScannerPanel
+            disabled={readOnly}
+            onIncrement={incrementRestockByVariant}
+            onDecrement={decrementRestockByVariant}
+            onSaveDraft={() => save.mutate()}
+            saving={save.isPending}
+            dirty={dirty}
+            totalPieces={totals.qty}
+            distinctVariantsCount={distinctScannedVariants}
+          />
+          {items.length > 0 && (
+            <div className="mt-3 text-xs text-muted-foreground">
+              O modo leitor edita o mesmo rascunho. Volte à aba <strong>Lançamento por grade</strong> para editar quantidades manualmente,
+              remover blocos ou cadastrar produtos novos e novas variações.
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
 
       <Card className="sticky bottom-0 border-t-2">
         <CardContent className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 py-4">
