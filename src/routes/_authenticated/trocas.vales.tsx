@@ -10,7 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { money } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
-import { Search } from "lucide-react";
+import { Search, Printer } from "lucide-react";
+import { PrintDialog } from "@/components/print/print-dialog";
+import { VoucherReceipt } from "@/components/print/voucher-receipt";
 
 export const Route = createFileRoute("/_authenticated/trocas/vales")({
   component: ValesPage,
