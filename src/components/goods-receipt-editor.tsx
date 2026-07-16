@@ -102,6 +102,11 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
   const [dirty, setDirty] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | undefined>();
   const [status, setStatus] = useState<string>("draft");
+  const [confirmedAt, setConfirmedAt] = useState<string | null>(null);
+  const [confirmationSummary, setConfirmationSummary] = useState<any>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Um único UUID por tentativa real de confirmação — reutilizado em retries de rede.
+  const confirmRequestIdRef = useRef<string>("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   const suppliers = useQuery({
