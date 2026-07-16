@@ -233,7 +233,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const confirm = useMutation({
+  const confirmReceipt = useMutation({
     mutationFn: async () => {
       if (!draftId) throw new Error("Salve o rascunho antes de confirmar.");
       if (dirty) throw new Error("Salve as alterações pendentes antes de confirmar.");
