@@ -35,3 +35,18 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassProps>(
   ),
 );
 GlassCard.displayName = "GlassCard";
+
+/** Liquid Glass — superfície com reflexo, espessura e profundidade. */
+export const LiquidCard = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("liquid-card rounded-2xl p-5", className)} {...props} />
+  ),
+);
+LiquidCard.displayName = "LiquidCard";
+
+export const LiquidSurface = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("liquid-surface rounded-2xl", className)} {...props} />
+  ),
+);
+LiquidSurface.displayName = "LiquidSurface";
