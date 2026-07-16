@@ -101,6 +101,7 @@ function CreditosPage() {
           <ClientCreditPanel clientId={selected.client_id} />
         </div>
       )}
-    </div>
+    </div></RequirePermission>
   );
+
 }
