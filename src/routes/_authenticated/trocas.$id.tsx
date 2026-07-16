@@ -87,10 +87,13 @@ function TrocaDetalhe() {
         title={`Troca #${ex.exchange_number}`}
         description={formatDateTime(ex.completed_at ?? ex.created_at)}
         actions={<>
-          <Button variant="outline" onClick={() => setPrintExOpen(true)}><Printer className="mr-2 h-4 w-4" />Comprovante</Button>
-          {voucher && (
+          {canPrintReceipt && (
+            <Button variant="outline" onClick={() => setPrintExOpen(true)}><Printer className="mr-2 h-4 w-4" />Comprovante</Button>
+          )}
+          {voucher && canPrintVoucher && (
             <Button variant="outline" onClick={() => setPrintVoucherOpen(true)}><Receipt className="mr-2 h-4 w-4" />Imprimir vale</Button>
           )}
+
           {canReverse && (
             <AlertDialog open={reverseOpen} onOpenChange={setReverseOpen}>
               <AlertDialogTrigger asChild>
