@@ -192,17 +192,28 @@ function ReportInner() {
         description="Consulta detalhada com filtros, totais, exportação e impressão."
         actions={
           <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" onClick={() => setPrintOpen(true)}>
-              <Printer className="mr-2 h-4 w-4" />Imprimir
+            <Button variant="outline" onClick={() => setPrintOpen(true)} aria-label="Imprimir página atual do relatório">
+              <Printer className="mr-2 h-4 w-4" aria-hidden />Imprimir página atual
             </Button>
             {canExport && (
-              <Button onClick={exportCsv}>
-                <Download className="mr-2 h-4 w-4" />Exportar CSV
+              <Button onClick={exportCsv} aria-label="Exportar todos os registros filtrados em CSV">
+                <Download className="mr-2 h-4 w-4" aria-hidden />Exportar CSV
               </Button>
             )}
           </div>
         }
       />
+
+      {exportInfo?.truncated && (
+        <Card className="p-3 mb-3 border-yellow-500/40 bg-yellow-500/5 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-600" aria-hidden />
+          <div className="text-sm">
+            A exportação anterior foi limitada às {exportInfo.max.toLocaleString("pt-BR")} linhas mais recentes.
+            O conjunto filtrado tem {exportInfo.total.toLocaleString("pt-BR")} registros — refine os filtros para exportar tudo.
+          </div>
+        </Card>
+      )}
+
 
       {/* Totais */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
