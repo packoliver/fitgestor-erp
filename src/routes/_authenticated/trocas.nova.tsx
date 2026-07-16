@@ -95,6 +95,18 @@ function NovaTrocaPage() {
   const [requestId] = useState(newRequestId());
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
 
+  // Confirmação antes de sair com dados preenchidos (recarregar aba/fechar navegador).
+  const isDirty = !!(saleId || returns.length || newItems.length || payments.length || reason || notes);
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
   const { data: session } = useQuery({ queryKey: ["pdv-session"], queryFn: () => getOpenSession() });
 
   const { data: sale } = useQuery({
