@@ -125,20 +125,20 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     queryKey: ["goods-receipt-draft", initialId],
     enabled: !!initialId,
     queryFn: async () => {
-      const { data: header, error: e1 } = await (supabase as any)
+      const { data: header, error: e1 } = await supabase
         .from("goods_receipt_drafts")
         .select("*")
         .eq("id", initialId)
         .maybeSingle();
       if (e1) throw e1;
       if (!header) return null;
-      const { data: rows, error: e2 } = await (supabase as any)
+      const { data: rows, error: e2 } = await supabase
         .from("goods_receipt_draft_items")
         .select("id, position, mode, product_id, new_product_data, new_variant_data, cells, product:products(name, color, category_id)")
         .eq("draft_id", initialId)
         .order("position");
       if (e2) throw e2;
-      return { ...header, items: rows ?? [] } as LoadedDraft;
+      return { ...header, items: rows ?? [] } as unknown as LoadedDraft;
     },
   });
 
