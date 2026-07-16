@@ -677,11 +677,16 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       <Card className="sticky bottom-0 border-t-2">
         <CardContent className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 py-4">
           <div className="flex flex-wrap gap-3 text-sm">
-            <span><strong>{totals.itemCount}</strong> produtos</span>
+            <span><strong>{totals.itemCount}</strong> linhas</span>
             <span><strong>{totals.qty}</strong> peças</span>
             <Badge variant="outline">{totals.restock} reposição</Badge>
             <Badge variant="outline">{totals.newVar} nova variação</Badge>
             <Badge variant="outline">{totals.newProd} produto novo</Badge>
+            {totals.counting > 0 && (
+              <Badge variant="outline" className="border-amber-400 text-amber-700">
+                {totals.counting} em contagem
+              </Badge>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {draftId && status === "draft" && (
@@ -696,11 +701,16 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
             <Button
               size="lg"
               onClick={() => setConfirmOpen(true)}
-              disabled={confirmReceipt.isPending || readOnly || !draftId || dirty || totals.qty === 0}
-              title={dirty ? "Salve as alterações antes de confirmar" : totals.qty === 0 ? "Preencha alguma quantidade" : ""}
+              disabled={confirmReceipt.isPending || readOnly || !draftId || dirty || totals.qty === 0 || totals.unresolved > 0}
+              title={
+                dirty ? "Salve as alterações antes de confirmar"
+                : totals.unresolved > 0 ? "Existem itens da contagem que ainda não foram vinculados a um produto e uma variação."
+                : totals.qty === 0 ? "Preencha alguma quantidade"
+                : ""
+              }
             >
               {confirmReceipt.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-              Confirmar recebimento
+              Confirmar entrada no estoque
             </Button>
           </div>
         </CardContent>
