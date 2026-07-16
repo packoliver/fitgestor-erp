@@ -118,11 +118,18 @@ function ClientesPage() {
               (data ?? []).length === 0 ? <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum cliente encontrado.</TableCell></TableRow> :
               data!.map((c: any) => (
                 <TableRow key={c.id}>
-                  <TableCell>{c.full_name}</TableCell>
+                  <TableCell>
+                    <Link to="/clientes/$id" params={{ id: c.id }} className="hover:underline font-medium">{c.full_name}</Link>
+                  </TableCell>
                   <TableCell>{c.cpf ?? "—"}</TableCell>
                   <TableCell>{c.phone ?? "—"}</TableCell>
                   <TableCell>{c.email ?? "—"}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right space-x-1">
+                    <Button asChild variant="ghost" size="icon" title="Crédito da loja">
+                      <Link to="/clientes/$id" params={{ id: c.id }} search={{ tab: "credito" }}>
+                        <Wallet className="h-4 w-4" />
+                      </Link>
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => { if (confirm("Remover cliente?")) softDelete.mutate(c.id); }}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
