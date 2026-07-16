@@ -104,7 +104,7 @@ function ReportInner() {
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["report_exchanges", payload],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("report_exchanges", { _filters: payload });
+      const { data, error } = await supabase.rpc("report_exchanges", { _filters: payload as any });
       if (error) throw error;
       return data as { rows: ReportRow[]; total_rows: number; page: number; page_size: number; totals: ReportTotals };
     },

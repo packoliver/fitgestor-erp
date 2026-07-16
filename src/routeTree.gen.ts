@@ -35,6 +35,7 @@ import { Route as AuthenticatedTrocasValesRouteImport } from './routes/_authenti
 import { Route as AuthenticatedTrocasNovaRouteImport } from './routes/_authenticated/trocas.nova'
 import { Route as AuthenticatedTrocasCreditosRouteImport } from './routes/_authenticated/trocas.creditos'
 import { Route as AuthenticatedTrocasIdRouteImport } from './routes/_authenticated/trocas.$id'
+import { Route as AuthenticatedRelatoriosTrocasRouteImport } from './routes/_authenticated/relatorios.trocas'
 import { Route as AuthenticatedProdutosNovoRouteImport } from './routes/_authenticated/produtos.novo'
 import { Route as AuthenticatedProdutosIdRouteImport } from './routes/_authenticated/produtos.$id'
 import { Route as AuthenticatedEstoqueMovimentacoesRouteImport } from './routes/_authenticated/estoque.movimentacoes'
@@ -182,6 +183,12 @@ const AuthenticatedTrocasIdRoute = AuthenticatedTrocasIdRouteImport.update({
   path: '/trocas/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRelatoriosTrocasRoute =
+  AuthenticatedRelatoriosTrocasRouteImport.update({
+    id: '/relatorios/trocas',
+    path: '/relatorios/trocas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProdutosNovoRoute =
   AuthenticatedProdutosNovoRouteImport.update({
     id: '/produtos/novo',
@@ -246,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
   '/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/produtos/novo': typeof AuthenticatedProdutosNovoRoute
+  '/relatorios/trocas': typeof AuthenticatedRelatoriosTrocasRoute
   '/trocas/$id': typeof AuthenticatedTrocasIdRoute
   '/trocas/creditos': typeof AuthenticatedTrocasCreditosRoute
   '/trocas/nova': typeof AuthenticatedTrocasNovaRoute
@@ -280,6 +288,7 @@ export interface FileRoutesByTo {
   '/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
   '/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/produtos/novo': typeof AuthenticatedProdutosNovoRoute
+  '/relatorios/trocas': typeof AuthenticatedRelatoriosTrocasRoute
   '/trocas/$id': typeof AuthenticatedTrocasIdRoute
   '/trocas/creditos': typeof AuthenticatedTrocasCreditosRoute
   '/trocas/nova': typeof AuthenticatedTrocasNovaRoute
@@ -316,6 +325,7 @@ export interface FileRoutesById {
   '/_authenticated/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
   '/_authenticated/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/_authenticated/produtos/novo': typeof AuthenticatedProdutosNovoRoute
+  '/_authenticated/relatorios/trocas': typeof AuthenticatedRelatoriosTrocasRoute
   '/_authenticated/trocas/$id': typeof AuthenticatedTrocasIdRoute
   '/_authenticated/trocas/creditos': typeof AuthenticatedTrocasCreditosRoute
   '/_authenticated/trocas/nova': typeof AuthenticatedTrocasNovaRoute
@@ -352,6 +362,7 @@ export interface FileRouteTypes {
     | '/estoque/movimentacoes'
     | '/produtos/$id'
     | '/produtos/novo'
+    | '/relatorios/trocas'
     | '/trocas/$id'
     | '/trocas/creditos'
     | '/trocas/nova'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/estoque/movimentacoes'
     | '/produtos/$id'
     | '/produtos/novo'
+    | '/relatorios/trocas'
     | '/trocas/$id'
     | '/trocas/creditos'
     | '/trocas/nova'
@@ -421,6 +433,7 @@ export interface FileRouteTypes {
     | '/_authenticated/estoque/movimentacoes'
     | '/_authenticated/produtos/$id'
     | '/_authenticated/produtos/novo'
+    | '/_authenticated/relatorios/trocas'
     | '/_authenticated/trocas/$id'
     | '/_authenticated/trocas/creditos'
     | '/_authenticated/trocas/nova'
@@ -625,6 +638,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTrocasIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/relatorios/trocas': {
+      id: '/_authenticated/relatorios/trocas'
+      path: '/relatorios/trocas'
+      fullPath: '/relatorios/trocas'
+      preLoaderRoute: typeof AuthenticatedRelatoriosTrocasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/produtos/novo': {
       id: '/_authenticated/produtos/novo'
       path: '/produtos/novo'
@@ -710,6 +730,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEstoqueMovimentacoesRoute: typeof AuthenticatedEstoqueMovimentacoesRoute
   AuthenticatedProdutosIdRoute: typeof AuthenticatedProdutosIdRoute
   AuthenticatedProdutosNovoRoute: typeof AuthenticatedProdutosNovoRoute
+  AuthenticatedRelatoriosTrocasRoute: typeof AuthenticatedRelatoriosTrocasRoute
   AuthenticatedTrocasIdRoute: typeof AuthenticatedTrocasIdRoute
   AuthenticatedTrocasCreditosRoute: typeof AuthenticatedTrocasCreditosRoute
   AuthenticatedTrocasNovaRoute: typeof AuthenticatedTrocasNovaRoute
@@ -741,6 +762,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedEstoqueMovimentacoesRoute,
   AuthenticatedProdutosIdRoute: AuthenticatedProdutosIdRoute,
   AuthenticatedProdutosNovoRoute: AuthenticatedProdutosNovoRoute,
+  AuthenticatedRelatoriosTrocasRoute: AuthenticatedRelatoriosTrocasRoute,
   AuthenticatedTrocasIdRoute: AuthenticatedTrocasIdRoute,
   AuthenticatedTrocasCreditosRoute: AuthenticatedTrocasCreditosRoute,
   AuthenticatedTrocasNovaRoute: AuthenticatedTrocasNovaRoute,
