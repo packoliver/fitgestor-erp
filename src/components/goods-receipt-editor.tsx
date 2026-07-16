@@ -175,7 +175,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       if (!header) return null;
       const { data: rows, error: e2 } = await supabase
         .from("goods_receipt_draft_items")
-        .select("id, position, mode, product_id, new_product_data, new_variant_data, cells, product:products(name, color, category_id)")
+        .select("id, position, mode, product_id, new_product_data, new_variant_data, cells, raw_description, raw_size_label, raw_color_label, raw_notes, raw_counted_quantity, resolution_status, product:products(name, color, category_id)")
         .eq("draft_id", id)
         .order("position");
       if (e2) throw e2;
