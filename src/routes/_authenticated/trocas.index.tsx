@@ -42,7 +42,8 @@ function TrocasPage() {
   };
 
   return (
-    <div>
+    <RequirePermission code="exchanges.view"><div>
+
       <PageHeader
         title="Trocas e devoluções"
         description="Trocas, devoluções, vale-troca e crédito da loja."
