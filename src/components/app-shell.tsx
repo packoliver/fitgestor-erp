@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePermissions } from "@/hooks/use-permissions";
+import { toast } from "sonner";
 
 type NavItem = { title: string; url: string; icon: React.ComponentType<{ className?: string }>; perm?: string | string[] };
 
