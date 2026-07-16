@@ -499,6 +499,11 @@ body {
   [data-sidebar="sidebar"] { background: #0D0D10 !important; }
 }
 
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
 /* Redução de movimento */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
