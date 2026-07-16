@@ -2364,28 +2364,34 @@ export type Database = {
       }
       roles: {
         Row: {
+          code: string | null
           created_at: string
           description: string | null
           id: string
           is_system_role: boolean
           name: string
           organization_id: string
+          updated_at: string
         }
         Insert: {
+          code?: string | null
           created_at?: string
           description?: string | null
           id?: string
           is_system_role?: boolean
           name: string
           organization_id: string
+          updated_at?: string
         }
         Update: {
+          code?: string | null
           created_at?: string
           description?: string | null
           id?: string
           is_system_role?: boolean
           name?: string
           organization_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -3563,8 +3569,10 @@ export type Database = {
           id: string
         }[]
       }
+      _is_admin_role: { Args: { _role_id: string }; Returns: boolean }
       _next_route_number: { Args: { _org: string }; Returns: number }
       _next_shipment_number: { Args: { _org: string }; Returns: number }
+      _org_admin_count: { Args: { _org: string }; Returns: number }
       _recompute_label_job_status: {
         Args: { _job_id: string }
         Returns: string
@@ -3589,6 +3597,7 @@ export type Database = {
         Args: { _route_id: string; _shipment_id: string }
         Returns: undefined
       }
+      admin_dashboard_stats: { Args: never; Returns: Json }
       advance_shipment_status: {
         Args: {
           _notes?: string
@@ -3617,6 +3626,10 @@ export type Database = {
       }
       assign_courier: {
         Args: { _courier_id: string; _shipment_id: string }
+        Returns: undefined
+      }
+      assign_employee_role: {
+        Args: { _role_id: string; _user_id: string }
         Returns: undefined
       }
       cancel_goods_receipt_draft: {
@@ -3652,9 +3665,24 @@ export type Database = {
         Args: { _at?: string; _org: string }
         Returns: string
       }
+      configure_courier_user_access: {
+        Args: { _courier_id: string; _mode: string }
+        Returns: undefined
+      }
       confirm_goods_receipt: {
         Args: { _client_request_id: string; _draft_id: string }
         Returns: Json
+      }
+      courier_access_status: {
+        Args: { _courier_id: string }
+        Returns: {
+          badge: string
+          courier_id: string
+          has_deliver: boolean
+          has_view_own: boolean
+          user_id: string
+          user_status: string
+        }[]
       }
       create_courier: {
         Args: {
@@ -3689,7 +3717,18 @@ export type Database = {
         Returns: undefined
       }
       dispatch_route: { Args: { _route_id: string }; Returns: undefined }
+      ensure_system_roles: { Args: { _org: string }; Returns: undefined }
       export_exchanges_report: { Args: { _filters: Json }; Returns: Json }
+      finalize_employee_invite: {
+        Args: {
+          _email: string
+          _full_name: string
+          _phone: string
+          _role_id: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       generate_goods_receipt_labels: {
         Args: { _client_request_id: string; _receipt_id: string }
         Returns: Json
@@ -3810,6 +3849,7 @@ export type Database = {
         }
         Returns: string
       }
+      remove_employee_access: { Args: { _user_id: string }; Returns: undefined }
       remove_shipment_from_route: {
         Args: { _shipment_id: string }
         Returns: undefined
@@ -3828,6 +3868,10 @@ export type Database = {
         Args: { _exchange_id: string; _reason: string }
         Returns: Json
       }
+      revoke_employee_role: {
+        Args: { _role_id: string; _user_id: string }
+        Returns: undefined
+      }
       run_exchange_tests: {
         Args: never
         Returns: {
@@ -3839,6 +3883,10 @@ export type Database = {
       save_goods_receipt_draft: { Args: { _payload: Json }; Returns: Json }
       set_courier_active: {
         Args: { _active: boolean; _id: string }
+        Returns: undefined
+      }
+      set_employee_status: {
+        Args: { _status: string; _user_id: string }
         Returns: undefined
       }
       start_route: { Args: { _route_id: string }; Returns: undefined }
