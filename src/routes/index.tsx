@@ -345,7 +345,8 @@ function AppFrame({ active, children }: { active: string; children: ReactNode })
 
 function HeroMockup() {
   return (
-    <div className="rounded-[16px] border border-border bg-card shadow-lg">
+    <div className="liquid-surface rounded-[24px] p-2 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.55)]">
+      <div className="rounded-[18px] border border-white/10 bg-[#0d0d12] overflow-hidden">
       <BrowserChrome path="/dashboard">
         <AppFrame active="Dashboard">
           <div className="space-y-4 p-5">
