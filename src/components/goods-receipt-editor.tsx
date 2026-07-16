@@ -14,6 +14,8 @@ import { Loader2, Plus, Minus, Trash2, Search, Save, Package, CheckCircle2, Lock
 import { formatDateTime } from "@/lib/erp";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { GoodsReceiptLabelsSection } from "@/components/goods-receipt-labels-section";
+import { ReceiptScannerPanel, type ScannedVariant, type IncrementResult } from "@/components/goods-receipt-scanner-panel";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type Mode = "restock" | "new_variant" | "new_product";
 
