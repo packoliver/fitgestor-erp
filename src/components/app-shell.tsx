@@ -14,12 +14,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  LayoutDashboard, Package, Boxes, ArrowDownToLine, ClipboardList, Tag,
-  Users, ShieldCheck, Truck, FolderTree, Sparkles, Settings, ScrollText, LogOut,
-  ShoppingCart, Wallet, Receipt, UserSquare2, RefreshCw, Ticket, PiggyBank, FileBarChart,
-  Search, Bell, MapPin,
-} from "lucide-react";
+import { LogOut, Search, Bell } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
@@ -30,73 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
-
-
-type NavItem = { title: string; url: string; icon: React.ComponentType<{ className?: string }>; perm?: string | string[] };
-
-const groups: { label: string; items: NavItem[] }[] = [
-  {
-    label: "Vendas",
-    items: [
-      { title: "PDV", url: "/pdv", icon: ShoppingCart, perm: "pos.view" },
-      { title: "Caixa", url: "/caixa", icon: Wallet, perm: ["pos.open_cash", "pos.close_cash", "pos.view"] },
-      { title: "Vendas", url: "/vendas", icon: Receipt },
-      { title: "Trocas", url: "/trocas", icon: RefreshCw, perm: "exchanges.view" },
-      { title: "Vales-troca", url: "/trocas/vales", icon: Ticket, perm: "vouchers.view" },
-      { title: "Créditos", url: "/trocas/creditos", icon: PiggyBank, perm: "credits.view" },
-      { title: "Clientes", url: "/clientes", icon: UserSquare2 },
-    ],
-  },
-  {
-    label: "Operação",
-    items: [
-      { title: "Área de trabalho", url: "/trabalho", icon: LayoutDashboard },
-      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-      { title: "Produtos", url: "/produtos", icon: Package, perm: "product.view" },
-      { title: "Estoque", url: "/estoque", icon: Boxes, perm: "stock.view" },
-      { title: "Entrada rápida de estoque", url: "/estoque/entrada", icon: ArrowDownToLine, perm: "goods_receipt.create" },
-      { title: "Receber mercadoria", url: "/estoque/recebimentos", icon: ArrowDownToLine, perm: "goods_receipt.create" },
-      { title: "Inventário", url: "/estoque/inventario", icon: ClipboardList, perm: "inventory.manage" },
-      { title: "Etiquetas", url: "/etiquetas", icon: Tag, perm: "label.print" },
-    ],
-  },
-  {
-    label: "Cadastros",
-    items: [
-      { title: "Fornecedores", url: "/fornecedores", icon: Truck, perm: "supplier.manage" },
-      { title: "Categorias", url: "/categorias", icon: FolderTree, perm: "category.manage" },
-      { title: "Marcas", url: "/marcas", icon: Sparkles, perm: "brand.manage" },
-    ],
-  },
-  {
-    label: "Expedição",
-    items: [
-      { title: "Painel", url: "/expedicao", icon: LayoutDashboard, perm: ["shipping.view", "shipping.view_all", "shipping.view_own", "shipping.dispatch", "shipping.pick"] },
-      { title: "Fila", url: "/expedicao/fila", icon: ClipboardList, perm: ["shipping.view", "shipping.view_all", "shipping.pick", "shipping.dispatch", "shipping.deliver"] },
-      { title: "Rotas", url: "/expedicao/rotas", icon: MapPin, perm: ["shipping.view", "shipping.view_all", "shipping.dispatch"] },
-      { title: "Vendas sem entrega", url: "/expedicao/pendencias", icon: ClipboardList, perm: ["shipping.view", "shipping.view_all", "shipping.create"] },
-      { title: "Motoboys", url: "/expedicao/motoboys", icon: Truck, perm: "shipping.manage_couriers" },
-      { title: "Minhas rotas", url: "/motoboy", icon: Truck, perm: ["shipping.view_own", "shipping.deliver"] },
-    ],
-  },
-  {
-    label: "Relatórios",
-    items: [
-      { title: "Relatório de trocas", url: "/relatorios/trocas", icon: FileBarChart, perm: "reports.exchanges.view" },
-    ],
-  },
-
-  {
-    label: "Administração",
-    items: [
-      { title: "Funcionários", url: "/funcionarios", icon: Users, perm: "user.manage" },
-      { title: "Cargos e permissões", url: "/cargos", icon: ShieldCheck, perm: "role.manage" },
-      { title: "Auditoria", url: "/auditoria", icon: ScrollText, perm: "audit.view" },
-      { title: "Configurações", url: "/configuracoes", icon: Settings },
-    ],
-  },
-];
-
+import { NAV_ITEMS, itemsByGroup, filterByPermission, type NavItem } from "@/config/navigation";
 
 
 function AppSidebar() {
@@ -106,10 +35,25 @@ function AppSidebar() {
   const isActive = (url: string) => pathname === url || pathname.startsWith(url + "/");
   const { has, hasAny, isLoading } = usePermissions();
 
-  const canSee = (item: NavItem) => {
-    if (!item.perm) return true;
-    if (Array.isArray(item.perm)) return hasAny(...item.perm);
-    return has(item.perm);
+  const visible = isLoading ? NAV_ITEMS : filterByPermission(NAV_ITEMS, has, hasAny);
+  const groups = itemsByGroup(visible);
+  const renderItem = (item: NavItem) => {
+    const active = isActive(item.url);
+    return (
+      <SidebarMenuItem key={item.id}>
+        <SidebarMenuButton
+          asChild
+          isActive={active}
+          tooltip={item.title}
+          className="h-9 rounded-lg text-[13.5px] font-medium text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold data-[active=true]:shadow-[inset_2px_0_0_0_var(--sidebar-primary)] transition-colors"
+        >
+          <Link to={item.url} className="flex items-center gap-2.5">
+            <item.icon className="h-4 w-4 shrink-0" />
+            <span className="truncate">{item.title}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
   };
 
   return (
