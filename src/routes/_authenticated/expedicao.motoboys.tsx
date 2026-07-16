@@ -167,15 +167,26 @@ function CouriersPage() {
           {filtered.map((c) => (
             <div key={c.id} className="p-3 flex items-center gap-3">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium truncate">{c.full_name}</span>
                   {c.active ? <Badge variant="secondary">Ativo</Badge> : <Badge variant="outline">Inativo</Badge>}
+                  {c.user_id
+                    ? <Badge variant="default" className="gap-1"><Link2 className="h-3 w-3" />Acesso ao painel</Badge>
+                    : <Badge variant="outline" className="text-muted-foreground">Sem acesso</Badge>}
                 </div>
                 <div className="text-xs text-muted-foreground truncate">
                   {[c.phone, c.document, c.vehicle_plate].filter(Boolean).join(" · ") || "Sem dados adicionais"}
                 </div>
+                {c.linked_user && (
+                  <div className="text-xs text-muted-foreground truncate">
+                    Vinculado a: {c.linked_user.full_name} ({c.linked_user.email})
+                  </div>
+                )}
                 {c.notes && <div className="text-xs text-muted-foreground truncate">{c.notes}</div>}
               </div>
+              <Button size="sm" variant="outline" onClick={() => setLinkFor(c)}>
+                <Link2 className="h-3.5 w-3.5 mr-1" />Vínculo
+              </Button>
               <Button size="sm" variant="outline" onClick={() => startEdit(c)}>
                 <Pencil className="h-3.5 w-3.5 mr-1" />Editar
               </Button>
