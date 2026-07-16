@@ -173,6 +173,8 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     if (!existing.data) return;
     const d = existing.data;
     setDraftId(d.id);
+    setReceiptNumber(d.receipt_number ?? null);
+    setVersion(d.version ?? 1);
     setSupplierId(d.supplier_id ?? "");
     setLocationId(d.location_id ?? "");
     setInvoiceNumber(d.invoice_number ?? "");
@@ -181,8 +183,10 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     setNotes(d.notes ?? "");
     setStatus(d.status);
     setLastSavedAt(d.updated_at);
-    setConfirmedAt((d as any).confirmed_at ?? null);
-    setConfirmationSummary((d as any).confirmation_summary ?? null);
+    setConfirmedAt((d as unknown as { confirmed_at?: string | null }).confirmed_at ?? null);
+    setCancelledAt(d.cancelled_at ?? null);
+    setCancellationReason(d.cancellation_reason ?? null);
+    setConfirmationSummary((d as unknown as { confirmation_summary?: unknown }).confirmation_summary ?? null);
     setItems(
       d.items.map((it) => ({
         local_id: uid(),
