@@ -490,6 +490,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
 
   let productsTotal = 0;
   let productsProcessed = 0;
+  let currentProduct: { id?: string; name?: string } | null = null;
   const persistProgress = async (extra: Record<string, any> = {}) => {
     if (!eventId) return;
     await supabaseAdmin
@@ -500,10 +501,21 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
           started_at: startedAt.toISOString(),
           products_total: productsTotal,
           products_processed: productsProcessed,
+          current_product: currentProduct,
           ...extra,
         },
       })
       .eq("id", eventId);
+  };
+
+  const isCancelled = async (): Promise<boolean> => {
+    if (!eventId) return false;
+    const { data } = await supabaseAdmin
+      .from("integration_events")
+      .select("status")
+      .eq("id", eventId)
+      .maybeSingle();
+    return data?.status === "cancelado";
   };
 
   try {
@@ -515,7 +527,9 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
     let pagina = 1;
     let totalPages = 1;
     let consecutiveFailures = 0;
+    let cancelled = false;
     while (true) {
+      if (await isCancelled()) { cancelled = true; break; }
       params.pagina = String(pagina);
       let retorno: any;
       try {
@@ -524,7 +538,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
       } catch (e: any) {
         counters.errors.push({ scope: "produtos.pesquisa", id: `pag ${pagina}`, message: e?.message ?? String(e) });
         consecutiveFailures++;
-        if (consecutiveFailures >= 3) break; // desiste após 3 páginas seguidas com falha
+        if (consecutiveFailures >= 3) break;
         pagina++;
         await sleep(SLEEP_MS);
         continue;
@@ -533,28 +547,54 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
         const produtos: any[] = Array.isArray(retorno?.produtos) ? retorno.produtos.map((x: any) => x.produto ?? x) : [];
         totalPages = Number(retorno?.numero_paginas ?? totalPages);
         const registros = Number(retorno?.numero_registros ?? produtos.length) || produtos.length;
-        // Estimativa: registros por página × páginas
         if (productsTotal === 0) {
           productsTotal = registros * totalPages;
           await persistProgress();
         }
         for (const p of produtos) {
+          if (await isCancelled()) { cancelled = true; break; }
           const externalId = p?.id ? String(p.id) : undefined;
           if (!externalId) continue;
+          currentProduct = { id: externalId, name: p?.nome ?? p?.descricao ?? undefined };
+          await persistProgress();
           try {
             await syncOneProduct(orgId, externalId, counters);
           } catch (e: any) {
             counters.errors.push({ scope: "produto", id: externalId, message: e?.message ?? String(e) });
           }
           productsProcessed++;
-          if (productsProcessed % 5 === 0) await persistProgress();
+          if (productsProcessed % 3 === 0) await persistProgress();
           await sleep(SLEEP_MS);
         }
+        if (cancelled) break;
       }
       if (pagina >= totalPages) break;
       pagina++;
       await sleep(SLEEP_MS);
     }
+
+    if (cancelled) {
+      if (eventId) {
+        await supabaseAdmin
+          .from("integration_events")
+          .update({
+            status: "cancelado",
+            processed_at: new Date().toISOString(),
+            payload: {
+              ...counters,
+              started_at: startedAt.toISOString(),
+              finished_at: new Date().toISOString(),
+              products_total: productsTotal || productsProcessed,
+              products_processed: productsProcessed,
+              current_product: currentProduct,
+              cancelled: true,
+            },
+          })
+          .eq("id", eventId);
+      }
+      return counters;
+    }
+
 
     // 2) Estoque
     try {
