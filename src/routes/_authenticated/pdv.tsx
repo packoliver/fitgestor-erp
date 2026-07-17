@@ -306,31 +306,68 @@ function PdvPage() {
     mutationFn: async () => {
       if (!newClient.full_name.trim()) throw new Error("Informe o nome.");
       const cpf = normalizeDigits(newClient.cpf);
+      if (requireCpf && !cpf) throw new Error("CPF é obrigatório (definido nas configurações).");
       if (cpf && !validCPF(cpf)) throw new Error("CPF inválido.");
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Sessão expirada. Faça login novamente.");
       const { data: prof, error: pErr } = await supabase.from("profiles").select("organization_id").eq("id", user.id).maybeSingle();
       if (pErr) throw pErr;
       if (!prof?.organization_id) throw new Error("Perfil sem organização.");
-      const { data, error } = await supabase.from("clients").insert({
+      const payload: any = {
         organization_id: prof.organization_id,
         full_name: newClient.full_name.trim(),
         cpf: cpf || null,
         phone: normalizeDigits(newClient.phone) || null,
         email: newClient.email.trim() || null,
-      }).select("id, full_name").single();
+      };
+      if (fullClientForm) {
+        payload.zip_code = normalizeDigits(newClient.zip_code) || null;
+        payload.address = newClient.address.trim() || null;
+        payload.address_number = newClient.address_number.trim() || null;
+        payload.address_complement = newClient.address_complement.trim() || null;
+        payload.neighborhood = newClient.neighborhood.trim() || null;
+        payload.city = newClient.city.trim() || null;
+        payload.state = newClient.state.trim().toUpperCase() || null;
+      }
+      const { data, error } = await supabase.from("clients").insert(payload).select("id, full_name").single();
       if (error) throw error;
       return data;
     },
     onSuccess: (c: any) => {
       setClientId(c.id); setClientName(c.full_name); setClientOpen(false);
-      setNewClient({ full_name: "", cpf: "", phone: "", email: "" });
+      setNewClient({
+        full_name: "", cpf: "", phone: "", email: "",
+        zip_code: "", address: "", address_number: "", address_complement: "",
+        neighborhood: "", city: "", state: "",
+      });
+      setFullClientForm(false);
       qc.invalidateQueries({ queryKey: ["pdv-clients"] });
       qc.invalidateQueries({ queryKey: ["clients"] });
       toast.success(`Cliente "${c.full_name}" cadastrado`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  async function lookupCep(raw: string) {
+    const cep = normalizeDigits(raw);
+    if (cep.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.erro) return;
+      setNewClient((prev) => ({
+        ...prev,
+        zip_code: cep,
+        address: prev.address || data.logradouro || "",
+        neighborhood: prev.neighborhood || data.bairro || "",
+        city: prev.city || data.localidade || "",
+        state: prev.state || data.uf || "",
+      }));
+    } catch { /* silent */ }
+    finally { setCepLoading(false); }
+  }
 
   function startNewSale() {
     setStep("sale");
