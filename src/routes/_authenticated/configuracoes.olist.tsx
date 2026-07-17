@@ -168,11 +168,19 @@ function OlistPage() {
                       <TableCell className="text-right">{p.stock_adjusted ?? 0}</TableCell>
                       <TableCell className="text-right">{p.errors?.length ?? 0}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => setDetail(r)}>Detalhes</Button>
+                        <div className="flex justify-end gap-1">
+                          {r.status === "processando" && (
+                            <Button variant="ghost" size="sm" onClick={() => cancelOne.mutate(r.id)} disabled={cancelOne.isPending}>
+                              <StopCircle className="mr-1 h-3.5 w-3.5" />Parar
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="sm" onClick={() => setDetail(r)}>Detalhes</Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
                 })}
+
               </TableBody>
             </Table>
           </div>
