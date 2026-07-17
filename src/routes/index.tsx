@@ -41,17 +41,17 @@ function Landing() {
 
 function SiteHeader() {
   return (
-    <header className="glass-soft sticky top-0 z-30 rounded-none border-0 border-b border-white/10">
+    <header className="glass-medium sticky top-0 z-30 rounded-none border-0 border-b border-white/10">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6 lg:px-10">
         <Link to="/" className="flex items-center gap-2.5">
           <BrandMark size={30} />
           <span className="text-[15px] font-semibold tracking-[-0.02em] text-foreground">FitGestor</span>
         </Link>
-        <div className="flex items-center gap-1">
-          <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground hover:bg-white/5">
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:bg-white/[0.08] hover:text-foreground">
             <Link to="/auth">Entrar</Link>
           </Button>
-          <Button asChild size="sm" className="rounded-[10px] bg-primary text-primary-foreground hover:bg-primary-hover">
+          <Button asChild size="sm" className="rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-10px_rgba(139,92,246,0.75)] hover:bg-primary-hover">
             <Link to="/auth">Acessar sistema</Link>
           </Button>
         </div>
@@ -104,14 +104,21 @@ function OperationOverview() {
             Um sistema para tudo o que acontece entre a caixa aberta e o cliente na porta.
           </h2>
         </div>
-        <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-[14px] border border-border bg-border/60 sm:grid-cols-2 lg:col-span-8 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-8 lg:grid-cols-3">
           {items.map((it) => (
-            <li key={it.n} className="flex flex-col justify-between bg-background p-6">
+            <li
+              key={it.n}
+              className="liquid-card group relative flex flex-col justify-between overflow-hidden rounded-[18px] p-6 transition-transform duration-300 hover:-translate-y-0.5"
+            >
               <span className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground">{it.n}</span>
               <div className="mt-8">
                 <p className="text-[15px] font-semibold text-foreground">{it.t}</p>
                 <p className="mt-1 text-[13px] text-muted-foreground">{it.d}</p>
               </div>
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(167,139,250,0.35),transparent_70%)] opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
+              />
             </li>
           ))}
         </ul>
@@ -152,26 +159,40 @@ function ModuleSection({
 
 function ClosingCta() {
   return (
-    <section className="border-b border-border">
+    <section className="fit-aurora relative overflow-hidden border-b border-white/5">
       <div className="mx-auto max-w-[1200px] px-6 py-28 lg:px-10">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
-          <div className="lg:col-span-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">FitGestor</p>
-            <h2 className="mt-4 text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[48px] lg:text-[58px]">
-              A operação da empresa funciona melhor <br />
-              <span className="text-muted-foreground">quando o sistema entende o negócio.</span>
-            </h2>
-          </div>
-          <div className="flex items-end lg:col-span-4">
-            <div className="w-full">
-              <Button asChild size="lg" className="w-full rounded-[10px] bg-primary text-primary-foreground hover:bg-primary-hover">
-                <Link to="/auth">
-                  Entrar no sistema <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground">
-                Ambiente corporativo. Acesso restrito à equipe autorizada da Quero Ser Fit<sup className="text-[0.6em]">®</sup>.
-              </p>
+        <div className="liquid-surface relative overflow-hidden rounded-[28px] p-10 lg:p-14">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -left-24 -top-24 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.35),transparent_70%)] blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-32 right-[-120px] h-[380px] w-[380px] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.28),transparent_70%)] blur-3xl"
+          />
+          <div className="relative grid grid-cols-1 gap-10 lg:grid-cols-12">
+            <div className="lg:col-span-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">FitGestor</p>
+              <h2 className="mt-4 text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[48px] lg:text-[58px]">
+                A operação da empresa funciona melhor <br />
+                <span className="text-muted-foreground">quando o sistema entende o negócio.</span>
+              </h2>
+            </div>
+            <div className="flex items-end lg:col-span-4">
+              <div className="w-full">
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full rounded-full bg-primary text-primary-foreground shadow-[0_14px_36px_-8px_rgba(139,92,246,0.7)] hover:bg-primary-hover"
+                >
+                  <Link to="/auth">
+                    Entrar no sistema <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground">
+                  Ambiente corporativo. Acesso restrito à equipe autorizada da Quero Ser Fit<sup className="text-[0.6em]">®</sup>.
+                </p>
+              </div>
             </div>
           </div>
         </div>
