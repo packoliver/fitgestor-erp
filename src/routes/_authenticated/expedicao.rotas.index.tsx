@@ -60,23 +60,23 @@ function RotasList() {
           <Button asChild><Link to="/expedicao/rotas/nova"><Plus className="mr-2 h-4 w-4" />Nova rota</Link></Button>
         }
       />
-      <Card className="p-3 mb-4 flex flex-wrap gap-2">
+      <Card className="p-3 mb-4 grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-2">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full lg:w-[180px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
             {Object.entries(ROUTE_STATUS_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Input type="date" className="w-[170px]" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+        <Input type="date" className="w-full lg:w-[170px]" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
         <Select value={courierFilter} onValueChange={setCourierFilter}>
-          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Motoboy" /></SelectTrigger>
+          <SelectTrigger className="w-full lg:w-[200px]"><SelectValue placeholder="Motoboy" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os motoboys</SelectItem>
             {couriers.data?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Input type="number" placeholder="Nº da rota" className="w-[120px]" value={numberFilter} onChange={(e) => setNumberFilter(e.target.value)} />
+        <Input type="number" placeholder="Nº da rota" className="w-full lg:w-[120px]" value={numberFilter} onChange={(e) => setNumberFilter(e.target.value)} />
       </Card>
 
       <Card className="overflow-x-auto">

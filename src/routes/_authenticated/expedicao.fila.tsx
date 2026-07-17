@@ -120,13 +120,13 @@ function FilaPage() {
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nº, cliente, bairro, venda…" className="pl-8" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]"><Filter className="mr-1 h-4 w-4" /><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[180px]"><Filter className="mr-1 h-4 w-4" /><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
             {KANBAN_STATUSES.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Input type="date" className="w-[170px]" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+        <Input type="date" className="w-full sm:w-[170px]" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
         {(search || dateFilter || statusFilter !== "all") && (
           <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setDateFilter(""); setStatusFilter("all"); }}>
             Limpar
@@ -190,8 +190,8 @@ function FilaPage() {
                   <tr key={r.id} className="border-t [&>td]:px-2 [&>td]:py-1.5">
                     <td className="font-semibold">#{r.shipment_number}</td>
                     <td>{r.sale?.sale_number ? `#${r.sale.sale_number}` : "—"}</td>
-                    <td className="truncate max-w-[160px]">{r.recipient_name}</td>
-                    <td className="truncate max-w-[120px]">{r.neighborhood}</td>
+                    <td className="truncate max-w-[160px]" title={r.recipient_name}>{r.recipient_name}</td>
+                    <td className="truncate max-w-[120px]" title={r.neighborhood}>{r.neighborhood}</td>
                     <td>{r.scheduled_date?.split("-").reverse().join("/")}</td>
                     <td>{r.route?.route_number ? `#${r.route.route_number}` : "—"}</td>
                     <td>{r.courier?.full_name ?? "—"}</td>

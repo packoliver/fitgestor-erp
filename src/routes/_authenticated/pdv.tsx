@@ -393,7 +393,7 @@ function PdvPage() {
         </div>
 
         <div className="border-t bg-background/50 backdrop-blur">
-          <div className="max-w-3xl mx-auto px-6 py-4 flex items-center gap-6">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center gap-4 sm:gap-6">
             <Button size="lg" onClick={startNewSale} className="h-14 px-8 rounded-xl">
               iniciar outra venda
               <span className="ml-3 text-xs opacity-80">CTRL+ENTER</span>
@@ -704,13 +704,13 @@ function PdvPage() {
 
       {/* Footer */}
       <div className="border-t bg-background">
-        <div className="px-6 py-3 flex items-center gap-6">
+        <div className="px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3 sm:gap-6">
           {pickedVariant ? (
             <>
               <Button size="lg" className="h-14 px-8 rounded-xl" onClick={commitAdd}>
                 adicionar <span className="ml-3 text-xs opacity-80">ENTER</span>
               </Button>
-              <button className="text-sm"><div>aplicar desconto</div><div className="text-xs text-muted-foreground">F4</div></button>
+              <button className="text-sm hidden sm:block"><div>aplicar desconto</div><div className="text-xs text-muted-foreground">F4</div></button>
               <button onClick={() => { setPickedVariant(null); setTerm(""); }} className="text-sm"><div>cancelar</div><div className="text-xs text-muted-foreground">ESC</div></button>
             </>
           ) : (
@@ -718,14 +718,14 @@ function PdvPage() {
               <Button size="lg" className="h-14 px-8 rounded-xl" disabled={cart.length === 0} onClick={() => setStep("checkout")}>
                 continuar <span className="ml-3 text-xs opacity-80">CTRL+ENTER</span>
               </Button>
-              <button onClick={() => toast.info("Salvar para depois em breve")} className="text-sm"><div>salvar para depois</div><div className="text-xs text-muted-foreground">F10</div></button>
+              <button onClick={() => toast.info("Salvar para depois em breve")} className="text-sm hidden sm:block"><div>salvar para depois</div><div className="text-xs text-muted-foreground">F10</div></button>
               <button onClick={() => { if (cart.length) { setCart([]); toast.success("Venda cancelada"); } }} className="text-sm"><div>cancelar venda</div><div className="text-xs text-muted-foreground">ESC</div></button>
             </>
           )}
-          <div className="ml-auto flex items-center gap-10">
-            <div className="text-right"><div className="text-xs text-muted-foreground">itens</div><div className="text-2xl">{cart.length}</div></div>
-            <div className="text-right"><div className="text-xs text-muted-foreground">quant.</div><div className="text-2xl">{totalQty}</div></div>
-            <div className="text-right"><div className="text-xs text-muted-foreground">total da venda</div><div className="text-3xl font-light">{money(subtotal)}</div></div>
+          <div className="w-full sm:w-auto sm:ml-auto flex items-center justify-between sm:justify-end gap-4 sm:gap-10">
+            <div className="text-right"><div className="text-xs text-muted-foreground">itens</div><div className="text-xl sm:text-2xl">{cart.length}</div></div>
+            <div className="text-right"><div className="text-xs text-muted-foreground">quant.</div><div className="text-xl sm:text-2xl">{totalQty}</div></div>
+            <div className="text-right"><div className="text-xs text-muted-foreground">total da venda</div><div className="text-2xl sm:text-3xl font-light">{money(subtotal)}</div></div>
           </div>
         </div>
       </div>
@@ -799,7 +799,7 @@ function PdvPage() {
       <Dialog open={methodOpen} onOpenChange={setMethodOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <DialogTitle>Escolha uma forma de recebimento</DialogTitle>
               <div className="text-right">
                 <div className="text-xs text-muted-foreground">total da venda</div>
@@ -807,7 +807,7 @@ function PdvPage() {
               </div>
             </div>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <MethodTile icon={<DollarSign className="h-5 w-5" />} label="Dinheiro" hint="1" onClick={() => pickPaymentMethod("cash")} />
             <MethodTile icon={<CreditCard className="h-5 w-5" />} label="Cartão de crédito" hint="2" onClick={() => pickPaymentMethod("credit_card")} />
             <MethodTile icon={<CreditCard className="h-5 w-5" />} label="Cartão de débito" hint="3" onClick={() => pickPaymentMethod("debit_card")} />

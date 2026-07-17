@@ -165,7 +165,7 @@ function TemplatesTab() {
           <DialogHeader><DialogTitle>{editing?.id ? "Editar modelo" : "Novo modelo"}</DialogTitle></DialogHeader>
           {editing && (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><Label>Nome</Label><Input value={editing.name ?? ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></div>
                 <div><Label>Categoria</Label><Input value={editing.category ?? ""} onChange={(e) => setEditing({ ...editing, category: e.target.value })} /></div>
               </div>
