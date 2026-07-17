@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
 import { BrandMark, BrandLockup } from "@/components/brand-logo";
+import { GlassVideoHero } from "@/components/ui/glass-video-hero";
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
