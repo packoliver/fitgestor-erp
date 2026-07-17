@@ -19,6 +19,7 @@ import { CheckCircle2, Truck, Store, Package, Mail, MoreHorizontal, Loader2 } fr
 import { usePermissions } from "@/hooks/use-permissions";
 import { money } from "@/lib/pos";
 import { OverrideScheduleDialog } from "@/components/shipping/override-schedule-dialog";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 
 type DeliveryMethod = "pickup" | "motoboy" | "correios" | "carrier" | "other";
 
@@ -275,8 +276,23 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
                   <Input inputMode="numeric" value={addr.zip_code} onChange={(e) => setAddr({ ...addr, zip_code: e.target.value })} />
                 </div>
                 <div className="sm:col-span-2">
-                  <Label>Endereço *</Label>
-                  <Input value={addr.address} onChange={(e) => setAddr({ ...addr, address: e.target.value })} />
+                  <Label>Endereço * <span className="text-xs text-muted-foreground font-normal">(buscar no Google Maps)</span></Label>
+                  <AddressAutocomplete
+                    value={addr.address}
+                    onChange={(v) => setAddr((a) => ({ ...a, address: v }))}
+                    onSelect={(p) => setAddr((a) => ({
+                      ...a,
+                      address: p.address || a.address,
+                      address_number: p.address_number || a.address_number,
+                      neighborhood: p.neighborhood || a.neighborhood,
+                      city: p.city || a.city,
+                      state: p.state || a.state,
+                      zip_code: p.zip_code || a.zip_code,
+                      latitude: p.latitude != null ? String(p.latitude) : a.latitude,
+                      longitude: p.longitude != null ? String(p.longitude) : a.longitude,
+                    }))}
+                    placeholder="Rua, número, bairro, cidade…"
+                  />
                 </div>
                 <div>
                   <Label>Número *</Label>

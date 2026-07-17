@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useState } from "react";
 import { Plus, Search, Trash2, Wallet } from "lucide-react";
 import { normalizeDigits, validCPF } from "@/lib/pos";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/clientes/")({
@@ -21,7 +22,12 @@ function ClientesPage() {
   const qc = useQueryClient();
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ full_name: "", cpf: "", phone: "", email: "" });
+  const [form, setForm] = useState({
+    full_name: "", cpf: "", phone: "", email: "",
+    zip_code: "", address: "", address_number: "", address_complement: "",
+    neighborhood: "", city: "", state: "",
+    latitude: null as number | null, longitude: null as number | null, place_id: "",
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["clients", term],
@@ -55,13 +61,28 @@ function ClientesPage() {
         cpf: cpf || null,
         phone: normalizeDigits(form.phone) || null,
         email: form.email.trim() || null,
+        zip_code: form.zip_code.trim() || null,
+        address: form.address.trim() || null,
+        address_number: form.address_number.trim() || null,
+        address_complement: form.address_complement.trim() || null,
+        neighborhood: form.neighborhood.trim() || null,
+        city: form.city.trim() || null,
+        state: form.state.trim().toUpperCase() || null,
+        latitude: form.latitude,
+        longitude: form.longitude,
+        place_id: form.place_id || null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Cliente cadastrado");
       setOpen(false);
-      setForm({ full_name: "", cpf: "", phone: "", email: "" });
+      setForm({
+        full_name: "", cpf: "", phone: "", email: "",
+        zip_code: "", address: "", address_number: "", address_complement: "",
+        neighborhood: "", city: "", state: "",
+        latitude: null, longitude: null, place_id: "",
+      });
       qc.invalidateQueries({ queryKey: ["clients"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -84,7 +105,7 @@ function ClientesPage() {
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />Novo cliente</Button></DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Novo cliente</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div><Label>Nome completo *</Label><Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
@@ -93,6 +114,42 @@ function ClientesPage() {
                   <div><Label>Telefone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
                 </div>
                 <div><Label>E-mail</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+
+                <div className="pt-2 border-t">
+                  <Label>Endereço <span className="text-xs text-muted-foreground font-normal">(buscar no Google Maps)</span></Label>
+                  <AddressAutocomplete
+                    value={form.address}
+                    onChange={(v) => setForm((f) => ({ ...f, address: v }))}
+                    onSelect={(p) => setForm((f) => ({
+                      ...f,
+                      address: p.address || f.address,
+                      address_number: p.address_number || f.address_number,
+                      neighborhood: p.neighborhood || f.neighborhood,
+                      city: p.city || f.city,
+                      state: p.state || f.state,
+                      zip_code: p.zip_code || f.zip_code,
+                      latitude: p.latitude,
+                      longitude: p.longitude,
+                      place_id: p.place_id,
+                    }))}
+                    placeholder="Rua, número, bairro, cidade…"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div><Label>Número</Label><Input value={form.address_number} onChange={(e) => setForm({ ...form, address_number: e.target.value })} /></div>
+                  <div className="col-span-2"><Label>Complemento</Label><Input value={form.address_complement} onChange={(e) => setForm({ ...form, address_complement: e.target.value })} /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Bairro</Label><Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} /></div>
+                  <div><Label>CEP</Label><Input value={form.zip_code} onChange={(e) => setForm({ ...form, zip_code: e.target.value })} /></div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2"><Label>Cidade</Label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
+                  <div><Label>UF</Label><Input maxLength={2} value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })} /></div>
+                </div>
+                {form.latitude != null && form.longitude != null && (
+                  <p className="text-xs text-muted-foreground">📍 Localização salva: {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}</p>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
