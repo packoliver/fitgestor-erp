@@ -1386,3 +1386,59 @@ function ItemBlock({
     </Card>
   );
 }
+
+type OrgTone = "emerald" | "sky" | "violet" | "amber";
+const toneClasses: Record<OrgTone, { border: string; bg: string; text: string; badge: string }> = {
+  emerald: { border: "border-emerald-300", bg: "bg-emerald-50/60", text: "text-emerald-900", badge: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+  sky: { border: "border-sky-300", bg: "bg-sky-50/60", text: "text-sky-900", badge: "bg-sky-100 text-sky-800 border-sky-300" },
+  violet: { border: "border-violet-300", bg: "bg-violet-50/60", text: "text-violet-900", badge: "bg-violet-100 text-violet-800 border-violet-300" },
+  amber: { border: "border-amber-300", bg: "bg-amber-50/60", text: "text-amber-900", badge: "bg-amber-100 text-amber-800 border-amber-300" },
+};
+
+function OrgGroup({
+  title, subtitle, tone, count, pieces, children,
+}: {
+  title: string;
+  subtitle: string;
+  tone: OrgTone;
+  count: number;
+  pieces: number;
+  children: React.ReactNode;
+}) {
+  const t = toneClasses[tone];
+  return (
+    <Card className={`${t.border}`}>
+      <CardHeader className={`py-3 ${t.bg}`}>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <CardTitle className={`text-sm font-semibold tracking-wider ${t.text}`}>{title}</CardTitle>
+            <div className="text-xs text-muted-foreground mt-0.5">{subtitle}</div>
+          </div>
+          <div className="flex gap-1.5">
+            <Badge variant="outline" className={t.badge}>{count} {count === 1 ? "linha" : "linhas"}</Badge>
+            <Badge variant="outline" className={t.badge}>{pieces} {pieces === 1 ? "peça" : "peças"}</Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-3 space-y-3">{children}</CardContent>
+    </Card>
+  );
+}
+
+function SummaryStat({
+  label, value, pieces, tone,
+}: {
+  label: string;
+  value: number;
+  pieces: number;
+  tone: OrgTone;
+}) {
+  const t = toneClasses[tone];
+  return (
+    <div className={`rounded-md border p-3 ${t.border} ${t.bg}`}>
+      <div className={`text-xs font-medium ${t.text}`}>{label}</div>
+      <div className="text-2xl font-semibold mt-1">{value}</div>
+      <div className="text-xs text-muted-foreground">{pieces} peça(s)</div>
+    </div>
+  );
+}
