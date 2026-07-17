@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
@@ -97,6 +98,18 @@ function Config() {
               disabled={pdvSaving || !orgId}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-2xl">
+        <CardHeader><CardTitle>Importar dados de outro ERP</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Migre produtos, clientes, fornecedores e saldos de estoque a partir de arquivos CSV ou XLSX exportados do Bling, Tiny, Olist ou outra fonte.
+          </p>
+          <Button asChild>
+            <Link to="/configuracoes/importar"><Upload className="mr-2 h-4 w-4" />Abrir importador</Link>
+          </Button>
         </CardContent>
       </Card>
     </div>
