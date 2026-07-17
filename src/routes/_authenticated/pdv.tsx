@@ -133,7 +133,7 @@ function PdvPage() {
   // Seller (profiles)
   const { data: sellers = [] } = useQuery({
     queryKey: ["pdv-sellers"], enabled: sellerOpen,
-    queryFn: async () => (await supabase.from("profiles").select("id, full_name").eq("status", "active").order("full_name")).data ?? [],
+    queryFn: async () => (await supabase.from("profiles").select("id, full_name").eq("status", "ativo").order("full_name")).data ?? [],
   });
 
   useEffect(() => { if (step === "sale") searchRef.current?.focus(); }, [step]);
