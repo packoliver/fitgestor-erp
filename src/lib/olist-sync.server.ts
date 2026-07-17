@@ -488,6 +488,24 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
     .from("olist_sync_state")
     .upsert({ organization_id: orgId, last_run_started_at: startedAt.toISOString() });
 
+  let productsTotal = 0;
+  let productsProcessed = 0;
+  const persistProgress = async (extra: Record<string, any> = {}) => {
+    if (!eventId) return;
+    await supabaseAdmin
+      .from("integration_events")
+      .update({
+        payload: {
+          ...counters,
+          started_at: startedAt.toISOString(),
+          products_total: productsTotal,
+          products_processed: productsProcessed,
+          ...extra,
+        },
+      })
+      .eq("id", eventId);
+  };
+
   try {
     // 1) Produtos
     const params: Record<string, string> = { pagina: "1" };
@@ -513,6 +531,13 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
       }
       if (!retorno?.empty) {
         const produtos: any[] = Array.isArray(retorno?.produtos) ? retorno.produtos.map((x: any) => x.produto ?? x) : [];
+        totalPages = Number(retorno?.numero_paginas ?? totalPages);
+        const registros = Number(retorno?.numero_registros ?? produtos.length) || produtos.length;
+        // Estimativa: registros por página × páginas
+        if (productsTotal === 0) {
+          productsTotal = registros * totalPages;
+          await persistProgress();
+        }
         for (const p of produtos) {
           const externalId = p?.id ? String(p.id) : undefined;
           if (!externalId) continue;
@@ -521,9 +546,10 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
           } catch (e: any) {
             counters.errors.push({ scope: "produto", id: externalId, message: e?.message ?? String(e) });
           }
+          productsProcessed++;
+          if (productsProcessed % 5 === 0) await persistProgress();
           await sleep(SLEEP_MS);
         }
-        totalPages = Number(retorno?.numero_paginas ?? totalPages);
       }
       if (pagina >= totalPages) break;
       pagina++;
@@ -532,6 +558,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
 
     // 2) Estoque
     try {
+      await persistProgress({ phase: "estoque" });
       await syncStock(orgId, sinceEstoque, counters);
     } catch (e: any) {
       counters.errors.push({ scope: "stock.list", message: e?.message ?? String(e) });
@@ -552,10 +579,17 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
         .update({
           status: counters.errors.length > 0 && counters.products_created + counters.products_updated === 0 ? "erro" : "processado",
           processed_at: new Date().toISOString(),
-          payload: { ...counters, started_at: startedAt.toISOString(), finished_at: new Date().toISOString() },
+          payload: {
+            ...counters,
+            started_at: startedAt.toISOString(),
+            finished_at: new Date().toISOString(),
+            products_total: productsTotal || productsProcessed,
+            products_processed: productsProcessed,
+          },
         })
         .eq("id", eventId);
     }
+
   } catch (e: any) {
     if (eventId) {
       await supabaseAdmin
