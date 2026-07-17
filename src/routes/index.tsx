@@ -104,14 +104,21 @@ function OperationOverview() {
             Um sistema para tudo o que acontece entre a caixa aberta e o cliente na porta.
           </h2>
         </div>
-        <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-[14px] border border-border bg-border/60 sm:grid-cols-2 lg:col-span-8 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-8 lg:grid-cols-3">
           {items.map((it) => (
-            <li key={it.n} className="flex flex-col justify-between bg-background p-6">
+            <li
+              key={it.n}
+              className="liquid-card group relative flex flex-col justify-between overflow-hidden rounded-[18px] p-6 transition-transform duration-300 hover:-translate-y-0.5"
+            >
               <span className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground">{it.n}</span>
               <div className="mt-8">
                 <p className="text-[15px] font-semibold text-foreground">{it.t}</p>
                 <p className="mt-1 text-[13px] text-muted-foreground">{it.d}</p>
               </div>
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(167,139,250,0.35),transparent_70%)] opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
+              />
             </li>
           ))}
         </ul>
