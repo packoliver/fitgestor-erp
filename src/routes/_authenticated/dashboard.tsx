@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   TrendingUp, Wallet, Truck, Package, Users, AlertTriangle, ClipboardList,
-  RefreshCw, PiggyBank, ArrowRight, MessageCircle,
+  RefreshCw, PiggyBank, ArrowRight, MessageCircle, Trophy,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 
