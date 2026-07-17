@@ -8,7 +8,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const OLIST_BASE = "https://api.tiny.com.br/api2";
-const SLEEP_MS = 300;
+const SLEEP_MS = 2100; // Tiny/Olist: ~30 req/min → ~2s entre chamadas
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type Counters = {
@@ -29,7 +29,7 @@ function fmtDate(d: Date | null): string | null {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-async function olistCall(endpoint: string, params: Record<string, string>): Promise<any> {
+async function olistCall(endpoint: string, params: Record<string, string>, attempt = 0): Promise<any> {
   const token = process.env.OLIST_API_TOKEN;
   if (!token) throw new Error("OLIST_API_TOKEN não configurado");
   const body = new URLSearchParams({ token, formato: "JSON", ...params });
@@ -44,11 +44,15 @@ async function olistCall(endpoint: string, params: Record<string, string>): Prom
   if (status === "Erro") {
     const codes = json?.retorno?.codigo_erro;
     if (codes === 20 || codes === "20") {
-      // "A consulta não retornou registros" — não é erro
       return { empty: true, raw: json };
     }
-    const msg = json?.retorno?.erros?.[0]?.erro || `Olist erro ${codes ?? ""}`;
-    throw new Error(String(msg));
+    const msg = String(json?.retorno?.erros?.[0]?.erro || `Olist erro ${codes ?? ""}`);
+    // Rate-limit: aguarda e tenta novamente (até 3x)
+    if (/API Bloqueada|Excedido o número de acessos/i.test(msg) && attempt < 3) {
+      await sleep(30_000 + attempt * 15_000);
+      return olistCall(endpoint, params, attempt + 1);
+    }
+    throw new Error(msg);
   }
   return json?.retorno ?? {};
 }
