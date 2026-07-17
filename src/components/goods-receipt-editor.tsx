@@ -374,6 +374,39 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     },
   });
 
+  const revertConfirmed = useMutation({
+    mutationFn: async () => {
+      if (!draftId) throw new Error("Entrada não identificada.");
+      if (status !== "confirmed") throw new Error("Somente entradas confirmadas podem ser estornadas.");
+      const reason = revertReason.trim();
+      if (reason.length < 3) throw new Error("Informe a justificativa do estorno.");
+      if (!revertRequestIdRef.current) {
+        revertRequestIdRef.current = globalThis.crypto?.randomUUID?.() ?? uid() + uid() + uid();
+      }
+      const { data, error } = await supabase.rpc("revert_goods_receipt" as never, {
+        _draft_id: draftId,
+        _reason: reason,
+        _client_request_id: revertRequestIdRef.current,
+      } as never);
+      if (error) throw error;
+      return data as { reversed_movements: number; total_quantity_reverted: number };
+    },
+    onSuccess: (res) => {
+      toast.success(
+        `Estorno concluído: ${res?.total_quantity_reverted ?? 0} peça(s) revertida(s) em ${res?.reversed_movements ?? 0} movimento(s).`
+      );
+      setSubStatus("reverted");
+      setRevertOpen(false);
+      setRevertReason("");
+      revertRequestIdRef.current = "";
+      qc.invalidateQueries({ queryKey: ["goods-receipts-list"] });
+      if (draftId) qc.invalidateQueries({ queryKey: ["goods-receipt-draft", draftId] });
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+    },
+  });
+
   function markDirty() { setDirty(true); }
 
   function addItemFromProduct(mode: Mode, product: any) {
