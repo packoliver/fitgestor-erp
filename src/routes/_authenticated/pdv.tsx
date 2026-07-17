@@ -128,8 +128,28 @@ function PdvPage() {
       return (await q).data ?? [];
     },
   });
-  const [newClient, setNewClient] = useState({ full_name: "", cpf: "", phone: "", email: "" });
+  const [newClient, setNewClient] = useState({
+    full_name: "", cpf: "", phone: "", email: "",
+    zip_code: "", address: "", address_number: "", address_complement: "",
+    neighborhood: "", city: "", state: "",
+  });
+  const [fullClientForm, setFullClientForm] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
   const qc = useQueryClient();
+
+  // Organization settings (for CPF policy)
+  const { data: orgSettings } = useQuery({
+    queryKey: ["pdv-org-settings"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data: p } = await supabase.from("profiles").select("organization_id").eq("id", user.id).maybeSingle();
+      if (!p?.organization_id) return null;
+      const { data: o } = await supabase.from("organizations").select("pdv_require_cpf").eq("id", p.organization_id).maybeSingle();
+      return o as { pdv_require_cpf: boolean } | null;
+    },
+  });
+  const requireCpf = !!orgSettings?.pdv_require_cpf;
 
   // Seller (profiles)
   const { data: sellers = [] } = useQuery({
