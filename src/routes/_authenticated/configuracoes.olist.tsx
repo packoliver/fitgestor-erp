@@ -152,16 +152,59 @@ function OlistPage() {
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>Detalhes da execução</DialogTitle></DialogHeader>
-          {detail && (
-            <div className="space-y-3 text-sm">
-              {detail.error_message && (
-                <div className="rounded bg-destructive/10 p-3 text-destructive text-xs">{detail.error_message}</div>
-              )}
-              <pre className="max-h-96 overflow-auto rounded bg-muted p-3 text-xs">{JSON.stringify(detail.payload, null, 2)}</pre>
-            </div>
-          )}
+          {detailFresh && (() => {
+            const p = detailFresh.payload ?? {};
+            const total = Number(p.products_total ?? 0);
+            const done = Number(p.products_processed ?? 0);
+            const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+            const isRunning = detailFresh.status === "processando";
+            return (
+              <div className="space-y-4 text-sm">
+                <div className="rounded border p-3">
+                  <div className="mb-2 flex items-center justify-between text-xs">
+                    <span className="font-medium">
+                      {isRunning ? "Sincronizando produtos..." : "Progresso final"}
+                      {p.phase === "estoque" && " (ajustando estoque)"}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {done} / {total > 0 ? total : "?"} {total > 0 && `(${pct}%)`}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded bg-muted">
+                    <div
+                      className={`h-full transition-all ${isRunning ? "bg-primary" : detailFresh.status === "erro" ? "bg-destructive" : "bg-emerald-500"}`}
+                      style={{ width: `${total > 0 ? pct : isRunning ? 5 : 100}%` }}
+                    />
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                    <Stat label="Produtos" value={(p.products_created ?? 0) + (p.products_updated ?? 0)} />
+                    <Stat label="Variações" value={(p.variants_created ?? 0) + (p.variants_updated ?? 0)} />
+                    <Stat label="Fotos" value={p.photos_synced ?? 0} />
+                    <Stat label="Estoque" value={p.stock_adjusted ?? 0} />
+                  </div>
+                </div>
+                {detailFresh.error_message && (
+                  <div className="rounded bg-destructive/10 p-3 text-destructive text-xs">{detailFresh.error_message}</div>
+                )}
+                <details>
+                  <summary className="cursor-pointer text-xs text-muted-foreground">Ver JSON completo</summary>
+                  <pre className="mt-2 max-h-96 overflow-auto rounded bg-muted p-3 text-xs">{JSON.stringify(detailFresh.payload, null, 2)}</pre>
+                </details>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
   );
 }
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded bg-muted/40 p-2">
+      <div className="text-[10px] uppercase text-muted-foreground">{label}</div>
+      <div className="text-sm font-semibold">{value}</div>
+    </div>
+  );
+}
+
