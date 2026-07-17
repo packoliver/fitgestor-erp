@@ -111,7 +111,29 @@ async function findLocalProductByExternal(orgId: string, externalId: string) {
     .eq("entity_type", "product")
     .eq("external_id", externalId)
     .maybeSingle();
-  return data?.internal_id as string | undefined;
+  if (data?.internal_id) return data.internal_id as string;
+  // Fallback: procura direto na tabela products pelo olist_product_id
+  // (caso o mapping tenha falhado em sync anterior). Evita duplicar.
+  const { data: prod } = await supabaseAdmin
+    .from("products")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("olist_product_id", externalId)
+    .maybeSingle();
+  if (prod?.id) {
+    await supabaseAdmin.from("integration_mappings").upsert(
+      {
+        organization_id: orgId,
+        source: "olist",
+        entity_type: "product",
+        external_id: externalId,
+        internal_id: prod.id,
+      },
+      { onConflict: "organization_id,source,entity_type,external_id" },
+    );
+    return prod.id as string;
+  }
+  return undefined;
 }
 
 async function findLocalVariantByExternal(orgId: string, externalId: string) {
@@ -123,7 +145,27 @@ async function findLocalVariantByExternal(orgId: string, externalId: string) {
     .eq("entity_type", "variant")
     .eq("external_id", externalId)
     .maybeSingle();
-  return data?.internal_id as string | undefined;
+  if (data?.internal_id) return data.internal_id as string;
+  const { data: v } = await supabaseAdmin
+    .from("product_variants")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("olist_variant_id", externalId)
+    .maybeSingle();
+  if (v?.id) {
+    await supabaseAdmin.from("integration_mappings").upsert(
+      {
+        organization_id: orgId,
+        source: "olist",
+        entity_type: "variant",
+        external_id: externalId,
+        internal_id: v.id,
+      },
+      { onConflict: "organization_id,source,entity_type,external_id" },
+    );
+    return v.id as string;
+  }
+  return undefined;
 }
 
 async function downloadPhoto(url: string): Promise<{ bytes: ArrayBuffer; contentType: string; ext: string }> {
