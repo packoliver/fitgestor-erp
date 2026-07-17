@@ -220,7 +220,22 @@ function OlistPage() {
                     <Stat label="Fotos" value={p.photos_synced ?? 0} />
                     <Stat label="Estoque" value={p.stock_adjusted ?? 0} />
                   </div>
+                  {isRunning && p.current_product?.name && (
+                    <div className="mt-3 flex items-center gap-2 rounded bg-muted/40 px-3 py-2 text-xs">
+                      <Package className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-muted-foreground">Processando agora:</span>
+                      <span className="font-medium truncate">{p.current_product.name}</span>
+                    </div>
+                  )}
                 </div>
+                {isRunning && (
+                  <div className="flex justify-end">
+                    <Button variant="destructive" size="sm" onClick={() => cancelOne.mutate(detailFresh.id)} disabled={cancelOne.isPending}>
+                      <StopCircle className="mr-2 h-4 w-4" />Parar sincronização
+                    </Button>
+                  </div>
+                )}
+
                 {detailFresh.error_message && (
                   <div className="rounded bg-destructive/10 p-3 text-destructive text-xs">{detailFresh.error_message}</div>
                 )}
