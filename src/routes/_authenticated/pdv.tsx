@@ -128,8 +128,28 @@ function PdvPage() {
       return (await q).data ?? [];
     },
   });
-  const [newClient, setNewClient] = useState({ full_name: "", cpf: "", phone: "", email: "" });
+  const [newClient, setNewClient] = useState({
+    full_name: "", cpf: "", phone: "", email: "",
+    zip_code: "", address: "", address_number: "", address_complement: "",
+    neighborhood: "", city: "", state: "",
+  });
+  const [fullClientForm, setFullClientForm] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
   const qc = useQueryClient();
+
+  // Organization settings (for CPF policy)
+  const { data: orgSettings } = useQuery({
+    queryKey: ["pdv-org-settings"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data: p } = await supabase.from("profiles").select("organization_id").eq("id", user.id).maybeSingle();
+      if (!p?.organization_id) return null;
+      const { data: o } = await supabase.from("organizations").select("pdv_require_cpf").eq("id", p.organization_id).maybeSingle();
+      return o as { pdv_require_cpf: boolean } | null;
+    },
+  });
+  const requireCpf = !!orgSettings?.pdv_require_cpf;
 
   // Seller (profiles)
   const { data: sellers = [] } = useQuery({
@@ -286,31 +306,68 @@ function PdvPage() {
     mutationFn: async () => {
       if (!newClient.full_name.trim()) throw new Error("Informe o nome.");
       const cpf = normalizeDigits(newClient.cpf);
+      if (requireCpf && !cpf) throw new Error("CPF é obrigatório (definido nas configurações).");
       if (cpf && !validCPF(cpf)) throw new Error("CPF inválido.");
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Sessão expirada. Faça login novamente.");
       const { data: prof, error: pErr } = await supabase.from("profiles").select("organization_id").eq("id", user.id).maybeSingle();
       if (pErr) throw pErr;
       if (!prof?.organization_id) throw new Error("Perfil sem organização.");
-      const { data, error } = await supabase.from("clients").insert({
+      const payload: any = {
         organization_id: prof.organization_id,
         full_name: newClient.full_name.trim(),
         cpf: cpf || null,
         phone: normalizeDigits(newClient.phone) || null,
         email: newClient.email.trim() || null,
-      }).select("id, full_name").single();
+      };
+      if (fullClientForm) {
+        payload.zip_code = normalizeDigits(newClient.zip_code) || null;
+        payload.address = newClient.address.trim() || null;
+        payload.address_number = newClient.address_number.trim() || null;
+        payload.address_complement = newClient.address_complement.trim() || null;
+        payload.neighborhood = newClient.neighborhood.trim() || null;
+        payload.city = newClient.city.trim() || null;
+        payload.state = newClient.state.trim().toUpperCase() || null;
+      }
+      const { data, error } = await supabase.from("clients").insert(payload).select("id, full_name").single();
       if (error) throw error;
       return data;
     },
     onSuccess: (c: any) => {
       setClientId(c.id); setClientName(c.full_name); setClientOpen(false);
-      setNewClient({ full_name: "", cpf: "", phone: "", email: "" });
+      setNewClient({
+        full_name: "", cpf: "", phone: "", email: "",
+        zip_code: "", address: "", address_number: "", address_complement: "",
+        neighborhood: "", city: "", state: "",
+      });
+      setFullClientForm(false);
       qc.invalidateQueries({ queryKey: ["pdv-clients"] });
       qc.invalidateQueries({ queryKey: ["clients"] });
       toast.success(`Cliente "${c.full_name}" cadastrado`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  async function lookupCep(raw: string) {
+    const cep = normalizeDigits(raw);
+    if (cep.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.erro) return;
+      setNewClient((prev) => ({
+        ...prev,
+        zip_code: cep,
+        address: prev.address || data.logradouro || "",
+        neighborhood: prev.neighborhood || data.bairro || "",
+        city: prev.city || data.localidade || "",
+        state: prev.state || data.uf || "",
+      }));
+    } catch { /* silent */ }
+    finally { setCepLoading(false); }
+  }
 
   function startNewSale() {
     setStep("sale");
@@ -740,7 +797,7 @@ function PdvPage() {
   function renderClientDialog() {
     return (
       <Dialog open={clientOpen} onOpenChange={setClientOpen}>
-        <DialogContent>
+        <DialogContent className={fullClientForm ? "max-w-2xl" : undefined}>
           <DialogHeader><DialogTitle>Cliente</DialogTitle></DialogHeader>
           <Input placeholder="Buscar por nome, CPF ou telefone…" value={clientTerm} onChange={(e) => setClientTerm(e.target.value)} />
           <div className="max-h-60 overflow-auto divide-y border rounded">
@@ -756,14 +813,51 @@ function PdvPage() {
             ))}
           </div>
           <div className="border-t pt-3">
-            <div className="text-sm font-medium mb-2">Cadastro rápido</div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium">{fullClientForm ? "Cadastro completo" : "Cadastro rápido"}</div>
+              <button
+                type="button"
+                onClick={() => setFullClientForm((v) => !v)}
+                className="text-xs text-primary hover:underline"
+              >
+                {fullClientForm ? "Usar cadastro rápido" : "Cadastro completo"}
+              </button>
+            </div>
             <div className="space-y-2">
               <Input placeholder="Nome completo *" value={newClient.full_name} onChange={(e) => setNewClient({ ...newClient, full_name: e.target.value })} />
-              <div className="grid grid-cols-2 gap-2">
-                <Input placeholder="CPF (opcional)" value={newClient.cpf} onChange={(e) => setNewClient({ ...newClient, cpf: e.target.value })} />
-                <Input placeholder="Telefone" value={newClient.phone} onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Input
+                  placeholder={requireCpf ? "CPF *" : "CPF (opcional)"}
+                  value={newClient.cpf}
+                  onChange={(e) => setNewClient({ ...newClient, cpf: e.target.value })}
+                  inputMode="numeric"
+                />
+                <Input placeholder="Telefone" value={newClient.phone} onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })} inputMode="tel" />
               </div>
               <Input placeholder="E-mail (opcional)" type="email" value={newClient.email} onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} />
+              {fullClientForm && (
+                <div className="space-y-2 pt-2 border-t">
+                  <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-2">
+                    <Input
+                      placeholder={cepLoading ? "Buscando…" : "CEP"}
+                      value={newClient.zip_code}
+                      onChange={(e) => setNewClient({ ...newClient, zip_code: e.target.value })}
+                      onBlur={(e) => lookupCep(e.target.value)}
+                      inputMode="numeric"
+                    />
+                    <Input placeholder="Logradouro" value={newClient.address} onChange={(e) => setNewClient({ ...newClient, address: e.target.value })} />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-2">
+                    <Input placeholder="Número" value={newClient.address_number} onChange={(e) => setNewClient({ ...newClient, address_number: e.target.value })} />
+                    <Input placeholder="Complemento" value={newClient.address_complement} onChange={(e) => setNewClient({ ...newClient, address_complement: e.target.value })} />
+                  </div>
+                  <Input placeholder="Bairro" value={newClient.neighborhood} onChange={(e) => setNewClient({ ...newClient, neighborhood: e.target.value })} />
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_80px] gap-2">
+                    <Input placeholder="Cidade" value={newClient.city} onChange={(e) => setNewClient({ ...newClient, city: e.target.value })} />
+                    <Input placeholder="UF" maxLength={2} value={newClient.state} onChange={(e) => setNewClient({ ...newClient, state: e.target.value.toUpperCase() })} />
+                  </div>
+                </div>
+              )}
               <Button className="w-full" onClick={() => createClient.mutate()} disabled={createClient.isPending}>
                 {createClient.isPending ? "Salvando…" : "Cadastrar e selecionar"}
               </Button>
