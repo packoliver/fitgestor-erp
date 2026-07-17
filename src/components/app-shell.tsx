@@ -78,10 +78,10 @@ function applyCourierFilter(items: NavItem[], has: (c: string) => boolean) {
 
 type BadgeMap = Record<string, number>;
 
-function useNavBadges(hasAny: (c: string[]) => boolean, isLoading: boolean): BadgeMap {
-  const canPostSale = !isLoading && hasAny(["post_sale.view", "post_sale.manage"]);
-  const canInbound = !isLoading && hasAny(["inventory.view", "inventory.manage"]);
-  const canShipping = !isLoading && hasAny(["shipping.view", "shipping.view_all", "shipping.dispatch"]);
+function useNavBadges(hasAny: (...c: string[]) => boolean, isLoading: boolean): BadgeMap {
+  const canPostSale = !isLoading && hasAny("post_sale.view", "post_sale.manage");
+  const canInbound = !isLoading && hasAny("inventory.view", "inventory.manage");
+  const canShipping = !isLoading && hasAny("shipping.view", "shipping.view_all", "shipping.dispatch");
 
   const posSale = useQuery({
     queryKey: ["nav-badge", "pos-venda"],
@@ -91,7 +91,7 @@ function useNavBadges(hasAny: (c: string[]) => boolean, isLoading: boolean): Bad
       const { count } = await supabase
         .from("post_sale_tasks")
         .select("id", { count: "exact", head: true })
-        .in("status", ["pending", "in_progress"]);
+        .in("status", ["pending", "scheduled"]);
       return count ?? 0;
     },
   });
