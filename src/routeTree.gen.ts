@@ -59,6 +59,7 @@ import { Route as AuthenticatedConfiguracoesImportarRouteImport } from './routes
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedExpedicaoRotasIndexRouteImport } from './routes/_authenticated/expedicao.rotas.index'
 import { Route as AuthenticatedEstoqueRecebimentosIndexRouteImport } from './routes/_authenticated/estoque.recebimentos.index'
+import { Route as ApiPublicHooksOlistSyncRouteImport } from './routes/api/public/hooks/olist-sync'
 import { Route as AuthenticatedExpedicaoRotasNovaRouteImport } from './routes/_authenticated/expedicao.rotas.nova'
 import { Route as AuthenticatedExpedicaoRotasIdRouteImport } from './routes/_authenticated/expedicao.rotas.$id'
 import { Route as AuthenticatedExpedicaoOrdensIdRouteImport } from './routes/_authenticated/expedicao.ordens.$id'
@@ -345,6 +346,11 @@ const AuthenticatedEstoqueRecebimentosIndexRoute =
     path: '/estoque/recebimentos/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHooksOlistSyncRoute = ApiPublicHooksOlistSyncRouteImport.update({
+  id: '/api/public/hooks/olist-sync',
+  path: '/api/public/hooks/olist-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedExpedicaoRotasNovaRoute =
   AuthenticatedExpedicaoRotasNovaRouteImport.update({
     id: '/expedicao/rotas/nova',
@@ -436,6 +442,7 @@ export interface FileRoutesByFullPath {
   '/expedicao/ordens/$id': typeof AuthenticatedExpedicaoOrdensIdRoute
   '/expedicao/rotas/$id': typeof AuthenticatedExpedicaoRotasIdRoute
   '/expedicao/rotas/nova': typeof AuthenticatedExpedicaoRotasNovaRoute
+  '/api/public/hooks/olist-sync': typeof ApiPublicHooksOlistSyncRoute
   '/estoque/recebimentos/': typeof AuthenticatedEstoqueRecebimentosIndexRoute
   '/expedicao/rotas/': typeof AuthenticatedExpedicaoRotasIndexRoute
 }
@@ -493,6 +500,7 @@ export interface FileRoutesByTo {
   '/expedicao/ordens/$id': typeof AuthenticatedExpedicaoOrdensIdRoute
   '/expedicao/rotas/$id': typeof AuthenticatedExpedicaoRotasIdRoute
   '/expedicao/rotas/nova': typeof AuthenticatedExpedicaoRotasNovaRoute
+  '/api/public/hooks/olist-sync': typeof ApiPublicHooksOlistSyncRoute
   '/estoque/recebimentos': typeof AuthenticatedEstoqueRecebimentosIndexRoute
   '/expedicao/rotas': typeof AuthenticatedExpedicaoRotasIndexRoute
 }
@@ -552,6 +560,7 @@ export interface FileRoutesById {
   '/_authenticated/expedicao/ordens/$id': typeof AuthenticatedExpedicaoOrdensIdRoute
   '/_authenticated/expedicao/rotas/$id': typeof AuthenticatedExpedicaoRotasIdRoute
   '/_authenticated/expedicao/rotas/nova': typeof AuthenticatedExpedicaoRotasNovaRoute
+  '/api/public/hooks/olist-sync': typeof ApiPublicHooksOlistSyncRoute
   '/_authenticated/estoque/recebimentos/': typeof AuthenticatedEstoqueRecebimentosIndexRoute
   '/_authenticated/expedicao/rotas/': typeof AuthenticatedExpedicaoRotasIndexRoute
 }
@@ -611,6 +620,7 @@ export interface FileRouteTypes {
     | '/expedicao/ordens/$id'
     | '/expedicao/rotas/$id'
     | '/expedicao/rotas/nova'
+    | '/api/public/hooks/olist-sync'
     | '/estoque/recebimentos/'
     | '/expedicao/rotas/'
   fileRoutesByTo: FileRoutesByTo
@@ -668,6 +678,7 @@ export interface FileRouteTypes {
     | '/expedicao/ordens/$id'
     | '/expedicao/rotas/$id'
     | '/expedicao/rotas/nova'
+    | '/api/public/hooks/olist-sync'
     | '/estoque/recebimentos'
     | '/expedicao/rotas'
   id:
@@ -726,6 +737,7 @@ export interface FileRouteTypes {
     | '/_authenticated/expedicao/ordens/$id'
     | '/_authenticated/expedicao/rotas/$id'
     | '/_authenticated/expedicao/rotas/nova'
+    | '/api/public/hooks/olist-sync'
     | '/_authenticated/estoque/recebimentos/'
     | '/_authenticated/expedicao/rotas/'
   fileRoutesById: FileRoutesById
@@ -736,6 +748,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   SetupRoute: typeof SetupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiPublicHooksOlistSyncRoute: typeof ApiPublicHooksOlistSyncRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1090,6 +1103,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEstoqueRecebimentosIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/olist-sync': {
+      id: '/api/public/hooks/olist-sync'
+      path: '/api/public/hooks/olist-sync'
+      fullPath: '/api/public/hooks/olist-sync'
+      preLoaderRoute: typeof ApiPublicHooksOlistSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/expedicao/rotas/nova': {
       id: '/_authenticated/expedicao/rotas/nova'
       path: '/expedicao/rotas/nova'
@@ -1285,6 +1305,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   SetupRoute: SetupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiPublicHooksOlistSyncRoute: ApiPublicHooksOlistSyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
