@@ -168,7 +168,7 @@ function ProdutosList() {
       </Card>
 
       <Sheet open={!!openId} onOpenChange={(o) => !o && setOpenId(null)}>
-        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto bg-background border-l shadow-2xl">
           {selected && (
             <>
               <SheetHeader>
