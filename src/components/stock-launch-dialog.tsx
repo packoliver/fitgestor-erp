@@ -1,0 +1,282 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { Loader2, Plus } from "lucide-react";
+
+type Kind = "entrada" | "saida" | "balanco";
+
+export function StockLaunchDialog({
+  variantId,
+  locationId: fixedLocationId,
+  trigger,
+  onDone,
+}: {
+  variantId?: string;
+  locationId?: string;
+  trigger?: React.ReactNode;
+  onDone?: () => void;
+}) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [kind, setKind] = useState<Kind>("entrada");
+  const [locationId, setLocationId] = useState<string | undefined>(fixedLocationId);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(variantId);
+  const [variantSearch, setVariantSearch] = useState("");
+  const [variantLabel, setVariantLabel] = useState<string>("");
+  const [quantity, setQuantity] = useState("");
+  const [unitPrice, setUnitPrice] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const locations = useQuery({
+    queryKey: ["stock-locations-launch"],
+    queryFn: async () =>
+      (await supabase.from("stock_locations").select("id, name").eq("status", "ativo").order("name")).data ?? [],
+  });
+
+  const variants = useQuery({
+    queryKey: ["stock-launch-variants", variantSearch],
+    enabled: !variantId && variantSearch.length > 1,
+    queryFn: async () => {
+      const q = variantSearch.trim();
+      const { data } = await supabase
+        .from("product_variants")
+        .select("id, size, sku, barcode, product:products!inner(name, color)")
+        .is("deleted_at", null)
+        .or(`sku.ilike.%${q}%,barcode.ilike.%${q}%`)
+        .limit(10);
+      return data ?? [];
+    },
+  });
+
+  const currentBalance = useQuery({
+    queryKey: ["stock-launch-balance", selectedVariantId, locationId],
+    enabled: !!selectedVariantId && !!locationId && kind === "balanco",
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("inventory_balances")
+        .select("physical_quantity")
+        .eq("variant_id", selectedVariantId!)
+        .eq("location_id", locationId!)
+        .maybeSingle();
+      return data?.physical_quantity ?? 0;
+    },
+  });
+
+  function reset() {
+    setKind("entrada");
+    setQuantity("");
+    setUnitPrice("");
+    setNotes("");
+    if (!variantId) {
+      setSelectedVariantId(undefined);
+      setVariantLabel("");
+    }
+    setVariantSearch("");
+  }
+
+  const submit = useMutation({
+    mutationFn: async () => {
+      if (!selectedVariantId) throw new Error("Selecione uma variação");
+      if (!locationId) throw new Error("Selecione o local de estoque");
+      const qty = Number((quantity || "0").replace(",", "."));
+      if (Number.isNaN(qty) || qty < 0) throw new Error("Quantidade inválida");
+
+      let movementType: "entrada" | "ajuste_negativo" | "inventario";
+      let delta: number;
+      let reason: string;
+
+      if (kind === "entrada") {
+        if (qty <= 0) throw new Error("Informe uma quantidade maior que zero");
+        movementType = "entrada";
+        delta = qty;
+        reason = notes || "Entrada manual";
+      } else if (kind === "saida") {
+        if (qty <= 0) throw new Error("Informe uma quantidade maior que zero");
+        movementType = "ajuste_negativo";
+        delta = -qty;
+        reason = notes || "Saída manual";
+      } else {
+        const cur = currentBalance.data ?? 0;
+        delta = qty - cur;
+        if (delta === 0) throw new Error("O saldo informado é igual ao atual");
+        movementType = "inventario";
+        reason = notes ? `Balanço: ${notes}` : `Balanço (saldo ajustado para ${qty})`;
+      }
+
+      const { error } = await supabase.rpc("apply_stock_movement", {
+        _variant_id: selectedVariantId,
+        _location_id: locationId,
+        _movement_type: movementType,
+        _quantity: delta,
+        _reason: reason,
+        _reference_type: "manual_launch",
+        _source: "lancamento",
+      });
+      if (error) throw error;
+
+      if (unitPrice) {
+        const price = Number(unitPrice.replace(",", "."));
+        if (!Number.isNaN(price) && price > 0 && kind === "entrada") {
+          await supabase.from("product_variants").update({ cost_price: price }).eq("id", selectedVariantId);
+        }
+      }
+    },
+    onSuccess: () => {
+      toast.success("Lançamento registrado");
+      qc.invalidateQueries();
+      reset();
+      setOpen(false);
+      onDone?.();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
+      <DialogTrigger asChild>
+        {trigger ?? (
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />Incluir lançamento
+          </Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Lançamento de estoque</DialogTitle>
+        </DialogHeader>
+
+        <Tabs value={kind} onValueChange={(v) => setKind(v as Kind)}>
+          <TabsList className="grid grid-cols-3 w-full">
+            <TabsTrigger value="entrada">Entrada</TabsTrigger>
+            <TabsTrigger value="saida">Saída</TabsTrigger>
+            <TabsTrigger value="balanco">Balanço</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <div className="space-y-3 mt-2">
+          {!variantId && (
+            <div className="space-y-1.5">
+              <Label>Variação *</Label>
+              {selectedVariantId ? (
+                <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                  <span className="truncate">{variantLabel}</span>
+                  <Button variant="ghost" size="sm" onClick={() => { setSelectedVariantId(undefined); setVariantLabel(""); }}>trocar</Button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Input
+                    placeholder="Buscar por SKU ou código de barras..."
+                    value={variantSearch}
+                    onChange={(e) => setVariantSearch(e.target.value)}
+                  />
+                  {variants.data && variants.data.length > 0 && variantSearch && (
+                    <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-lg max-h-60 overflow-auto">
+                      {variants.data.map((v: any) => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedVariantId(v.id);
+                            setVariantLabel(`${v.product.name} · ${v.product.color ?? ""} · ${v.size} (${v.sku ?? "sem SKU"})`);
+                            setVariantSearch("");
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
+                        >
+                          {v.product.name} · {v.product.color} · {v.size}{" "}
+                          <span className="text-muted-foreground">— {v.sku ?? "sem SKU"}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Local de estoque *</Label>
+              <Select value={locationId} onValueChange={setLocationId} disabled={!!fixedLocationId}>
+                <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+                <SelectContent>
+                  {(locations.data ?? []).map((l: any) => (
+                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>
+                {kind === "balanco" ? "Saldo contado *" : "Quantidade *"}
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                inputMode="decimal"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder="0"
+              />
+              {kind === "balanco" && selectedVariantId && locationId && (
+                <p className="text-xs text-muted-foreground">
+                  Saldo atual: <strong>{currentBalance.data ?? 0}</strong>
+                </p>
+              )}
+            </div>
+          </div>
+
+          {kind === "entrada" && (
+            <div className="space-y-1.5">
+              <Label>Preço de custo (opcional)</Label>
+              <Input
+                inputMode="decimal"
+                value={unitPrice}
+                onChange={(e) => setUnitPrice(e.target.value)}
+                placeholder="0,00"
+              />
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <Label>Observações</Label>
+            <Textarea
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Motivo, referência de nota, etc."
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="mt-2">
+          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={() => submit.mutate()} disabled={submit.isPending}>
+            {submit.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
