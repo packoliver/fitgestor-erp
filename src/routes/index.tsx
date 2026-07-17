@@ -41,17 +41,17 @@ function Landing() {
 
 function SiteHeader() {
   return (
-    <header className="glass-soft sticky top-0 z-30 rounded-none border-0 border-b border-white/10">
+    <header className="glass-medium sticky top-0 z-30 rounded-none border-0 border-b border-white/10">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6 lg:px-10">
         <Link to="/" className="flex items-center gap-2.5">
           <BrandMark size={30} />
           <span className="text-[15px] font-semibold tracking-[-0.02em] text-foreground">FitGestor</span>
         </Link>
-        <div className="flex items-center gap-1">
-          <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground hover:bg-white/5">
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:bg-white/[0.08] hover:text-foreground">
             <Link to="/auth">Entrar</Link>
           </Button>
-          <Button asChild size="sm" className="rounded-[10px] bg-primary text-primary-foreground hover:bg-primary-hover">
+          <Button asChild size="sm" className="rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-10px_rgba(139,92,246,0.75)] hover:bg-primary-hover">
             <Link to="/auth">Acessar sistema</Link>
           </Button>
         </div>
