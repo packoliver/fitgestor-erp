@@ -421,7 +421,7 @@ async function findVariantByBarcode(orgId: string, barcode: string | null | unde
  * se o INSERT falhar por `product_variants_org_barcode_uniq`, tenta novamente com barcode = null
  * (evita abortar o produto inteiro só porque a Olist reutiliza GTIN entre variações).
  */
-async function insertVariantSafe(row: Record<string, any>): Promise<{ id: string; barcode_dropped: boolean }> {
+async function insertVariantSafe(row: any): Promise<{ id: string; barcode_dropped: boolean }> {
   const { data, error } = await supabaseAdmin
     .from("product_variants")
     .insert(row)
