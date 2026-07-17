@@ -248,6 +248,7 @@ async function syncOneProduct(
   await syncPhotos(orgId, productId, externalId, Array.isArray(anexos) ? anexos.map((x: any) => x.anexo ?? x) : [], counters);
 
   // Variações
+  const locationId = await defaultLocationId(orgId);
   const variacoes: any[] = Array.isArray(p.variacoes) ? p.variacoes.map((v: any) => v.variacao ?? v) : [];
   if (variacoes.length === 0) {
     // Sem grade — cria variação ÚNICA
@@ -274,6 +275,8 @@ async function syncOneProduct(
       counters.variants_created++;
       await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico" });
     }
+    const saldo = Number(p.estoque_atual ?? p.saldo ?? 0) || 0;
+    await adjustStockForVariant(orgId, variantId, locationId, saldo, counters);
   } else {
     for (const v of variacoes) {
       const varExternalId: string = String(v.id ?? `${externalId}:${v.codigo ?? v.grade?.[0]?.valor ?? Math.random()}`);
@@ -311,7 +314,45 @@ async function syncOneProduct(
           .eq("id", variantId);
         counters.variants_updated++;
       }
+      const saldoV = Number(v.estoque_atual ?? v.saldo ?? v.estoque ?? 0) || 0;
+      await adjustStockForVariant(orgId, variantId, locationId, saldoV, counters);
     }
+  }
+}
+
+async function adjustStockForVariant(
+  orgId: string,
+  variantId: string,
+  locationId: string,
+  saldo: number,
+  counters: Counters,
+) {
+  try {
+    const { data: bal } = await supabaseAdmin
+      .from("inventory_balances")
+      .select("physical_quantity")
+      .eq("variant_id", variantId)
+      .eq("location_id", locationId)
+      .maybeSingle();
+    const current = Number(bal?.physical_quantity ?? 0);
+    const delta = saldo - current;
+    if (delta === 0) return;
+    await supabaseAdmin.rpc("apply_stock_movement_system", {
+      _organization_id: orgId,
+      _variant_id: variantId,
+      _location_id: locationId,
+      _movement_type: "inventario",
+      _quantity: delta,
+      _reason: "Sincronização Olist",
+      _notes: `Ajuste automático (delta ${delta > 0 ? "+" : ""}${delta})`,
+      _reference_type: "olist_sync",
+      _reference_id: undefined,
+      _source: "olist_sync",
+      _user_id: undefined,
+    });
+    counters.stock_adjusted++;
+  } catch (e: any) {
+    counters.errors.push({ scope: "stock.inline", id: variantId, message: e?.message ?? String(e) });
   }
 }
 
@@ -412,29 +453,36 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
     if (d) params.dataAlteracao = d;
 
     let pagina = 1;
+    let totalPages = 1;
+    let consecutiveFailures = 0;
     while (true) {
       params.pagina = String(pagina);
       let retorno: any;
       try {
         retorno = await olistCall("produtos.pesquisa.php", params);
+        consecutiveFailures = 0;
       } catch (e: any) {
-        counters.errors.push({ scope: "produtos.pesquisa", message: e?.message ?? String(e) });
-        break;
-      }
-      if (retorno?.empty) break;
-      const produtos: any[] = Array.isArray(retorno?.produtos) ? retorno.produtos.map((x: any) => x.produto ?? x) : [];
-      if (produtos.length === 0) break;
-      for (const p of produtos) {
-        const externalId = p?.id ? String(p.id) : undefined;
-        if (!externalId) continue;
-        try {
-          await syncOneProduct(orgId, externalId, counters);
-        } catch (e: any) {
-          counters.errors.push({ scope: "produto", id: externalId, message: e?.message ?? String(e) });
-        }
+        counters.errors.push({ scope: "produtos.pesquisa", id: `pag ${pagina}`, message: e?.message ?? String(e) });
+        consecutiveFailures++;
+        if (consecutiveFailures >= 3) break; // desiste após 3 páginas seguidas com falha
+        pagina++;
         await sleep(SLEEP_MS);
+        continue;
       }
-      const totalPages = Number(retorno?.numero_paginas ?? 1);
+      if (!retorno?.empty) {
+        const produtos: any[] = Array.isArray(retorno?.produtos) ? retorno.produtos.map((x: any) => x.produto ?? x) : [];
+        for (const p of produtos) {
+          const externalId = p?.id ? String(p.id) : undefined;
+          if (!externalId) continue;
+          try {
+            await syncOneProduct(orgId, externalId, counters);
+          } catch (e: any) {
+            counters.errors.push({ scope: "produto", id: externalId, message: e?.message ?? String(e) });
+          }
+          await sleep(SLEEP_MS);
+        }
+        totalPages = Number(retorno?.numero_paginas ?? totalPages);
+      }
       if (pagina >= totalPages) break;
       pagina++;
       await sleep(SLEEP_MS);
