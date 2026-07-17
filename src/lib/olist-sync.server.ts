@@ -532,6 +532,21 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
   };
 
   const startedAt = new Date();
+
+  // Evita execuções concorrentes na mesma organização
+  const { data: running } = await supabaseAdmin
+    .from("integration_events")
+    .select("id, received_at")
+    .eq("organization_id", orgId)
+    .eq("source", "olist")
+    .eq("event_type", "sync_run")
+    .eq("status", "processando")
+    .gt("received_at", new Date(Date.now() - 15 * 60 * 1000).toISOString())
+    .limit(1);
+  if (running && running.length > 0) {
+    throw new Error("Já existe uma sincronização em andamento. Aguarde ou cancele-a antes de iniciar outra.");
+  }
+
   const { data: eventRow } = await supabaseAdmin
     .from("integration_events")
     .insert({
@@ -544,6 +559,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
     .select("id")
     .single();
   const eventId = eventRow?.id as string | undefined;
+
 
   const { data: state } = await supabaseAdmin
     .from("olist_sync_state")
