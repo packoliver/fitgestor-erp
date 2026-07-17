@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
 import { BrandMark, BrandLockup } from "@/components/brand-logo";
+import { GlassVideoHero } from "@/components/ui/glass-video-hero";
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
@@ -63,87 +64,25 @@ function SiteHeader() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-white/5">
-      {/* Aurora blobs de fundo */}
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-40 -left-20 h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.35),transparent_70%)] blur-3xl" />
-        <div className="absolute top-20 right-[-160px] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.28),transparent_70%)] blur-3xl" />
-        <div className="absolute bottom-[-180px] left-1/3 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(167,139,250,0.30),transparent_70%)] blur-3xl" />
-      </div>
-
-      <div className="relative mx-auto grid max-w-[1200px] grid-cols-1 gap-14 px-6 pb-24 pt-20 lg:grid-cols-12 lg:gap-10 lg:px-10 lg:pb-32 lg:pt-28">
-        <div className="lg:col-span-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-white/80 backdrop-blur-md">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary-glow shadow-[0_0_10px_rgba(167,139,250,0.9)]" />
-            FitGestor · Sistema de Gestão
-          </div>
-
-          <h1 className="mt-8 text-[44px] font-semibold leading-[1.05] tracking-[-0.03em] text-foreground sm:text-[54px] lg:text-[60px]">
-            Da entrada da mercadoria<br />
-            à venda,<br />
-            <span className="bg-gradient-to-r from-white via-white/70 to-white/40 bg-clip-text text-transparent">tudo sob controle.</span>
-          </h1>
-
-          <p className="mt-7 max-w-[54ch] text-[15.5px] leading-relaxed text-muted-foreground">
-            O FitGestor foi desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup> para
-            centralizar toda a operação da empresa em uma única plataforma. Controle
-            estoque, recebimentos, etiquetas, vendas, PDV, trocas, relatórios e
-            indicadores com rapidez, organização e segurança.
-          </p>
-
-          <div className="mt-10 flex flex-wrap items-center gap-3">
-            <Button asChild size="lg" className="rounded-full bg-primary px-6 text-primary-foreground shadow-[0_10px_30px_-8px_rgba(139,92,246,0.65)] hover:bg-primary-hover hover:shadow-[0_14px_36px_-8px_rgba(139,92,246,0.8)]">
-              <Link to="/auth">
-                Entrar no sistema <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="ghost" className="rounded-full border border-white/12 bg-white/[0.04] text-foreground backdrop-blur-md hover:bg-white/[0.08]">
-              <a href="#operacao">Conhecer a plataforma</a>
-            </Button>
-          </div>
-
-          <dl className="mt-14 grid max-w-md grid-cols-3 gap-8 border-t border-white/8 pt-8">
-            <Stat kpi="7" label="módulos integrados" />
-            <Stat kpi="1" label="fonte de verdade" />
-            <Stat kpi="0" label="planilhas paralelas" />
-          </dl>
-        </div>
-
-        <div className="relative lg:col-span-6">
-          {/* Glow difuso atrás do mockup */}
-          <div aria-hidden className="pointer-events-none absolute -inset-10 rounded-[40px] bg-[radial-gradient(circle_at_50%_40%,rgba(139,92,246,0.35),transparent_60%)] blur-2xl" />
-          <div className="relative">
-            <HeroMockup />
-          </div>
-        </div>
-      </div>
-    </section>
+    <GlassVideoHero
+      eyebrow="FitGestor · Sistema de Gestão"
+      title={
+        <>
+          Da entrada da mercadoria à venda,{" "}
+          <span className="bg-gradient-to-r from-white via-white/75 to-white/40 bg-clip-text text-transparent">
+            tudo sob controle.
+          </span>
+        </>
+      }
+      description="Controle estoque, produtos, etiquetas, vendas, entregas, funcionários e pós-venda em um único sistema."
+      primaryCta={{ label: "Acessar o sistema", to: "/auth" }}
+      secondaryCta={{ label: "Conhecer recursos", href: "#operacao" }}
+      videoSrc="/videos/fitgestor-hero.mp4"
+      posterSrc="/images/fitgestor-hero-poster.webp"
+    />
   );
 }
 
-
-
-function FloatingChip({ className, label, value, accent }: { className?: string; label: string; value: string; accent: string }) {
-  return (
-    <div
-      className={`liquid-surface rounded-2xl px-4 py-3 min-w-[160px] ${className ?? ""}`}
-      style={{ animation: "float 6s ease-in-out infinite" }}
-    >
-      <p className="text-[10px] uppercase tracking-[0.16em] text-white/60">{label}</p>
-      <p className="mt-1 text-[18px] font-semibold tracking-[-0.02em] text-white">{value}</p>
-      <p className="text-[10.5px] text-primary-glow">{accent}</p>
-    </div>
-  );
-}
-
-function Stat({ kpi, label }: { kpi: string; label: string }) {
-  return (
-    <div>
-      <dt className="text-[26px] font-semibold leading-none tracking-[-0.02em] text-foreground">{kpi}</dt>
-      <dd className="mt-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{label}</dd>
-    </div>
-  );
-}
 
 /* --------------------------- Operation overview -------------------------- */
 
