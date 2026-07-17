@@ -29,6 +29,8 @@ function Landing() {
       <main>
         <Hero />
         <OperationOverview />
+        <Testimonials />
+        <FaqSection />
         <ClosingCta />
       </main>
       <SiteFooter />
