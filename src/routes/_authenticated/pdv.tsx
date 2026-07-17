@@ -763,7 +763,10 @@ function PdvPage() {
                 <Input placeholder="CPF (opcional)" value={newClient.cpf} onChange={(e) => setNewClient({ ...newClient, cpf: e.target.value })} />
                 <Input placeholder="Telefone" value={newClient.phone} onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })} />
               </div>
-              <Button className="w-full" onClick={() => createClient.mutate()} disabled={createClient.isPending}>Cadastrar e selecionar</Button>
+              <Input placeholder="E-mail (opcional)" type="email" value={newClient.email} onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} />
+              <Button className="w-full" onClick={() => createClient.mutate()} disabled={createClient.isPending}>
+                {createClient.isPending ? "Salvando…" : "Cadastrar e selecionar"}
+              </Button>
             </div>
           </div>
         </DialogContent>
