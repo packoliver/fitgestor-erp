@@ -2122,6 +2122,7 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          pdv_require_cpf: boolean
           phone: string | null
           timezone: string
           updated_at: string
@@ -2134,6 +2135,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          pdv_require_cpf?: boolean
           phone?: string | null
           timezone?: string
           updated_at?: string
@@ -2146,6 +2148,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          pdv_require_cpf?: boolean
           phone?: string | null
           timezone?: string
           updated_at?: string
