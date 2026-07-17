@@ -19,6 +19,7 @@ import { CheckCircle2, Truck, Store, Package, Mail, MoreHorizontal, Loader2 } fr
 import { usePermissions } from "@/hooks/use-permissions";
 import { money } from "@/lib/pos";
 import { OverrideScheduleDialog } from "@/components/shipping/override-schedule-dialog";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 
 type DeliveryMethod = "pickup" | "motoboy" | "correios" | "carrier" | "other";
 
