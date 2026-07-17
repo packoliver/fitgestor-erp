@@ -118,11 +118,11 @@ export const NAV_ITEMS: NavItem[] = [
     keywords: ["marca","brand"] },
 
   // ── Entregas ──────────────────────────────────────────────
-  { id: "expedicao", title: "Visão geral", url: "/expedicao", icon: LayoutDashboard,
+  { id: "expedicao", title: "Painel de entregas", url: "/expedicao", icon: LayoutDashboard,
     perm: ["shipping.view","shipping.view_all","shipping.dispatch","shipping.pick"],
     group: "Entregas", workspaces: ["employee","admin"], priority: 100, essential: true,
     description: "Panorama das entregas do dia.",
-    keywords: ["expedicao","entregas","visao geral","panorama"] },
+    keywords: ["expedicao","entregas","painel","visao geral","panorama"] },
   { id: "expedicao-fila", title: "Fila de entregas", url: "/expedicao/fila", icon: ClipboardList,
     perm: ["shipping.view","shipping.view_all","shipping.pick","shipping.dispatch","shipping.deliver"],
     group: "Entregas", workspaces: ["employee","admin"], priority: 90,
