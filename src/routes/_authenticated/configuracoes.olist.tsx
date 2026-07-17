@@ -25,8 +25,16 @@ function OlistPage() {
   const trigger = useServerFn(triggerOlistSync);
   const [detail, setDetail] = useState<any | null>(null);
 
-  const runs = useQuery({ queryKey: ["olist-runs"], queryFn: () => listRuns() });
+  const runs = useQuery({
+    queryKey: ["olist-runs"],
+    queryFn: () => listRuns(),
+    refetchInterval: (q) => ((q.state.data as any[] | undefined)?.some((r) => r.status === "processando") ? 3000 : false),
+  });
   const state = useQuery({ queryKey: ["olist-state"], queryFn: () => getState() });
+
+  // Mantém o modal aberto sincronizado com os dados mais recentes
+  const detailFresh = detail ? (runs.data ?? []).find((r: any) => r.id === detail.id) ?? detail : null;
+
 
   const syncNow = useMutation({
     mutationFn: () => trigger(),
