@@ -61,13 +61,28 @@ function ClientesPage() {
         cpf: cpf || null,
         phone: normalizeDigits(form.phone) || null,
         email: form.email.trim() || null,
+        zip_code: form.zip_code.trim() || null,
+        address: form.address.trim() || null,
+        address_number: form.address_number.trim() || null,
+        address_complement: form.address_complement.trim() || null,
+        neighborhood: form.neighborhood.trim() || null,
+        city: form.city.trim() || null,
+        state: form.state.trim().toUpperCase() || null,
+        latitude: form.latitude,
+        longitude: form.longitude,
+        place_id: form.place_id || null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Cliente cadastrado");
       setOpen(false);
-      setForm({ full_name: "", cpf: "", phone: "", email: "" });
+      setForm({
+        full_name: "", cpf: "", phone: "", email: "",
+        zip_code: "", address: "", address_number: "", address_complement: "",
+        neighborhood: "", city: "", state: "",
+        latitude: null, longitude: null, place_id: "",
+      });
       qc.invalidateQueries({ queryKey: ["clients"] });
     },
     onError: (e: Error) => toast.error(e.message),
