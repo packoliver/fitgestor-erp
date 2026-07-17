@@ -51,7 +51,7 @@ function Config() {
     if (!orgId) return;
     setPdvRequireCpf(next);
     setPdvSaving(true);
-    const { error } = await supabase.from("organizations").update({ pdv_require_cpf: next }).eq("id", orgId);
+    const { error } = await supabase.from("organizations").update({ pdv_require_cpf: next } as any).eq("id", orgId);
     setPdvSaving(false);
     if (error) {
       setPdvRequireCpf(!next);
