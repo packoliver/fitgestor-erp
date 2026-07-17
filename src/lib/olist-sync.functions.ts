@@ -5,11 +5,16 @@ export const triggerOlistSync = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data: isAdmin, error } = await context.supabase.rpc("has_role", { _role_name: "Administrador" });
-    if (error) throw new Error(error.message);
-    if (!isAdmin) throw new Error("Apenas administradores podem sincronizar.");
-    const { runOlistSync } = await import("@/lib/olist-sync.server");
-    const counters = await runOlistSync();
-    return counters;
+    if (error) return { ok: false, error: error.message };
+    if (!isAdmin) return { ok: false, error: "Apenas administradores podem sincronizar." };
+    try {
+      const { runOlistSync } = await import("@/lib/olist-sync.server");
+      const counters = await runOlistSync();
+      return { ok: true, ...counters };
+    } catch (e: any) {
+      const message = e?.message ?? "Falha na sincronização.";
+      return { ok: false, error: message };
+    }
   });
 
 export const listOlistRuns = createServerFn({ method: "GET" })

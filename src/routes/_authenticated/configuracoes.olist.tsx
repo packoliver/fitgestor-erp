@@ -31,6 +31,10 @@ function OlistPage() {
   const syncNow = useMutation({
     mutationFn: () => trigger(),
     onSuccess: (c: any) => {
+      if (!c?.ok) {
+        toast.error(c?.error ?? "Falha na sincronização");
+        return;
+      }
       toast.success(
         `Sincronizado: ${c.products_created + c.products_updated} produtos, ${c.stock_adjusted} ajustes de estoque, ${c.photos_synced} fotos${c.errors?.length ? `, ${c.errors.length} erros` : ""}`,
       );
