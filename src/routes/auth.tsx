@@ -1,15 +1,15 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { BrandLockup } from "@/components/brand-logo";
+import { SignInFlow } from "@/components/ui/sign-in-flow-1";
 
 const searchSchema = z.object({ mode: z.enum(["signin", "signup"]).optional() });
 
@@ -37,45 +37,36 @@ function AuthPage() {
   const [tab, setTab] = useState<"signin" | "signup">(search.mode ?? "signin");
 
   return (
-    <div className="dark fit-aurora relative min-h-screen text-foreground flex items-center justify-center px-4 py-12 overflow-hidden">
-      <div className="fit-aurora-grid pointer-events-none absolute inset-0 opacity-60" aria-hidden />
-      <div className="relative w-full max-w-[420px]">
-        <div className="mb-10 flex justify-center">
-          <BrandLockup align="center" size="lg" onDark />
-        </div>
-
-        <Card className="rounded-3xl">
-
-          <CardHeader className="pb-2">
-            <h2 className="text-[17px] font-semibold tracking-[-0.02em]">Acessar conta</h2>
-            <p className="text-[13px] text-muted-foreground">Entre com suas credenciais corporativas.</p>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-              </TabsList>
-              <TabsContent value="signin" className="mt-6">
-                <SignInForm onDone={() => navigate({ to: "/dashboard" })} />
-              </TabsContent>
-              <TabsContent value="signup" className="mt-6">
-                <SignUpForm onDone={() => navigate({ to: "/setup" })} />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-          <div className="border-t border-border px-6 py-4 text-center text-[11px] text-muted-foreground">
-            Desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup>
-          </div>
-        </Card>
-      </div>
-    </div>
+    <SignInFlow
+      brand={<BrandLockup align="center" size="lg" onDark />}
+      title="Bem-vindo ao FitGestor"
+      description="Entre para acessar a gestão da sua loja."
+      footer={
+        <>
+          Desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup>
+        </>
+      }
+    >
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")}>
+        <TabsList className="grid w-full grid-cols-2 bg-white/5">
+          <TabsTrigger value="signin">Entrar</TabsTrigger>
+          <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+        </TabsList>
+        <TabsContent value="signin" className="mt-6">
+          <SignInForm onDone={() => navigate({ to: "/dashboard" })} />
+        </TabsContent>
+        <TabsContent value="signup" className="mt-6">
+          <SignUpForm onDone={() => navigate({ to: "/setup" })} />
+        </TabsContent>
+      </Tabs>
+    </SignInFlow>
   );
 }
 
 function SignInForm({ onDone }: { onDone: () => void }) {
   const [loading, setLoading] = useState(false);
   const [values, setValues] = useState({ email: "", password: "" });
+  const [resetting, setResetting] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -94,19 +85,66 @@ function SignInForm({ onDone }: { onDone: () => void }) {
     onDone();
   }
 
+  async function forgot() {
+    const email = values.email.trim();
+    const emailParsed = z.string().email().safeParse(email);
+    if (!emailParsed.success) {
+      toast.error("Informe seu e-mail para recuperar a senha");
+      return;
+    }
+    setResetting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResetting(false);
+    if (error) {
+      toast.error("Erro ao enviar e-mail", { description: error.message });
+      return;
+    }
+    toast.success("Enviamos um e-mail com as instruções de recuperação.");
+  }
+
   return (
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="si-email">E-mail</Label>
-        <Input id="si-email" type="email" autoComplete="email" value={values.email}
-          onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))} required />
+        <Label htmlFor="si-email" className="text-white/80">E-mail</Label>
+        <Input
+          id="si-email"
+          type="email"
+          autoComplete="email"
+          value={values.email}
+          onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
+          required
+          className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+        />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="si-pass">Senha</Label>
-        <Input id="si-pass" type="password" autoComplete="current-password" value={values.password}
-          onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))} required />
+        <div className="flex items-center justify-between">
+          <Label htmlFor="si-pass" className="text-white/80">Senha</Label>
+          <button
+            type="button"
+            onClick={forgot}
+            disabled={resetting}
+            className="text-[12px] text-violet-300 hover:text-violet-200 underline-offset-2 hover:underline disabled:opacity-50"
+          >
+            {resetting ? "Enviando..." : "Esqueci minha senha"}
+          </button>
+        </div>
+        <Input
+          id="si-pass"
+          type="password"
+          autoComplete="current-password"
+          value={values.password}
+          onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))}
+          required
+          className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+        />
       </div>
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button
+        type="submit"
+        className="w-full bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-400 hover:to-blue-400 text-white shadow-lg shadow-violet-500/20"
+        disabled={loading}
+      >
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Entrar
       </Button>
@@ -146,21 +184,44 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
   return (
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="su-name">Nome completo</Label>
-        <Input id="su-name" value={values.fullName}
-          onChange={(e) => setValues((v) => ({ ...v, fullName: e.target.value }))} required />
+        <Label htmlFor="su-name" className="text-white/80">Nome completo</Label>
+        <Input
+          id="su-name"
+          value={values.fullName}
+          onChange={(e) => setValues((v) => ({ ...v, fullName: e.target.value }))}
+          required
+          className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+        />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="su-email">E-mail</Label>
-        <Input id="su-email" type="email" autoComplete="email" value={values.email}
-          onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))} required />
+        <Label htmlFor="su-email" className="text-white/80">E-mail</Label>
+        <Input
+          id="su-email"
+          type="email"
+          autoComplete="email"
+          value={values.email}
+          onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
+          required
+          className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+        />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="su-pass">Senha</Label>
-        <Input id="su-pass" type="password" autoComplete="new-password" value={values.password}
-          onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))} required />
+        <Label htmlFor="su-pass" className="text-white/80">Senha</Label>
+        <Input
+          id="su-pass"
+          type="password"
+          autoComplete="new-password"
+          value={values.password}
+          onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))}
+          required
+          className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+        />
       </div>
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button
+        type="submit"
+        className="w-full bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-400 hover:to-blue-400 text-white shadow-lg shadow-violet-500/20"
+        disabled={loading}
+      >
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Criar conta
       </Button>
