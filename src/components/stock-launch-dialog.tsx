@@ -104,7 +104,9 @@ export function StockLaunchDialog({
     mutationFn: async () => {
       if (!selectedVariantId) throw new Error("Selecione uma variação");
       if (!locationId) throw new Error("Selecione o local de estoque");
-      const qty = Number((quantity || "0").replace(",", "."));
+      const raw = (quantity || "").trim().replace(",", ".");
+      if (raw === "") throw new Error("Informe a quantidade");
+      const qty = Number(raw);
       if (Number.isNaN(qty) || qty < 0) throw new Error("Quantidade inválida");
 
       let movementType: "entrada" | "ajuste_negativo" | "inventario";
@@ -113,20 +115,40 @@ export function StockLaunchDialog({
 
       if (kind === "entrada") {
         if (qty <= 0) throw new Error("Informe uma quantidade maior que zero");
+        if (!Number.isInteger(qty)) throw new Error("A quantidade deve ser um número inteiro");
         movementType = "entrada";
         delta = qty;
         reason = notes || "Entrada manual";
       } else if (kind === "saida") {
         if (qty <= 0) throw new Error("Informe uma quantidade maior que zero");
+        if (!Number.isInteger(qty)) throw new Error("A quantidade deve ser um número inteiro");
         movementType = "ajuste_negativo";
         delta = -qty;
         reason = notes || "Saída manual";
       } else {
-        const cur = currentBalance.data ?? 0;
+        // Balanço: garante que temos o saldo atual antes de calcular o ajuste
+        if (!Number.isInteger(qty)) throw new Error("O saldo contado deve ser um número inteiro");
+        if (currentBalance.isLoading || currentBalance.isFetching) {
+          throw new Error("Aguardando saldo atual… tente novamente em instantes");
+        }
+        if (currentBalance.isError || currentBalance.data === undefined) {
+          throw new Error("Não foi possível ler o saldo atual. Recarregue e tente de novo.");
+        }
+        // Releitura defensiva do saldo no momento do commit (evita usar valor obsoleto)
+        const fresh = await supabase
+          .from("inventory_balances")
+          .select("physical_quantity")
+          .eq("variant_id", selectedVariantId)
+          .eq("location_id", locationId)
+          .maybeSingle();
+        if (fresh.error) throw fresh.error;
+        const cur = fresh.data?.physical_quantity ?? 0;
         delta = qty - cur;
-        if (delta === 0) throw new Error("O saldo informado é igual ao atual");
+        if (delta === 0) throw new Error("O saldo informado é igual ao atual — nenhum ajuste necessário");
+        const sign = delta > 0 ? "+" : "";
+        const noteSuffix = notes ? ` — ${notes}` : "";
         movementType = "inventario";
-        reason = notes ? `Balanço: ${notes}` : `Balanço (saldo ajustado para ${qty})`;
+        reason = `Balanço: ${cur} → ${qty} (${sign}${delta})${noteSuffix}`;
       }
 
       const { error } = await supabase.rpc("apply_stock_movement", {
@@ -135,8 +157,8 @@ export function StockLaunchDialog({
         _movement_type: movementType,
         _quantity: delta,
         _reason: reason,
-        _reference_type: "manual_launch",
-        _source: "lancamento",
+        _reference_type: kind === "balanco" ? "inventory" : "manual_launch",
+        _source: kind === "balanco" ? "balanco" : "lancamento",
       });
       if (error) throw error;
 
@@ -146,9 +168,16 @@ export function StockLaunchDialog({
           await supabase.from("product_variants").update({ cost_price: price }).eq("id", selectedVariantId);
         }
       }
+
+      return { kind, delta };
     },
-    onSuccess: () => {
-      toast.success("Lançamento registrado");
+    onSuccess: (res) => {
+      if (res?.kind === "balanco") {
+        const sign = res.delta > 0 ? "+" : "";
+        toast.success(`Balanço aplicado (ajuste ${sign}${res.delta}) e registrado no histórico`);
+      } else {
+        toast.success("Lançamento registrado");
+      }
       qc.invalidateQueries();
       reset();
       setOpen(false);
@@ -156,6 +185,7 @@ export function StockLaunchDialog({
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
