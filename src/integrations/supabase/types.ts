@@ -4182,6 +4182,22 @@ export type Database = {
         }
         Returns: string
       }
+      apply_stock_movement_system: {
+        Args: {
+          _location_id: string
+          _movement_type: string
+          _notes?: string
+          _organization_id: string
+          _quantity: number
+          _reason?: string
+          _reference_id?: string
+          _reference_type?: string
+          _source?: string
+          _user_id?: string
+          _variant_id: string
+        }
+        Returns: string
+      }
       assert_pos_payment_allowed: {
         Args: { _method: string }
         Returns: undefined
