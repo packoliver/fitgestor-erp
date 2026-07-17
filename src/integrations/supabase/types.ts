@@ -290,10 +290,13 @@ export type Database = {
           full_name: string
           id: string
           instagram: string | null
+          latitude: number | null
+          longitude: number | null
           neighborhood: string | null
           notes: string | null
           organization_id: string
           phone: string | null
+          place_id: string | null
           post_sale_preference: Database["public"]["Enums"]["post_sale_client_preference"]
           post_sale_preference_reason: string | null
           post_sale_preference_updated_at: string | null
@@ -316,10 +319,13 @@ export type Database = {
           full_name: string
           id?: string
           instagram?: string | null
+          latitude?: number | null
+          longitude?: number | null
           neighborhood?: string | null
           notes?: string | null
           organization_id: string
           phone?: string | null
+          place_id?: string | null
           post_sale_preference?: Database["public"]["Enums"]["post_sale_client_preference"]
           post_sale_preference_reason?: string | null
           post_sale_preference_updated_at?: string | null
@@ -342,10 +348,13 @@ export type Database = {
           full_name?: string
           id?: string
           instagram?: string | null
+          latitude?: number | null
+          longitude?: number | null
           neighborhood?: string | null
           notes?: string | null
           organization_id?: string
           phone?: string | null
+          place_id?: string | null
           post_sale_preference?: Database["public"]["Enums"]["post_sale_client_preference"]
           post_sale_preference_reason?: string | null
           post_sale_preference_updated_at?: string | null
