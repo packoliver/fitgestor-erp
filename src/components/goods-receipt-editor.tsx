@@ -238,17 +238,34 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     let qty = 0;
     let restock = 0, newVar = 0, newProd = 0, counting = 0;
     let unresolved = 0;
+    let restockQty = 0, newVarQty = 0, newProdQty = 0, countingQty = 0;
     for (const it of items) {
-      for (const c of it.cells) qty += c.quantity || 0;
-      if (it.mode === "restock") restock++;
-      else if (it.mode === "new_variant") newVar++;
-      else if (it.mode === "new_product") newProd++;
-      else counting++;
+      let itemQty = 0;
+      for (const c of it.cells) itemQty += c.quantity || 0;
+      qty += itemQty;
+      if (it.mode === "restock") { restock++; restockQty += itemQty; }
+      else if (it.mode === "new_variant") { newVar++; newVarQty += itemQty; }
+      else if (it.mode === "new_product") { newProd++; newProdQty += itemQty; }
+      else { counting++; countingQty += itemQty; }
       if (it.mode === "count_only" || (it.resolution_status && it.resolution_status !== "resolved")) {
         unresolved++;
       }
     }
-    return { qty, restock, newVar, newProd, counting, unresolved, itemCount: items.length };
+    return { qty, restock, newVar, newProd, counting, unresolved,
+      restockQty, newVarQty, newProdQty, countingQty,
+      itemCount: items.length };
+  }, [items]);
+
+  // Grupos por classificação para as abas Organização e Revisão
+  const grouped = useMemo(() => {
+    const existentes = items.filter((i) => i.mode === "restock");
+    const novasVariacoes = items.filter((i) => i.mode === "new_variant");
+    const novosProdutos = items.filter((i) => i.mode === "new_product");
+    const revisao = items.filter(
+      (i) => i.mode === "count_only" ||
+             (i.resolution_status && i.resolution_status !== "resolved")
+    );
+    return { existentes, novasVariacoes, novosProdutos, revisao };
   }, [items]);
 
   const save = useMutation({
