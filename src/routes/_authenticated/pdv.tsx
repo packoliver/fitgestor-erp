@@ -288,18 +288,26 @@ function PdvPage() {
       const cpf = normalizeDigits(newClient.cpf);
       if (cpf && !validCPF(cpf)) throw new Error("CPF inválido.");
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: prof } = await supabase.from("profiles").select("organization_id").eq("id", user!.id).maybeSingle();
+      if (!user) throw new Error("Sessão expirada. Faça login novamente.");
+      const { data: prof, error: pErr } = await supabase.from("profiles").select("organization_id").eq("id", user.id).maybeSingle();
+      if (pErr) throw pErr;
+      if (!prof?.organization_id) throw new Error("Perfil sem organização.");
       const { data, error } = await supabase.from("clients").insert({
-        organization_id: prof!.organization_id!, full_name: newClient.full_name.trim(),
-        cpf: cpf || null, phone: normalizeDigits(newClient.phone) || null,
+        organization_id: prof.organization_id,
+        full_name: newClient.full_name.trim(),
+        cpf: cpf || null,
+        phone: normalizeDigits(newClient.phone) || null,
+        email: newClient.email.trim() || null,
       }).select("id, full_name").single();
       if (error) throw error;
       return data;
     },
     onSuccess: (c: any) => {
       setClientId(c.id); setClientName(c.full_name); setClientOpen(false);
-      setNewClient({ full_name: "", cpf: "", phone: "" });
-      toast.success("Cliente cadastrado");
+      setNewClient({ full_name: "", cpf: "", phone: "", email: "" });
+      qc.invalidateQueries({ queryKey: ["pdv-clients"] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success(`Cliente "${c.full_name}" cadastrado`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
