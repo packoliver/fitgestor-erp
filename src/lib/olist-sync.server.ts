@@ -298,39 +298,35 @@ async function syncOneProduct(
     let variantId = await findLocalVariantByExternal(orgId, externalVariantId);
     if (!variantId) {
       const sku = p.codigo ?? null;
+      const barcode = p.gtin ?? null;
       variantId = await findVariantBySku(orgId, sku);
+      if (!variantId) variantId = await findVariantByBarcode(orgId, barcode);
       if (variantId) {
         await supabaseAdmin
           .from("product_variants")
           .update({
-            barcode: p.gtin ?? null,
             sale_price: price,
             status,
             olist_variant_id: externalId,
           })
           .eq("id", variantId);
         counters.variants_updated++;
-        await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico", reused_by_sku: true });
+        await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico", reused: true });
       } else {
-        const { data: v, error } = await supabaseAdmin
-          .from("product_variants")
-          .insert({
-            organization_id: orgId,
-            product_id: productId,
-            size: "ÚNICO",
-            sku,
-            barcode: p.gtin ?? null,
-            cost_price: cost,
-            sale_price: price,
-            status,
-            olist_variant_id: externalId,
-          })
-          .select("id")
-          .single();
-        if (error) throw error;
-        variantId = v.id;
+        const ins = await insertVariantSafe({
+          organization_id: orgId,
+          product_id: productId,
+          size: "ÚNICO",
+          sku,
+          barcode,
+          cost_price: cost,
+          sale_price: price,
+          status,
+          olist_variant_id: externalId,
+        });
+        variantId = ins.id;
         counters.variants_created++;
-        await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico" });
+        await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico", barcode_dropped: ins.barcode_dropped });
       }
     }
     const saldo = Number(p.estoque_atual ?? p.saldo ?? 0) || 0;
@@ -342,47 +338,41 @@ async function syncOneProduct(
       let variantId = await findLocalVariantByExternal(orgId, varExternalId);
       if (!variantId) {
         const sku = v.codigo ?? null;
+        const barcode = v.gtin ?? null;
         variantId = await findVariantBySku(orgId, sku);
+        if (!variantId) variantId = await findVariantByBarcode(orgId, barcode);
         if (variantId) {
           await supabaseAdmin
             .from("product_variants")
             .update({
               size,
-              barcode: v.gtin ?? null,
               sale_price: Number(v.preco ?? price) || price,
               olist_variant_id: varExternalId,
             })
             .eq("id", variantId);
           counters.variants_updated++;
-          await upsertVariantMapping(orgId, varExternalId, variantId, { codigo: v.codigo, reused_by_sku: true });
+          await upsertVariantMapping(orgId, varExternalId, variantId, { codigo: v.codigo, reused: true });
         } else {
-          const { data: vr, error } = await supabaseAdmin
-            .from("product_variants")
-            .insert({
-              organization_id: orgId,
-              product_id: productId,
-              size,
-              sku,
-              barcode: v.gtin ?? null,
-              cost_price: Number(v.preco_custo ?? cost) || cost,
-              sale_price: Number(v.preco ?? price) || price,
-              status,
-              olist_variant_id: varExternalId,
-            })
-            .select("id")
-            .single();
-          if (error) throw error;
-          variantId = vr.id;
+          const ins = await insertVariantSafe({
+            organization_id: orgId,
+            product_id: productId,
+            size,
+            sku,
+            barcode,
+            cost_price: Number(v.preco_custo ?? cost) || cost,
+            sale_price: Number(v.preco ?? price) || price,
+            status,
+            olist_variant_id: varExternalId,
+          });
+          variantId = ins.id;
           counters.variants_created++;
-          await upsertVariantMapping(orgId, varExternalId, variantId, { codigo: v.codigo });
+          await upsertVariantMapping(orgId, varExternalId, variantId, { codigo: v.codigo, barcode_dropped: ins.barcode_dropped });
         }
       } else {
         await supabaseAdmin
           .from("product_variants")
           .update({
             size,
-            sku: v.codigo ?? null,
-            barcode: v.gtin ?? null,
             sale_price: Number(v.preco ?? price) || price,
           })
           .eq("id", variantId);
@@ -403,6 +393,42 @@ async function findVariantBySku(orgId: string, sku: string | null | undefined): 
     .eq("sku", sku)
     .maybeSingle();
   return data?.id;
+}
+
+async function findVariantByBarcode(orgId: string, barcode: string | null | undefined): Promise<string | undefined> {
+  if (!barcode) return undefined;
+  const { data } = await supabaseAdmin
+    .from("product_variants")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("barcode", barcode)
+    .maybeSingle();
+  return data?.id;
+}
+
+/**
+ * Insere uma variante lidando com colisões de barcode:
+ * se o INSERT falhar por `product_variants_org_barcode_uniq`, tenta novamente com barcode = null
+ * (evita abortar o produto inteiro só porque a Olist reutiliza GTIN entre variações).
+ */
+async function insertVariantSafe(row: any): Promise<{ id: string; barcode_dropped: boolean }> {
+  const { data, error } = await supabaseAdmin
+    .from("product_variants")
+    .insert(row)
+    .select("id")
+    .single();
+  if (!error) return { id: data!.id, barcode_dropped: false };
+  const msg = String(error.message ?? "");
+  if (row.barcode && /product_variants_org_barcode_uniq/.test(msg)) {
+    const { data: d2, error: e2 } = await supabaseAdmin
+      .from("product_variants")
+      .insert({ ...row, barcode: null })
+      .select("id")
+      .single();
+    if (e2) throw e2;
+    return { id: d2!.id, barcode_dropped: true };
+  }
+  throw error;
 }
 
 
