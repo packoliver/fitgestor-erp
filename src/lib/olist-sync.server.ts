@@ -333,11 +333,11 @@ async function syncStock(orgId: string, since: Date | null, counters: Counters) 
       const saldo = Number(item?.saldo ?? 0) || 0;
       const { data: bal } = await supabaseAdmin
         .from("inventory_balances")
-        .select("quantity")
+        .select("physical_quantity")
         .eq("variant_id", variantId)
         .eq("location_id", locationId)
         .maybeSingle();
-      const current = Number(bal?.quantity ?? 0);
+      const current = Number(bal?.physical_quantity ?? 0);
       const delta = saldo - current;
       if (delta === 0) continue;
       await supabaseAdmin.rpc("apply_stock_movement", {
@@ -348,7 +348,7 @@ async function syncStock(orgId: string, since: Date | null, counters: Counters) 
         _reason: "Sincronização Olist",
         _notes: `Ajuste automático (delta ${delta > 0 ? "+" : ""}${delta})`,
         _reference_type: "olist_sync",
-        _reference_id: null,
+        _reference_id: undefined,
         _source: "olist_sync",
       });
       counters.stock_adjusted++;
