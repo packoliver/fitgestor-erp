@@ -148,7 +148,8 @@ async function syncPhotos(
 
   let position = 0;
   for (const a of anexos) {
-    const url: string | undefined = a?.anexo || a?.url;
+    const url: string | undefined =
+      typeof a === "string" ? a : a?.anexo || a?.url || a?.link;
     if (!url) continue;
     try {
       const { bytes, contentType, ext } = await downloadPhoto(url);
