@@ -1,47 +1,59 @@
-## O que vai mudar
+## O que vamos entregar
 
-### 1. Cadastro de cliente no PDV (dois modos)
+Uma nova área **Configurações → Importar dados** onde o dono/gestor sobe arquivos exportados de outro ERP (Bling, Tiny, Olist, ou genérico) e o sistema traz produtos, variantes, estoque, clientes e fornecedores. Também aceita **XML de NF-e** para entrada de mercadoria.
 
-No mesmo modal "Cliente" (F8) do PDV:
+### Fluxo do usuário
 
-- **Cadastro rápido** (padrão, como hoje): nome, CPF, telefone, e‑mail. Sem quebrar o fluxo do caixa.
-- Botão discreto **"Cadastro completo"** abre um modal maior com, além dos campos acima:
-  - CEP (com busca automática via ViaCEP ao completar 8 dígitos)
-  - Logradouro, número, complemento
-  - Bairro, cidade, UF
-  - Data de nascimento (opcional)
-  - Observações (opcional)
-- Ao salvar em qualquer um dos modos, o cliente já entra selecionado na venda em andamento.
-- Máscaras em CPF, telefone e CEP; validação de CPF continua ativa quando preenchido.
+1. Escolhe **tipo de dado**: Produtos, Estoque, Clientes, Fornecedores, ou NF-e (XML).
+2. Escolhe **origem**: Bling, Tiny, Olist ou Genérico.
+3. Faz upload do arquivo (CSV, XLSX ou XML). Limite 20 MB.
+4. Sistema mostra **preview das 20 primeiras linhas** + **mapeamento de colunas** (auto‑detectado por origem, editável no modo Genérico).
+5. Marca opções: “atualizar existentes por SKU/CPF/CNPJ” ou “apenas novos”, e local de estoque destino (quando aplicável).
+6. Clica em **Importar** — job assíncrono processa em lotes de 500 linhas.
+7. Ao final: relatório com **X importados / Y atualizados / Z com erro**, botão para baixar CSV dos erros.
 
-### 2. CPF obrigatório — configurável
+### Escopo por tipo
 
-- Nova configuração da organização: **"Exigir CPF no cadastro de clientes pelo PDV"** (padrão: desligado).
-- Local: **Configurações → PDV / Caixa** (nova seção, ou aba dentro de Configurações).
-- Quando ligada:
-  - Rápido e completo dentro do PDV exigem CPF válido antes de salvar.
-  - Se o cliente for selecionado a partir da busca (já existente sem CPF), o PDV mostra aviso e pede para completar o CPF antes de finalizar a venda.
-- Na tela **Clientes → Novo/Editar** o CPF permanece opcional (não trava importações nem clientes antigos), independentemente da configuração.
+**Produtos e variantes** (CSV/XLSX)
+- Campos: SKU pai, nome, marca, categoria, NCM, cor, tamanho, EAN, preço venda, preço custo, peso.
+- Cria `products` + `product_variants`; agrupa linhas com mesmo SKU pai em grade.
+- Marca/categoria criadas automaticamente se não existirem.
+- **Fotos**: se o CSV tiver coluna `imagem_url`, baixamos e subimos no bucket `product-images`; se vier ZIP com imagens nomeadas por SKU, também suportamos.
 
-### 3. Onde a config é lida
+**Estoque** (CSV/XLSX)
+- Campos: SKU, saldo, local (opcional).
+- Aplica como **balanço** via `apply_stock_movement` (movement_type `inventario`), preservando histórico.
 
-- Server function pública ao carregar o PDV traz a flag da organização.
-- Cache com React Query, invalidada quando a configuração é alterada.
+**Clientes** (CSV/XLSX)
+- Campos: nome, CPF, telefone, e‑mail, CEP, endereço, cidade, UF, data nasc.
+- Deduplicação por CPF; sem CPF, por nome+telefone.
+
+**Fornecedores** (CSV/XLSX)
+- Campos: nome, CNPJ, telefone, e‑mail, endereço.
+- Deduplicação por CNPJ.
+
+**NF-e (XML)** — entrada de mercadoria
+- Parse do XML padrão SEFAZ; cria um **rascunho de recebimento** (`goods_receipt_drafts`) já preenchido com fornecedor (por CNPJ), número da nota e itens (SKU/EAN → variante, quantidade, preço custo).
+- Usuário revisa no editor existente `/estoque/recebimentos/$id` e confirma.
+
+**PDF** — não suportado nesta primeira versão. Vou avisar no modal que PDF de ERP normalmente é layout de relatório, difícil de parsear com precisão; se o usuário tiver o PDF, oriento a exportar em CSV/XLSX no ERP de origem. Se for **DANFE (PDF de NF-e)**, pedimos o XML da nota — todo ERP fornece.
+
+### Presets de mapeamento por origem
+
+Cada ERP tem colunas diferentes. Sistema já vem com mapeamentos prontos para Bling, Tiny e Olist (nomes de coluna → campo interno). No modo Genérico o usuário escolhe manualmente.
 
 ## Detalhes técnicos
 
-- **Banco:** adicionar coluna `pdv_require_cpf boolean not null default false` em `organizations` via migration (com GRANTs/RLS já existentes na tabela).
-- **UI PDV** (`src/routes/_authenticated/pdv.tsx`):
-  - Refatorar o bloco "Cadastro rápido" para receber estado estendido (endereço).
-  - Novo `ClientFullForm` (colapsável ou dialog separado acionado por botão "Cadastro completo").
-  - Helpers de máscara reutilizando `normalizeDigits` / `validCPF` de `@/lib/pos`.
-  - Fetch ViaCEP client-side (`https://viacep.com.br/ws/{cep}/json/`), com fallback silencioso em caso de erro.
-- **Insert em `clients`:** incluir os novos campos de endereço (colunas já existentes na tabela) apenas quando preenchidos.
-- **Configurações:** nova rota/aba `configuracoes.pdv.tsx` com o toggle; server fn para ler/gravar a flag (via `requireSupabaseAuth` + verificação de papel admin, mesmo padrão das outras configurações).
-- **Validação:** se `pdv_require_cpf` estiver ligado, bloquear finalização da venda quando `clientId` selecionado não tiver CPF, mostrando toast com CTA para editar.
+- **UI**: nova rota `src/routes/_authenticated/configuracoes.importar.tsx` com wizard (etapas: tipo → origem → upload → mapeamento → confirmação → progresso).
+- **Parsers client-side**: `papaparse` (CSV), `xlsx` (SheetJS) para XLSX, `fast-xml-parser` para NF-e. Parse no browser para mostrar preview sem round-trip.
+- **Import backend**: server function `runImport` (`src/lib/imports.functions.ts`) com `requireSupabaseAuth` + verificação de papel admin. Recebe payload `{ kind, source, rows, mapping, options }` já parseado; processa em lotes com `supabaseAdmin` (carregado dentro do handler, padrão do projeto).
+- **Persistência do job**: tabela `import_jobs` (id, kind, source, status, total, ok, errors, error_report_url, created_by, org_id, timestamps) + `import_job_errors` (job_id, row_index, payload, message). RLS: admin da org lê/escreve.
+- **Fotos**: helper que baixa URL server-side e sobe no bucket `product-images`; erros de foto não abortam o produto.
+- **NF-e**: reaproveita fluxo existente de recebimento; server fn `createReceiptFromNfe` cria o draft e devolve id para redirecionar.
+- **Navegação**: link "Importar dados" em `src/config/navigation.tsx` dentro do grupo Configurações; permissão `settings.manage`.
 
-## O que NÃO muda
+## O que NÃO faz nesta versão
 
-- Layout base do PDV, atalhos de teclado, RLS existentes.
-- Tela de Clientes e demais fluxos (trocas, expedição, etc.).
-- Comportamento do "Consumidor Final" (venda sem cliente segue permitida quando a config estiver desligada).
+- Importar histórico de vendas / financeiro (fora de escopo típico de migração inicial).
+- Sincronização contínua com o ERP antigo (é importação pontual, não integração).
+- OCR de PDF.
