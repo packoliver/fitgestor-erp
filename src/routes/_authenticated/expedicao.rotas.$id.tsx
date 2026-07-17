@@ -255,7 +255,7 @@ function RotaDetalhe() {
                 <td>#{s.shipment_number} {s.sale?.sale_number && <span className="text-xs text-muted-foreground">(v. #{s.sale.sale_number})</span>}</td>
                 <td>{s.recipient_name}</td>
                 <td>{s.neighborhood}</td>
-                <td className="text-xs max-w-[220px] truncate">{formatAddress(s)}</td>
+                <td className="text-xs max-w-[220px] truncate" title={formatAddress(s)}>{formatAddress(s)}</td>
                 <td className="text-right">{money(s.amount_to_collect)}</td>
                 <td className="text-right">{Number(s.change_for_amount) > 0 ? money(s.change_for_amount) : "—"}</td>
                 <td><Badge variant={statusVariant(s.status)}>{SHIPMENT_STATUS_LABEL[s.status] ?? s.status}</Badge></td>

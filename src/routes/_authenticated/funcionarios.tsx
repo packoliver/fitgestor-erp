@@ -173,7 +173,7 @@ function Funcionarios() {
             <Input className="pl-8" placeholder="Buscar por nome ou e-mail" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-44"><SelectValue placeholder="Situação" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="Situação" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as situações</SelectItem>
               <SelectItem value="ativo">Ativo</SelectItem>
