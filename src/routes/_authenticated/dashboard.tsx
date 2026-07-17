@@ -69,6 +69,38 @@ function Dashboard() {
   const canFinance = perms.hasAny("report.view","pos.view");
   const canShip = perms.hasAny("shipping.view","shipping.view_all","shipping.dispatch");
   const canTeam = perms.has("user.manage");
+  const canReports = perms.has("report.view");
+
+  const topProducts = useQuery({
+    enabled: canReports,
+    queryKey: ["dashboard-top-products-30d"],
+    queryFn: async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
+      const { data, error } = await supabase
+        .from("sale_items")
+        .select("product_id, product_name_snapshot, color_snapshot, quantity, total, sale:sales!inner(id, status, completed_at)")
+        .not("sale.completed_at", "is", null)
+        .gte("sale.completed_at", since.toISOString())
+        .neq("sale.status", "cancelada")
+        .limit(2000);
+      if (error) throw error;
+      const map = new Map<string, { name: string; color: string | null; qty: number; revenue: number }>();
+      for (const it of (data ?? []) as any[]) {
+        const key = it.product_id ?? `n:${it.product_name_snapshot}`;
+        const cur = map.get(key);
+        if (cur) { cur.qty += Number(it.quantity)||0; cur.revenue += Number(it.total)||0; }
+        else map.set(key, {
+          name: it.product_name_snapshot ?? "—",
+          color: it.color_snapshot ?? null,
+          qty: Number(it.quantity)||0,
+          revenue: Number(it.total)||0,
+        });
+      }
+      return Array.from(map.values()).sort((a,b) => b.qty - a.qty).slice(0, 5);
+    },
+    staleTime: 5 * 60_000,
+  });
 
   return (
     <div className="space-y-6">
