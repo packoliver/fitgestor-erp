@@ -555,10 +555,22 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
   return (
     <div className="space-y-4">
       {status === "confirmed" && (
-        <div className="rounded-md border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900 flex items-start gap-3">
+        <div className={`rounded-md border p-4 text-sm flex items-start gap-3 ${
+          subStatus === "reverted"
+            ? "border-amber-300 bg-amber-50 text-amber-900"
+            : "border-emerald-300 bg-emerald-50 text-emerald-900"
+        }`}>
           <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0" />
-          <div className="space-y-1">
-            <div><strong>Recebimento {formatReceiptNumber(receiptNumber)} confirmado.</strong> As etiquetas ainda estão pendentes de geração.</div>
+          <div className="space-y-1 flex-1">
+            <div>
+              <strong>Recebimento {formatReceiptNumber(receiptNumber)} confirmado.</strong>
+              {subStatus === "reverted" && (
+                <span className="ml-2 inline-flex items-center gap-1">
+                  <Badge variant="destructive">Estornado</Badge>
+                </span>
+              )}
+              {subStatus !== "reverted" && " As etiquetas ainda estão pendentes de geração."}
+            </div>
             {confirmedAt && <div className="text-xs">Confirmado em {formatDateTime(confirmedAt)}.</div>}
             {confirmationSummary?.total_quantity != null && (
               <div className="text-xs">
@@ -571,8 +583,51 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
               <Lock className="h-3 w-3" /> Somente leitura · <Badge variant="outline">Etiquetas pendentes</Badge>
             </div>
           </div>
+          {subStatus !== "reverted" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRevertOpen(true)}
+              className="shrink-0"
+            >
+              Corrigir entrada
+            </Button>
+          )}
         </div>
       )}
+      <AlertDialog open={revertOpen} onOpenChange={setRevertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Corrigir entrada confirmada?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação cria movimentos de <strong>estorno</strong> vinculados a este lote e reverte as quantidades adicionadas ao estoque.
+              Os produtos e variações criados no lote não são removidos. A ação fica registrada em auditoria e não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="revert-reason">Justificativa (obrigatória)</Label>
+            <Textarea
+              id="revert-reason"
+              value={revertReason}
+              onChange={(e) => setRevertReason(e.target.value)}
+              placeholder="Ex.: contagem duplicada, produto errado, devolvido ao fornecedor"
+              rows={3}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={revertConfirmed.isPending}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                revertConfirmed.mutate();
+              }}
+              disabled={revertConfirmed.isPending || revertReason.trim().length < 3}
+            >
+              {revertConfirmed.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar estorno"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {status === "confirmed" && draftId && (
         <GoodsReceiptLabelsSection draftId={draftId} />
       )}
