@@ -4615,6 +4615,7 @@ export type Database = {
         | "processado"
         | "erro"
         | "ignorado"
+        | "cancelado"
       integration_source: "olist" | "shopify" | "manual"
       movement_type:
         | "entrada"
@@ -4884,6 +4885,7 @@ export const Constants = {
         "processado",
         "erro",
         "ignorado",
+        "cancelado",
       ],
       integration_source: ["olist", "shopify", "manual"],
       movement_type: [
