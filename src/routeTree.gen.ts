@@ -41,6 +41,7 @@ import { Route as AuthenticatedTrocasNovaRouteImport } from './routes/_authentic
 import { Route as AuthenticatedTrocasCreditosRouteImport } from './routes/_authenticated/trocas.creditos'
 import { Route as AuthenticatedTrocasIdRouteImport } from './routes/_authenticated/trocas.$id'
 import { Route as AuthenticatedRelatoriosTrocasRouteImport } from './routes/_authenticated/relatorios.trocas'
+import { Route as AuthenticatedRelatoriosMaisVendidosRouteImport } from './routes/_authenticated/relatorios.mais-vendidos'
 import { Route as AuthenticatedProdutosNovoRouteImport } from './routes/_authenticated/produtos.novo'
 import { Route as AuthenticatedProdutosIdRouteImport } from './routes/_authenticated/produtos.$id'
 import { Route as AuthenticatedPosVendaSequencialRouteImport } from './routes/_authenticated/pos-venda.sequencial'
@@ -237,6 +238,12 @@ const AuthenticatedRelatoriosTrocasRoute =
     path: '/relatorios/trocas',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRelatoriosMaisVendidosRoute =
+  AuthenticatedRelatoriosMaisVendidosRouteImport.update({
+    id: '/relatorios/mais-vendidos',
+    path: '/relatorios/mais-vendidos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProdutosNovoRoute =
   AuthenticatedProdutosNovoRouteImport.update({
     id: '/produtos/novo',
@@ -401,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/pos-venda/sequencial': typeof AuthenticatedPosVendaSequencialRoute
   '/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/produtos/novo': typeof AuthenticatedProdutosNovoRoute
+  '/relatorios/mais-vendidos': typeof AuthenticatedRelatoriosMaisVendidosRoute
   '/relatorios/trocas': typeof AuthenticatedRelatoriosTrocasRoute
   '/trocas/$id': typeof AuthenticatedTrocasIdRoute
   '/trocas/creditos': typeof AuthenticatedTrocasCreditosRoute
@@ -456,6 +464,7 @@ export interface FileRoutesByTo {
   '/pos-venda/sequencial': typeof AuthenticatedPosVendaSequencialRoute
   '/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/produtos/novo': typeof AuthenticatedProdutosNovoRoute
+  '/relatorios/mais-vendidos': typeof AuthenticatedRelatoriosMaisVendidosRoute
   '/relatorios/trocas': typeof AuthenticatedRelatoriosTrocasRoute
   '/trocas/$id': typeof AuthenticatedTrocasIdRoute
   '/trocas/creditos': typeof AuthenticatedTrocasCreditosRoute
@@ -513,6 +522,7 @@ export interface FileRoutesById {
   '/_authenticated/pos-venda/sequencial': typeof AuthenticatedPosVendaSequencialRoute
   '/_authenticated/produtos/$id': typeof AuthenticatedProdutosIdRoute
   '/_authenticated/produtos/novo': typeof AuthenticatedProdutosNovoRoute
+  '/_authenticated/relatorios/mais-vendidos': typeof AuthenticatedRelatoriosMaisVendidosRoute
   '/_authenticated/relatorios/trocas': typeof AuthenticatedRelatoriosTrocasRoute
   '/_authenticated/trocas/$id': typeof AuthenticatedTrocasIdRoute
   '/_authenticated/trocas/creditos': typeof AuthenticatedTrocasCreditosRoute
@@ -570,6 +580,7 @@ export interface FileRouteTypes {
     | '/pos-venda/sequencial'
     | '/produtos/$id'
     | '/produtos/novo'
+    | '/relatorios/mais-vendidos'
     | '/relatorios/trocas'
     | '/trocas/$id'
     | '/trocas/creditos'
@@ -625,6 +636,7 @@ export interface FileRouteTypes {
     | '/pos-venda/sequencial'
     | '/produtos/$id'
     | '/produtos/novo'
+    | '/relatorios/mais-vendidos'
     | '/relatorios/trocas'
     | '/trocas/$id'
     | '/trocas/creditos'
@@ -681,6 +693,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pos-venda/sequencial'
     | '/_authenticated/produtos/$id'
     | '/_authenticated/produtos/novo'
+    | '/_authenticated/relatorios/mais-vendidos'
     | '/_authenticated/relatorios/trocas'
     | '/_authenticated/trocas/$id'
     | '/_authenticated/trocas/creditos'
@@ -938,6 +951,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRelatoriosTrocasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/relatorios/mais-vendidos': {
+      id: '/_authenticated/relatorios/mais-vendidos'
+      path: '/relatorios/mais-vendidos'
+      fullPath: '/relatorios/mais-vendidos'
+      preLoaderRoute: typeof AuthenticatedRelatoriosMaisVendidosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/produtos/novo': {
       id: '/_authenticated/produtos/novo'
       path: '/produtos/novo'
@@ -1156,6 +1176,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPosVendaSequencialRoute: typeof AuthenticatedPosVendaSequencialRoute
   AuthenticatedProdutosIdRoute: typeof AuthenticatedProdutosIdRoute
   AuthenticatedProdutosNovoRoute: typeof AuthenticatedProdutosNovoRoute
+  AuthenticatedRelatoriosMaisVendidosRoute: typeof AuthenticatedRelatoriosMaisVendidosRoute
   AuthenticatedRelatoriosTrocasRoute: typeof AuthenticatedRelatoriosTrocasRoute
   AuthenticatedTrocasIdRoute: typeof AuthenticatedTrocasIdRoute
   AuthenticatedTrocasCreditosRoute: typeof AuthenticatedTrocasCreditosRoute
@@ -1205,6 +1226,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPosVendaSequencialRoute: AuthenticatedPosVendaSequencialRoute,
   AuthenticatedProdutosIdRoute: AuthenticatedProdutosIdRoute,
   AuthenticatedProdutosNovoRoute: AuthenticatedProdutosNovoRoute,
+  AuthenticatedRelatoriosMaisVendidosRoute:
+    AuthenticatedRelatoriosMaisVendidosRoute,
   AuthenticatedRelatoriosTrocasRoute: AuthenticatedRelatoriosTrocasRoute,
   AuthenticatedTrocasIdRoute: AuthenticatedTrocasIdRoute,
   AuthenticatedTrocasCreditosRoute: AuthenticatedTrocasCreditosRoute,
