@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const triggerOlistSync = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin, error } = await context.supabase.rpc("has_role", { _role_name: "admin" });
+    const { data: isAdmin, error } = await context.supabase.rpc("has_role", { _role_name: "Administrador" });
     if (error) throw new Error(error.message);
     if (!isAdmin) throw new Error("Apenas administradores podem sincronizar.");
     const { runOlistSync } = await import("@/lib/olist-sync.server");
@@ -15,7 +15,7 @@ export const triggerOlistSync = createServerFn({ method: "POST" })
 export const listOlistRuns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", { _role_name: "admin" });
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _role_name: "Administrador" });
     if (!isAdmin) throw new Error("Apenas administradores.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
@@ -32,7 +32,7 @@ export const listOlistRuns = createServerFn({ method: "GET" })
 export const getOlistSyncState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", { _role_name: "admin" });
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _role_name: "Administrador" });
     if (!isAdmin) throw new Error("Apenas administradores.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin
