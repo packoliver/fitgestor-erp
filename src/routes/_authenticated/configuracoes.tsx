@@ -112,6 +112,18 @@ function Config() {
           </Button>
         </CardContent>
       </Card>
+
+      <Card className="max-w-2xl">
+        <CardHeader><CardTitle>Integração Olist / Tiny</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Sincronização automática somente-leitura: puxa produtos, variações, fotos e saldo de estoque da Olist a cada 20 minutos.
+          </p>
+          <Button asChild variant="outline">
+            <Link to="/configuracoes/olist">Abrir sincronização</Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
