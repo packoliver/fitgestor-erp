@@ -30,7 +30,12 @@ function Movs() {
 
   return (
     <div>
-      <PageHeader title="Movimentações de estoque" description="Histórico auditável de todas as movimentações." />
+      <PageHeader
+        title="Movimentações de estoque"
+        description="Histórico auditável de todas as movimentações."
+        actions={<StockLaunchDialog />}
+      />
+
       <Card>
         <Table>
           <TableHeader>
