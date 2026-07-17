@@ -577,8 +577,18 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
   let productsTotal = 0;
   let productsProcessed = 0;
   let currentProduct: { id?: string; name?: string } | null = null;
+  let cancelledFlag = false;
   const persistProgress = async (extra: Record<string, any> = {}) => {
-    if (!eventId) return;
+    if (!eventId || cancelledFlag) return;
+    const { data: cur } = await supabaseAdmin
+      .from("integration_events")
+      .select("status")
+      .eq("id", eventId)
+      .maybeSingle();
+    if (cur?.status === "cancelado") {
+      cancelledFlag = true;
+      return;
+    }
     await supabaseAdmin
       .from("integration_events")
       .update({
@@ -595,14 +605,17 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
   };
 
   const isCancelled = async (): Promise<boolean> => {
+    if (cancelledFlag) return true;
     if (!eventId) return false;
     const { data } = await supabaseAdmin
       .from("integration_events")
       .select("status")
       .eq("id", eventId)
       .maybeSingle();
-    return data?.status === "cancelado";
+    if (data?.status === "cancelado") cancelledFlag = true;
+    return cancelledFlag;
   };
+
 
   try {
     // 1) Produtos
