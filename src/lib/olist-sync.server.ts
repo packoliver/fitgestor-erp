@@ -315,6 +315,42 @@ async function syncOneProduct(
   }
 }
 
+async function adjustStockForVariant(
+  orgId: string,
+  variantId: string,
+  locationId: string,
+  saldo: number,
+  counters: Counters,
+) {
+  try {
+    const { data: bal } = await supabaseAdmin
+      .from("inventory_balances")
+      .select("physical_quantity")
+      .eq("variant_id", variantId)
+      .eq("location_id", locationId)
+      .maybeSingle();
+    const current = Number(bal?.physical_quantity ?? 0);
+    const delta = saldo - current;
+    if (delta === 0) return;
+    await supabaseAdmin.rpc("apply_stock_movement_system", {
+      _organization_id: orgId,
+      _variant_id: variantId,
+      _location_id: locationId,
+      _movement_type: "inventario",
+      _quantity: delta,
+      _reason: "Sincronização Olist",
+      _notes: `Ajuste automático (delta ${delta > 0 ? "+" : ""}${delta})`,
+      _reference_type: "olist_sync",
+      _reference_id: undefined,
+      _source: "olist_sync",
+      _user_id: undefined,
+    });
+    counters.stock_adjusted++;
+  } catch (e: any) {
+    counters.errors.push({ scope: "stock.inline", id: variantId, message: e?.message ?? String(e) });
+  }
+}
+
 async function syncStock(orgId: string, since: Date | null, counters: Counters) {
   const params: Record<string, string> = {};
   const d = fmtDate(since);
