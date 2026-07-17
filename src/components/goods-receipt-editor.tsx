@@ -647,9 +647,6 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {status === "confirmed" && draftId && (
-        <GoodsReceiptLabelsSection draftId={draftId} />
-      )}
       {status === "cancelled" && (
         <div className="rounded-md border border-rose-300 bg-rose-50 p-4 text-sm text-rose-900 flex items-start gap-3">
           <Lock className="h-5 w-5 mt-0.5 shrink-0" />
