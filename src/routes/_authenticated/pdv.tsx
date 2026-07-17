@@ -128,7 +128,8 @@ function PdvPage() {
       return (await q).data ?? [];
     },
   });
-  const [newClient, setNewClient] = useState({ full_name: "", cpf: "", phone: "" });
+  const [newClient, setNewClient] = useState({ full_name: "", cpf: "", phone: "", email: "" });
+  const qc = useQueryClient();
 
   // Seller (profiles)
   const { data: sellers = [] } = useQuery({
