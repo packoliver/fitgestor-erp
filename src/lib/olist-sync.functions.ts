@@ -47,3 +47,39 @@ export const getOlistSyncState = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return data;
   });
+
+export const cancelOlistRun = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string }) => data)
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _role_name: "Administrador" });
+    if (!isAdmin) return { ok: false, error: "Apenas administradores." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("integration_events")
+      .update({ status: "cancelado", processed_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .in("status", ["processando", "pendente"]);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  });
+
+export const cancelStuckOlistRuns = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _role_name: "Administrador" });
+    if (!isAdmin) return { ok: false, error: "Apenas administradores." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Marca como cancelado tudo que está "processando" há mais de 15 min sem finalizar
+    const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { data, error } = await supabaseAdmin
+      .from("integration_events")
+      .update({ status: "cancelado", processed_at: new Date().toISOString(), error_message: "Cancelado por inatividade" })
+      .eq("source", "olist")
+      .eq("event_type", "sync_run")
+      .eq("status", "processando")
+      .lt("received_at", cutoff)
+      .select("id");
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, cancelled: data?.length ?? 0 };
+  });
