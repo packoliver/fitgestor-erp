@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatDateTime } from "@/lib/erp";
-import { Loader2, RefreshCw, PlayCircle } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 import { triggerOlistSync, listOlistRuns, getOlistSyncState } from "@/lib/olist-sync.functions";
 
@@ -60,6 +61,13 @@ function OlistPage() {
       <Card className="max-w-2xl">
         <CardHeader><CardTitle>Status</CardTitle></CardHeader>
         <CardContent className="grid gap-2 text-sm sm:grid-cols-2">
+          {state.isError && (
+            <Alert variant="destructive" className="sm:col-span-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Não foi possível carregar o status</AlertTitle>
+              <AlertDescription>{(state.error as Error)?.message ?? "Tente atualizar novamente."}</AlertDescription>
+            </Alert>
+          )}
           <div>
             <div className="text-muted-foreground">Última sincronização de produtos</div>
             <div>{formatDateTime(state.data?.last_updated_produtos_at ?? null)}</div>
@@ -92,7 +100,13 @@ function OlistPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {runs.isLoading ? (
+                {runs.isError ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-8 text-center text-destructive">
+                      {(runs.error as Error)?.message ?? "Não foi possível carregar as execuções."}
+                    </TableCell>
+                  </TableRow>
+                ) : runs.isLoading ? (
                   <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
                 ) : (runs.data ?? []).length === 0 ? (
                   <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhuma sincronização ainda.</TableCell></TableRow>

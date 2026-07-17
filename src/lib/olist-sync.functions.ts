@@ -17,8 +17,7 @@ export const listOlistRuns = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _role_name: "Administrador" });
     if (!isAdmin) throw new Error("Apenas administradores.");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await context.supabase
       .from("integration_events")
       .select("id, status, received_at, processed_at, attempts, error_message, payload")
       .eq("source", "olist")
@@ -34,12 +33,12 @@ export const getOlistSyncState = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _role_name: "Administrador" });
     if (!isAdmin) throw new Error("Apenas administradores.");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
+    const { data, error } = await context.supabase
       .from("olist_sync_state")
       .select("*")
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (error) throw new Error(error.message);
     return data;
   });
