@@ -38,8 +38,9 @@ function EstoquePage() {
         actions={
           <>
             <Button asChild variant="outline"><Link to="/estoque/movimentacoes"><ArrowRight className="mr-2 h-4 w-4" />Movimentações</Link></Button>
-            <Button asChild variant="outline"><Link to="/estoque/entrada">Entrada</Link></Button>
+            <Button asChild variant="outline"><Link to="/estoque/entrada">Entrada em lote</Link></Button>
             <Button asChild variant="outline"><Link to="/estoque/inventario">Inventário</Link></Button>
+            <StockLaunchDialog />
           </>
         }
       />
