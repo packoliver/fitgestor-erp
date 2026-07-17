@@ -248,6 +248,7 @@ async function syncOneProduct(
   await syncPhotos(orgId, productId, externalId, Array.isArray(anexos) ? anexos.map((x: any) => x.anexo ?? x) : [], counters);
 
   // Variações
+  const locationId = await defaultLocationId(orgId);
   const variacoes: any[] = Array.isArray(p.variacoes) ? p.variacoes.map((v: any) => v.variacao ?? v) : [];
   if (variacoes.length === 0) {
     // Sem grade — cria variação ÚNICA
@@ -274,6 +275,8 @@ async function syncOneProduct(
       counters.variants_created++;
       await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico" });
     }
+    const saldo = Number(p.estoque_atual ?? p.saldo ?? 0) || 0;
+    await adjustStockForVariant(orgId, variantId, locationId, saldo, counters);
   } else {
     for (const v of variacoes) {
       const varExternalId: string = String(v.id ?? `${externalId}:${v.codigo ?? v.grade?.[0]?.valor ?? Math.random()}`);
@@ -311,6 +314,8 @@ async function syncOneProduct(
           .eq("id", variantId);
         counters.variants_updated++;
       }
+      const saldoV = Number(v.estoque_atual ?? v.saldo ?? v.estoque ?? 0) || 0;
+      await adjustStockForVariant(orgId, variantId, locationId, saldoV, counters);
     }
   }
 }
