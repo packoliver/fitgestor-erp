@@ -72,16 +72,21 @@ export function StockLaunchDialog({
   const currentBalance = useQuery({
     queryKey: ["stock-launch-balance", selectedVariantId, locationId],
     enabled: !!selectedVariantId && !!locationId && kind === "balanco",
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("inventory_balances")
         .select("physical_quantity")
         .eq("variant_id", selectedVariantId!)
         .eq("location_id", locationId!)
         .maybeSingle();
+      if (error) throw error;
       return data?.physical_quantity ?? 0;
     },
   });
+
 
   function reset() {
     setKind("entrada");
