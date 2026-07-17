@@ -132,15 +132,19 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
   const [cancelledAt, setCancelledAt] = useState<string | null>(null);
   const [cancellationReason, setCancellationReason] = useState<string | null>(null);
   const [confirmationSummary, setConfirmationSummary] = useState<any>(null);
+  const [subStatus, setSubStatus] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [revertOpen, setRevertOpen] = useState(false);
+  const [revertReason, setRevertReason] = useState("");
   const [conflictOpen, setConflictOpen] = useState(false);
   const [receiptNumber, setReceiptNumber] = useState<number | null>(null);
   const [version, setVersion] = useState<number>(1);
   // Um único UUID por tentativa real de confirmação — reutilizado em retries de rede.
   const confirmRequestIdRef = useRef<string>("");
   const cancelRequestIdRef = useRef<string>("");
+  const revertRequestIdRef = useRef<string>("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   const suppliers = useQuery({
