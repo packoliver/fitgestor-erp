@@ -326,7 +326,13 @@ export function StockLaunchDialog({
 
         <DialogFooter className="mt-2">
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={() => submit.mutate()} disabled={submit.isPending}>
+          <Button
+            onClick={() => submit.mutate()}
+            disabled={
+              submit.isPending ||
+              (kind === "balanco" && !!selectedVariantId && !!locationId && (currentBalance.isLoading || currentBalance.isFetching))
+            }
+          >
             {submit.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Salvar
           </Button>
