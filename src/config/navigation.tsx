@@ -177,6 +177,10 @@ export const NAV_ITEMS: NavItem[] = [
     keywords: ["auditoria","log","registro","historico"] },
 
   // ── Relatórios ────────────────────────────────────────────
+  { id: "rel-mais-vendidos", title: "Produtos mais vendidos", url: "/relatorios/mais-vendidos", icon: Trophy,
+    perm: "report.view", group: "Relatórios", workspaces: ["admin"], priority: 100,
+    description: "Ranking dos produtos que mais saem da loja.",
+    keywords: ["mais vendidos","ranking","top","best sellers","produtos","curva abc"] },
   { id: "rel-trocas", title: "Relatório de trocas", url: "/relatorios/trocas", icon: FileBarChart,
     perm: "reports.exchanges.view", group: "Relatórios", workspaces: ["admin"],
     description: "Indicadores e desempenho das trocas.",
