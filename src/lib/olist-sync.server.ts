@@ -298,39 +298,35 @@ async function syncOneProduct(
     let variantId = await findLocalVariantByExternal(orgId, externalVariantId);
     if (!variantId) {
       const sku = p.codigo ?? null;
+      const barcode = p.gtin ?? null;
       variantId = await findVariantBySku(orgId, sku);
+      if (!variantId) variantId = await findVariantByBarcode(orgId, barcode);
       if (variantId) {
         await supabaseAdmin
           .from("product_variants")
           .update({
-            barcode: p.gtin ?? null,
             sale_price: price,
             status,
             olist_variant_id: externalId,
           })
           .eq("id", variantId);
         counters.variants_updated++;
-        await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico", reused_by_sku: true });
+        await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico", reused: true });
       } else {
-        const { data: v, error } = await supabaseAdmin
-          .from("product_variants")
-          .insert({
-            organization_id: orgId,
-            product_id: productId,
-            size: "ÚNICO",
-            sku,
-            barcode: p.gtin ?? null,
-            cost_price: cost,
-            sale_price: price,
-            status,
-            olist_variant_id: externalId,
-          })
-          .select("id")
-          .single();
-        if (error) throw error;
-        variantId = v.id;
+        const ins = await insertVariantSafe({
+          organization_id: orgId,
+          product_id: productId,
+          size: "ÚNICO",
+          sku,
+          barcode,
+          cost_price: cost,
+          sale_price: price,
+          status,
+          olist_variant_id: externalId,
+        });
+        variantId = ins.id;
         counters.variants_created++;
-        await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico" });
+        await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico", barcode_dropped: ins.barcode_dropped });
       }
     }
     const saldo = Number(p.estoque_atual ?? p.saldo ?? 0) || 0;
