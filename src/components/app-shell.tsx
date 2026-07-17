@@ -224,34 +224,6 @@ function AppSidebar({
           );
         })}
 
-        {/* Essential toggle & expand-all */}
-        {!collapsed && (
-          <div className="mt-2 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex min-w-0 items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5 shrink-0 text-sidebar-foreground/60" />
-                <div className="min-w-0">
-                  <p className="text-[12px] font-medium text-sidebar-foreground truncate">Menu essencial</p>
-                  <p className="text-[10.5px] text-sidebar-foreground/55 truncate">Mostrar apenas o básico</p>
-                </div>
-              </div>
-              <Switch
-                checked={essential}
-                onCheckedChange={(v) => { setEssential(v); setExpandedAll(false); }}
-                aria-label="Alternar menu essencial"
-              />
-            </div>
-            {essential && !expandedAll && (
-              <button
-                type="button"
-                onClick={() => setExpandedAll(true)}
-                className="mt-2 w-full rounded-md border border-sidebar-border/60 px-2 py-1.5 text-[11.5px] font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent transition-colors"
-              >
-                Ver todos os módulos
-              </button>
-            )}
-          </div>
-        )}
       </SidebarContent>
 
       {!collapsed && (
