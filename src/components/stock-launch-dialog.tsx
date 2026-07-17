@@ -268,18 +268,38 @@ export function StockLaunchDialog({
               <Input
                 type="number"
                 min="0"
-                inputMode="decimal"
+                step="1"
+                inputMode="numeric"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 placeholder="0"
               />
-              {kind === "balanco" && selectedVariantId && locationId && (
-                <p className="text-xs text-muted-foreground">
-                  Saldo atual: <strong>{currentBalance.data ?? 0}</strong>
-                </p>
-              )}
+              {kind === "balanco" && selectedVariantId && locationId && (() => {
+                const cur = currentBalance.data ?? 0;
+                const raw = (quantity || "").trim().replace(",", ".");
+                const parsed = raw === "" ? null : Number(raw);
+                const valid = parsed !== null && !Number.isNaN(parsed) && Number.isInteger(parsed) && parsed >= 0;
+                const diff = valid ? (parsed as number) - cur : null;
+                return (
+                  <div className="text-xs space-y-0.5">
+                    <p className="text-muted-foreground">
+                      Saldo atual:{" "}
+                      <strong className="text-foreground">
+                        {currentBalance.isLoading || currentBalance.isFetching ? "…" : cur}
+                      </strong>
+                    </p>
+                    {diff !== null && (
+                      <p className={diff === 0 ? "text-muted-foreground" : diff > 0 ? "text-emerald-600" : "text-rose-600"}>
+                        Ajuste: {diff > 0 ? `+${diff}` : diff}
+                        {diff !== 0 && ` (${cur} → ${parsed})`}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
+
 
           {kind === "entrada" && (
             <div className="space-y-1.5">
