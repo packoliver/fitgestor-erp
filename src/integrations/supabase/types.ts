@@ -1582,6 +1582,7 @@ export type Database = {
       inventory_movements: {
         Row: {
           created_at: string
+          goods_receipt_draft_item_id: string | null
           id: string
           location_id: string
           movement_type: Database["public"]["Enums"]["movement_type"]
@@ -1599,6 +1600,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          goods_receipt_draft_item_id?: string | null
           id?: string
           location_id: string
           movement_type: Database["public"]["Enums"]["movement_type"]
@@ -1616,6 +1618,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          goods_receipt_draft_item_id?: string | null
           id?: string
           location_id?: string
           movement_type?: Database["public"]["Enums"]["movement_type"]
@@ -1632,6 +1635,13 @@ export type Database = {
           variant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "inventory_movements_goods_receipt_draft_item_id_fkey"
+            columns: ["goods_receipt_draft_item_id"]
+            isOneToOne: false
+            referencedRelation: "goods_receipt_draft_items"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "inventory_movements_location_id_fkey"
             columns: ["location_id"]
@@ -2020,6 +2030,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "label_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_color_aliases: {
+        Row: {
+          alias_normalized: string
+          canonical_label: string
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          alias_normalized: string
+          canonical_label: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          alias_normalized?: string
+          canonical_label?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_color_aliases_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -4422,6 +4470,10 @@ export type Database = {
       resolve_goods_receipt_scan: { Args: { _code: string }; Returns: Json }
       reverse_exchange: {
         Args: { _exchange_id: string; _reason: string }
+        Returns: Json
+      }
+      revert_goods_receipt: {
+        Args: { _client_request_id: string; _draft_id: string; _reason: string }
         Returns: Json
       }
       revoke_courier_access: {

@@ -132,15 +132,19 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
   const [cancelledAt, setCancelledAt] = useState<string | null>(null);
   const [cancellationReason, setCancellationReason] = useState<string | null>(null);
   const [confirmationSummary, setConfirmationSummary] = useState<any>(null);
+  const [subStatus, setSubStatus] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [revertOpen, setRevertOpen] = useState(false);
+  const [revertReason, setRevertReason] = useState("");
   const [conflictOpen, setConflictOpen] = useState(false);
   const [receiptNumber, setReceiptNumber] = useState<number | null>(null);
   const [version, setVersion] = useState<number>(1);
   // Um único UUID por tentativa real de confirmação — reutilizado em retries de rede.
   const confirmRequestIdRef = useRef<string>("");
   const cancelRequestIdRef = useRef<string>("");
+  const revertRequestIdRef = useRef<string>("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   const suppliers = useQuery({
@@ -201,6 +205,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     setCancelledAt(d.cancelled_at ?? null);
     setCancellationReason(d.cancellation_reason ?? null);
     setConfirmationSummary((d as unknown as { confirmation_summary?: unknown }).confirmation_summary ?? null);
+    setSubStatus((d as unknown as { sub_status?: string | null }).sub_status ?? null);
     setItems(
       d.items.map((it) => ({
         local_id: uid(),
@@ -369,6 +374,39 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     },
   });
 
+  const revertConfirmed = useMutation({
+    mutationFn: async () => {
+      if (!draftId) throw new Error("Entrada não identificada.");
+      if (status !== "confirmed") throw new Error("Somente entradas confirmadas podem ser estornadas.");
+      const reason = revertReason.trim();
+      if (reason.length < 3) throw new Error("Informe a justificativa do estorno.");
+      if (!revertRequestIdRef.current) {
+        revertRequestIdRef.current = globalThis.crypto?.randomUUID?.() ?? uid() + uid() + uid();
+      }
+      const { data, error } = await supabase.rpc("revert_goods_receipt" as never, {
+        _draft_id: draftId,
+        _reason: reason,
+        _client_request_id: revertRequestIdRef.current,
+      } as never);
+      if (error) throw error;
+      return data as { reversed_movements: number; total_quantity_reverted: number };
+    },
+    onSuccess: (res) => {
+      toast.success(
+        `Estorno concluído: ${res?.total_quantity_reverted ?? 0} peça(s) revertida(s) em ${res?.reversed_movements ?? 0} movimento(s).`
+      );
+      setSubStatus("reverted");
+      setRevertOpen(false);
+      setRevertReason("");
+      revertRequestIdRef.current = "";
+      qc.invalidateQueries({ queryKey: ["goods-receipts-list"] });
+      if (draftId) qc.invalidateQueries({ queryKey: ["goods-receipt-draft", draftId] });
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+    },
+  });
+
   function markDirty() { setDirty(true); }
 
   function addItemFromProduct(mode: Mode, product: any) {
@@ -517,10 +555,22 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
   return (
     <div className="space-y-4">
       {status === "confirmed" && (
-        <div className="rounded-md border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900 flex items-start gap-3">
+        <div className={`rounded-md border p-4 text-sm flex items-start gap-3 ${
+          subStatus === "reverted"
+            ? "border-amber-300 bg-amber-50 text-amber-900"
+            : "border-emerald-300 bg-emerald-50 text-emerald-900"
+        }`}>
           <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0" />
-          <div className="space-y-1">
-            <div><strong>Recebimento {formatReceiptNumber(receiptNumber)} confirmado.</strong> As etiquetas ainda estão pendentes de geração.</div>
+          <div className="space-y-1 flex-1">
+            <div>
+              <strong>Recebimento {formatReceiptNumber(receiptNumber)} confirmado.</strong>
+              {subStatus === "reverted" && (
+                <span className="ml-2 inline-flex items-center gap-1">
+                  <Badge variant="destructive">Estornado</Badge>
+                </span>
+              )}
+              {subStatus !== "reverted" && " As etiquetas ainda estão pendentes de geração."}
+            </div>
             {confirmedAt && <div className="text-xs">Confirmado em {formatDateTime(confirmedAt)}.</div>}
             {confirmationSummary?.total_quantity != null && (
               <div className="text-xs">
@@ -533,8 +583,51 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
               <Lock className="h-3 w-3" /> Somente leitura · <Badge variant="outline">Etiquetas pendentes</Badge>
             </div>
           </div>
+          {subStatus !== "reverted" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRevertOpen(true)}
+              className="shrink-0"
+            >
+              Corrigir entrada
+            </Button>
+          )}
         </div>
       )}
+      <AlertDialog open={revertOpen} onOpenChange={setRevertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Corrigir entrada confirmada?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação cria movimentos de <strong>estorno</strong> vinculados a este lote e reverte as quantidades adicionadas ao estoque.
+              Os produtos e variações criados no lote não são removidos. A ação fica registrada em auditoria e não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="revert-reason">Justificativa (obrigatória)</Label>
+            <Textarea
+              id="revert-reason"
+              value={revertReason}
+              onChange={(e) => setRevertReason(e.target.value)}
+              placeholder="Ex.: contagem duplicada, produto errado, devolvido ao fornecedor"
+              rows={3}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={revertConfirmed.isPending}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                revertConfirmed.mutate();
+              }}
+              disabled={revertConfirmed.isPending || revertReason.trim().length < 3}
+            >
+              {revertConfirmed.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar estorno"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {status === "confirmed" && draftId && (
         <GoodsReceiptLabelsSection draftId={draftId} />
       )}
