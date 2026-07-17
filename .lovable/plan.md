@@ -1,75 +1,69 @@
-## Objetivo
+## Plano revisado (baseado nas suas respostas)
 
-Sincronização unidirecional Olist ERP (Tiny) → FitGestor, somente leitura, rodando a cada 20 min em background. Traz produtos, variações, fotos e saldo de estoque. Nada é escrito de volta.
+Boas notícias: quase toda a infraestrutura já existe. O escopo real é bem menor do que o plano original.
 
-## Ponto importante sobre "Edge Function"
+## Já existe no schema — vou reutilizar
 
-A instrução pede uma Edge Function do Supabase, mas este projeto é **TanStack Start** e a diretriz da stack é NÃO criar novas Supabase Edge Functions — o padrão é `createServerFn` + server routes em `/api/public/*` para o cron chamar. Vou seguir o padrão do projeto (server route `/api/public/hooks/olist-sync` disparada por `pg_cron` a cada 20 min). Funcionalmente é idêntico ao que você pediu; muda só onde o código roda. Se preferir Edge Function mesmo assim, me avisa antes que eu troco.
+- `products.olist_product_id` (text) — vínculo produto pai.
+- `product_variants.olist_variant_id` (text) — vínculo variação.
+- `integration_mappings(source, entity_type, external_id, external_parent_id, internal_id, metadata)` com `source` enum já contendo `'olist'` — perfeito pra registrar o mapa (inclusive código/SKU no `metadata`).
+- `integration_events(source, event_type, payload jsonb, status, attempts, error_message, ...)` com status `pendente/processando/processado/erro/ignorado` — vou logar cada run aqui com `event_type='sync_run'`.
+- `product_images(storage_path, image_url, ...)` — mesmo padrão do `product-form.tsx`.
+- `apply_stock_movement(_variant_id, _location_id, _movement_type, _quantity, _reason, _notes, _reference_type, _reference_id, _source)` — chamo com `_movement_type='inventario'` e `_source='olist_sync'`.
+- Enum `movement_type` já tem `inventario` — nada a adicionar.
 
-## API da Olist (Tiny v3 — REST/OAuth) — endpoints somente leitura
+## Migration mínima (única tabela nova)
 
-- `GET /produtos` — lista paginada com filtro `dataAlteracao` (só o que mudou desde o último cursor).
-- `GET /produtos/{id}` — detalhe completo (variações, tipo_variacao, produto pai, anexos/fotos).
-- `GET /estoque/{id}` — saldo por depósito (ou `GET /estoque` em lote quando disponível).
-- Identificação pai/variação: campos `tipoVariacao` / `produtoPaiId` do próprio payload — nunca inferir por SKU.
-- Fotos: URLs vêm no detalhe do produto; baixamos e reenviamos ao bucket `product-images`.
+`olist_sync_state` (organization_id uuid PK, last_updated_estoque_at timestamptz null, last_updated_produtos_at timestamptz null, last_run_started_at timestamptz null, updated_at timestamptz).
+- GRANT SELECT authenticated, ALL service_role.
+- RLS: SELECT quando `has_role(auth.uid(),'admin')` na org; sem policies de INSERT/UPDATE (só service_role via GRANT ALL).
 
-## Rate limit
+## Server route TanStack (não Edge Function)
 
-Tiny v3 limita ~120 req/min por token. Estratégia:
-- Concurrency = 3, `await sleep(250ms)` entre chamadas.
-- Em `429` / `Retry-After`: respeita header, backoff exponencial (1s, 2s, 4s, 8s, máx 30s), até 5 tentativas.
-- Em `5xx`: mesmo backoff.
-- Se o run estourar 10 min, encerra graciosamente, grava cursor parcial e a próxima execução continua.
-- Erro por produto é isolado (`try/catch` por item), incrementa `errors_count` e anexa em `error_details`, mas não aborta o run.
+`src/routes/api/public/hooks/olist-sync.ts` — POST, verifica header `apikey`, valida (opcional) query `?organization_id=` para multi-org (na dúvida, itera todas as orgs com token — na primeira versão fica **uma org por token** lida de env `OLIST_ORGANIZATION_ID`).
 
-## Migration (uma só)
-
-Cria 3 tabelas no schema `public` com GRANTs + RLS:
-
-- `olist_product_map` (organization_id, olist_produto_id text, olist_sku text, olist_produto_pai_id text null, fitgestor_product_id uuid, fitgestor_variant_id uuid null, timestamps; unique (organization_id, olist_produto_id)).
-- `olist_sync_runs` (organization_id, started_at, finished_at, status, products_created, products_updated, photos_synced, errors_count int, error_details jsonb).
-- `olist_sync_state` (organization_id pk, last_cursor timestamptz, last_run_id uuid, updated_at).
-
-RLS:
-- SELECT: `authenticated` só quando `has_role(auth.uid(),'admin')` na org.
-- INSERT/UPDATE/DELETE: apenas `service_role` (a rota `/api/public/*` usa `supabaseAdmin`).
-
-## Server route de sync
-
-`src/routes/api/public/hooks/olist-sync.ts`:
-1. Verifica header `apikey` = anon key (padrão do template para rotas `/api/public/*`).
-2. Marca `olist_sync_runs` como `running`.
-3. Lê `olist_sync_state.last_cursor`.
-4. Loop paginado em `GET /produtos?dataAlteracao=>=<cursor>`.
-5. Para cada produto:
-   - `GET /produtos/{id}` completo.
-   - Determina pai/variação pelos campos oficiais.
-   - Upsert em `products` (pai) / `product_variants` (filho) via `olist_product_map`.
-   - Baixa fotos novas (compara URL/hash contra `product_images`) e sobe em `product-images/olist/{organization_id}/{produto_id}/{n}.jpg`.
-   - Busca saldo atual → calcula delta contra `inventory_balances` → chama `apply_stock_movement` com `movement_type='ajuste_sync'` (novo enum) e `source='olist_sync'`, para NÃO acionar regras de PDV/pós-venda.
-6. Atualiza `last_cursor` = `started_at`, encerra run com `success`.
-7. Em falha global: `status='error'` + stack em `error_details`.
+Fluxo:
+1. Cria `integration_events` com `source='olist'`, `event_type='sync_run'`, `status='processando'`.
+2. Lê `olist_sync_state.last_updated_produtos_at`.
+3. `POST https://api.tiny.com.br/api2/produtos.pesquisa.php` com body form `token=<>&formato=json&pagina=N&dataAlteracao=DD/MM/YYYY` — pagina até esgotar.
+4. Para cada produto retornado: `POST produto.obter.php` com `token=<>&formato=json&id=<>`.
+5. Determina pai/variação pelos campos oficiais do payload (`tipoVariacao`, `idProdutoPai`).
+6. Upsert em `products`/`product_variants` via `integration_mappings` (procura por `source='olist', entity_type='product'|'variant', external_id=<olist id>`; cria se não existir).
+7. Baixa fotos novas (compara URLs contra `product_images` já linkadas), sobe em `product-images/olist/{organization_id}/{produto_id}/{n}.{ext}`, chama `createSignedUrl(365 dias)`, insere em `product_images` seguindo padrão do `product-form.tsx`.
+8. Estoque: `POST lista.atualizacoes.estoque.php` com `dataAlteracao=<last_updated_estoque_at>`; pra cada variação, chama `apply_stock_movement(..., _movement_type='inventario', _source='olist_sync', _reason='Sincronização Olist')` com delta = saldo Olist - saldo atual.
+9. Rate limit: sleep 250ms entre chamadas, concurrency=1 (Tiny v2 é sensível), backoff exponencial em erro `6` (limite excedido) da API.
+10. Isolamento de erro: cada produto em `try/catch`, erros acumulados em `payload.errors[]` do event, `attempts++`.
+11. Ao terminar: `status='processado'` (ou `'erro'` se falha global), grava contadores em `payload` (`{ products_created, products_updated, photos_synced, variants_created, stock_adjusted, errors: [...] }`), atualiza `olist_sync_state`.
 
 ## Cron
 
-`pg_cron`: `*/20 * * * *` chamando `net.http_post` para `project--<id>.lovable.app/api/public/hooks/olist-sync`.
+`pg_cron`: `*/20 * * * *` → `net.http_post` para `https://project--6163daa4-b1e8-4e1a-adfd-587651752222.lovable.app/api/public/hooks/olist-sync` com header `apikey`. Instalado via `supabase--insert` (não migration, porque contém URL/anon key).
 
 ## UI
 
-Nova rota `src/routes/_authenticated/configuracoes.olist.tsx`:
-- Tabela dos últimos 50 `olist_sync_runs` (data, status, criados, atualizados, fotos, erros).
-- Botão **Sincronizar agora** que chama um `createServerFn` (com `requireSupabaseAuth` + check admin) que faz `fetch` interno na rota `/api/public/hooks/olist-sync`.
-- Link "Ver detalhes" abre modal com `error_details`.
-- Somente admin da org. Somente leitura.
+Nova rota `src/routes/_authenticated/configuracoes.olist.tsx` (link em Configurações e sub-aba em Importar dados):
+- Tabela: últimos 50 `integration_events` where `source='olist' AND event_type='sync_run'` — colunas: data, status, criados, atualizados, fotos, erros (todos vindos do `payload`).
+- Botão **Sincronizar agora** → `createServerFn` com `requireSupabaseAuth`, valida `has_role(admin)`, dispara `fetch` interno na rota `/api/public/hooks/olist-sync`.
+- Modal "Ver detalhes" mostra `payload.errors[]` + `error_message`.
+- Gate: só admin.
 
-Adiciono item de navegação em Configurações → "Importar dados" já existente aponta pra sub-aba "Olist ERP".
+## Segredos
 
-## Confirmações que preciso antes de codar
+- `OLIST_API_TOKEN` — já salvo, confirma na próxima etapa.
+- `OLIST_ORGANIZATION_ID` — precisa ser adicionado para dizer em qual org da FitGestor os produtos vão. (Se quiser multi-org futuramente, viramos numa tabela `org_integration_credentials`; hoje, uma org.)
 
-1. **OK usar server route TanStack ao invés de Edge Function?** (recomendo sim — segue o padrão da stack)
-2. **`OLIST_API_TOKEN`** está salvo — confirmo se é token Tiny v3 (OAuth Bearer). Se for v2 (api_token por form-url-encoded), a implementação muda: v2 é XML/form, v3 é JSON. Me diz qual.
-3. **Novo `movement_type='ajuste_sync'`** no enum de `inventory_movements` — posso adicionar? (necessário para não conflitar com tipos existentes que disparam regras.)
-4. **Bucket `product-images`** confirmado como público? Se privado, uso URL assinada.
+## Fora de escopo (confirmado)
 
-Assim que responder essas 4, mando a migration + código.
+- Sem escrita para Olist.
+- Sem clientes/pedidos/fornecedores.
+- Sem tocar PDV/vendas/caixa.
+- Sem nova aba fora de Configurações.
+
+## Ação imediata após aprovação
+
+1. Migration da `olist_sync_state`.
+2. Confirmar/adicionar secret `OLIST_ORGANIZATION_ID` (você me diz o UUID da org, ou eu detecto a primeira/única).
+3. Server route + createServerFn + UI.
+4. Cron via `supabase--insert`.
+
+Aprova pra eu executar?
