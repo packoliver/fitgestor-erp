@@ -453,29 +453,36 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
     if (d) params.dataAlteracao = d;
 
     let pagina = 1;
+    let totalPages = 1;
+    let consecutiveFailures = 0;
     while (true) {
       params.pagina = String(pagina);
       let retorno: any;
       try {
         retorno = await olistCall("produtos.pesquisa.php", params);
+        consecutiveFailures = 0;
       } catch (e: any) {
-        counters.errors.push({ scope: "produtos.pesquisa", message: e?.message ?? String(e) });
-        break;
-      }
-      if (retorno?.empty) break;
-      const produtos: any[] = Array.isArray(retorno?.produtos) ? retorno.produtos.map((x: any) => x.produto ?? x) : [];
-      if (produtos.length === 0) break;
-      for (const p of produtos) {
-        const externalId = p?.id ? String(p.id) : undefined;
-        if (!externalId) continue;
-        try {
-          await syncOneProduct(orgId, externalId, counters);
-        } catch (e: any) {
-          counters.errors.push({ scope: "produto", id: externalId, message: e?.message ?? String(e) });
-        }
+        counters.errors.push({ scope: "produtos.pesquisa", id: `pag ${pagina}`, message: e?.message ?? String(e) });
+        consecutiveFailures++;
+        if (consecutiveFailures >= 3) break; // desiste após 3 páginas seguidas com falha
+        pagina++;
         await sleep(SLEEP_MS);
+        continue;
       }
-      const totalPages = Number(retorno?.numero_paginas ?? 1);
+      if (!retorno?.empty) {
+        const produtos: any[] = Array.isArray(retorno?.produtos) ? retorno.produtos.map((x: any) => x.produto ?? x) : [];
+        for (const p of produtos) {
+          const externalId = p?.id ? String(p.id) : undefined;
+          if (!externalId) continue;
+          try {
+            await syncOneProduct(orgId, externalId, counters);
+          } catch (e: any) {
+            counters.errors.push({ scope: "produto", id: externalId, message: e?.message ?? String(e) });
+          }
+          await sleep(SLEEP_MS);
+        }
+        totalPages = Number(retorno?.numero_paginas ?? totalPages);
+      }
       if (pagina >= totalPages) break;
       pagina++;
       await sleep(SLEEP_MS);
