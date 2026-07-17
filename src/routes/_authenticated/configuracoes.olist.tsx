@@ -84,9 +84,12 @@ function OlistPage() {
         title="Sincronização com a Olist"
         description="Puxa produtos, variações, fotos e saldo de estoque da Olist/Tiny automaticamente a cada 20 minutos."
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => { runs.refetch(); state.refetch(); }}>
               <RefreshCw className="mr-2 h-4 w-4" />Atualizar
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => cancelStuckMut.mutate()} disabled={cancelStuckMut.isPending}>
+              <StopCircle className="mr-2 h-4 w-4" />Cancelar travadas
             </Button>
             <Button onClick={() => syncNow.mutate()} disabled={syncNow.isPending}>
               {syncNow.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
@@ -94,6 +97,7 @@ function OlistPage() {
             </Button>
           </div>
         }
+
       />
 
       <Card className="max-w-2xl">
