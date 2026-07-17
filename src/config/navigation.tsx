@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Package, Boxes, ArrowDownToLine, ClipboardList, Tag,
   Users, ShieldCheck, Truck, FolderTree, Sparkles, Settings, ScrollText,
   ShoppingCart, Wallet, Receipt, UserSquare2, RefreshCw, Ticket, PiggyBank, FileBarChart,
-  MapPin, AlertTriangle, Rocket, MessageCircle, Home, Briefcase, Trophy,
+  MapPin, AlertTriangle, Rocket, MessageCircle, Home, Briefcase, Trophy, Upload,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -171,6 +171,10 @@ export const NAV_ITEMS: NavItem[] = [
     perm: "settings.manage", group: "Gestão", workspaces: ["admin"], priority: 68,
     description: "Grade de tamanhos usada na contagem manual da entrada de mercadoria.",
     keywords: ["tamanhos","grade","PP","P","M","G","GG","XG","preset"] },
+  { id: "config-importar", title: "Importar dados", url: "/configuracoes/importar", icon: Upload,
+    perm: "settings.manage", group: "Gestão", workspaces: ["admin"], priority: 67,
+    description: "Traga produtos, clientes, fornecedores e estoque de outro ERP (Bling, Tiny, Olist ou CSV/XLSX).",
+    keywords: ["importar","importacao","bling","tiny","olist","csv","xlsx","excel","planilha","migrar","migracao","erp"] },
   { id: "auditoria", title: "Auditoria", url: "/auditoria", icon: ScrollText, perm: "audit.view",
     group: "Gestão", workspaces: ["admin"], priority: 60,
     description: "Registro de ações sensíveis do sistema.",

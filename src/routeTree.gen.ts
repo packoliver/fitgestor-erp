@@ -55,6 +55,7 @@ import { Route as AuthenticatedEstoqueEntradaRouteImport } from './routes/_authe
 import { Route as AuthenticatedConfiguracoesTrocasRouteImport } from './routes/_authenticated/configuracoes.trocas'
 import { Route as AuthenticatedConfiguracoesTamanhosRouteImport } from './routes/_authenticated/configuracoes.tamanhos'
 import { Route as AuthenticatedConfiguracoesPosVendaRouteImport } from './routes/_authenticated/configuracoes.pos-venda'
+import { Route as AuthenticatedConfiguracoesImportarRouteImport } from './routes/_authenticated/configuracoes.importar'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedExpedicaoRotasIndexRouteImport } from './routes/_authenticated/expedicao.rotas.index'
 import { Route as AuthenticatedEstoqueRecebimentosIndexRouteImport } from './routes/_authenticated/estoque.recebimentos.index'
@@ -321,6 +322,12 @@ const AuthenticatedConfiguracoesPosVendaRoute =
     path: '/pos-venda',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
+const AuthenticatedConfiguracoesImportarRoute =
+  AuthenticatedConfiguracoesImportarRouteImport.update({
+    id: '/importar',
+    path: '/importar',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
 const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
   id: '/clientes/$id',
   path: '/clientes/$id',
@@ -395,6 +402,7 @@ export interface FileRoutesByFullPath {
   '/pdv': typeof AuthenticatedPdvRoute
   '/trabalho': typeof AuthenticatedTrabalhoRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRoute
+  '/configuracoes/importar': typeof AuthenticatedConfiguracoesImportarRoute
   '/configuracoes/pos-venda': typeof AuthenticatedConfiguracoesPosVendaRoute
   '/configuracoes/tamanhos': typeof AuthenticatedConfiguracoesTamanhosRoute
   '/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
@@ -451,6 +459,7 @@ export interface FileRoutesByTo {
   '/pdv': typeof AuthenticatedPdvRoute
   '/trabalho': typeof AuthenticatedTrabalhoRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRoute
+  '/configuracoes/importar': typeof AuthenticatedConfiguracoesImportarRoute
   '/configuracoes/pos-venda': typeof AuthenticatedConfiguracoesPosVendaRoute
   '/configuracoes/tamanhos': typeof AuthenticatedConfiguracoesTamanhosRoute
   '/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
@@ -509,6 +518,7 @@ export interface FileRoutesById {
   '/_authenticated/pdv': typeof AuthenticatedPdvRoute
   '/_authenticated/trabalho': typeof AuthenticatedTrabalhoRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRoute
+  '/_authenticated/configuracoes/importar': typeof AuthenticatedConfiguracoesImportarRoute
   '/_authenticated/configuracoes/pos-venda': typeof AuthenticatedConfiguracoesPosVendaRoute
   '/_authenticated/configuracoes/tamanhos': typeof AuthenticatedConfiguracoesTamanhosRoute
   '/_authenticated/configuracoes/trocas': typeof AuthenticatedConfiguracoesTrocasRoute
@@ -567,6 +577,7 @@ export interface FileRouteTypes {
     | '/pdv'
     | '/trabalho'
     | '/clientes/$id'
+    | '/configuracoes/importar'
     | '/configuracoes/pos-venda'
     | '/configuracoes/tamanhos'
     | '/configuracoes/trocas'
@@ -623,6 +634,7 @@ export interface FileRouteTypes {
     | '/pdv'
     | '/trabalho'
     | '/clientes/$id'
+    | '/configuracoes/importar'
     | '/configuracoes/pos-venda'
     | '/configuracoes/tamanhos'
     | '/configuracoes/trocas'
@@ -680,6 +692,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pdv'
     | '/_authenticated/trabalho'
     | '/_authenticated/clientes/$id'
+    | '/_authenticated/configuracoes/importar'
     | '/_authenticated/configuracoes/pos-venda'
     | '/_authenticated/configuracoes/tamanhos'
     | '/_authenticated/configuracoes/trocas'
@@ -1049,6 +1062,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesPosVendaRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
+    '/_authenticated/configuracoes/importar': {
+      id: '/_authenticated/configuracoes/importar'
+      path: '/importar'
+      fullPath: '/configuracoes/importar'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesImportarRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
     '/_authenticated/clientes/$id': {
       id: '/_authenticated/clientes/$id'
       path: '/clientes/$id'
@@ -1116,6 +1136,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedConfiguracoesRouteChildren {
+  AuthenticatedConfiguracoesImportarRoute: typeof AuthenticatedConfiguracoesImportarRoute
   AuthenticatedConfiguracoesPosVendaRoute: typeof AuthenticatedConfiguracoesPosVendaRoute
   AuthenticatedConfiguracoesTamanhosRoute: typeof AuthenticatedConfiguracoesTamanhosRoute
   AuthenticatedConfiguracoesTrocasRoute: typeof AuthenticatedConfiguracoesTrocasRoute
@@ -1123,6 +1144,8 @@ interface AuthenticatedConfiguracoesRouteChildren {
 
 const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteChildren =
   {
+    AuthenticatedConfiguracoesImportarRoute:
+      AuthenticatedConfiguracoesImportarRoute,
     AuthenticatedConfiguracoesPosVendaRoute:
       AuthenticatedConfiguracoesPosVendaRoute,
     AuthenticatedConfiguracoesTamanhosRoute:
