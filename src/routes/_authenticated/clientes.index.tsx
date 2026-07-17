@@ -22,7 +22,12 @@ function ClientesPage() {
   const qc = useQueryClient();
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ full_name: "", cpf: "", phone: "", email: "" });
+  const [form, setForm] = useState({
+    full_name: "", cpf: "", phone: "", email: "",
+    zip_code: "", address: "", address_number: "", address_complement: "",
+    neighborhood: "", city: "", state: "",
+    latitude: null as number | null, longitude: null as number | null, place_id: "",
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["clients", term],
