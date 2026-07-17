@@ -10,9 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatDateTime } from "@/lib/erp";
-import { AlertCircle, Loader2, RefreshCw, PlayCircle } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw, PlayCircle, StopCircle, Package } from "lucide-react";
 import { toast } from "sonner";
-import { triggerOlistSync, listOlistRuns, getOlistSyncState } from "@/lib/olist-sync.functions";
+import { triggerOlistSync, listOlistRuns, getOlistSyncState, cancelOlistRun, cancelStuckOlistRuns } from "@/lib/olist-sync.functions";
+
 
 export const Route = createFileRoute("/_authenticated/configuracoes/olist")({
   component: OlistPage,
@@ -23,18 +24,18 @@ function OlistPage() {
   const listRuns = useServerFn(listOlistRuns);
   const getState = useServerFn(getOlistSyncState);
   const trigger = useServerFn(triggerOlistSync);
+  const cancelRun = useServerFn(cancelOlistRun);
+  const cancelStuck = useServerFn(cancelStuckOlistRuns);
   const [detail, setDetail] = useState<any | null>(null);
 
   const runs = useQuery({
     queryKey: ["olist-runs"],
     queryFn: () => listRuns(),
-    refetchInterval: (q) => ((q.state.data as any[] | undefined)?.some((r) => r.status === "processando") ? 3000 : false),
+    refetchInterval: (q) => ((q.state.data as any[] | undefined)?.some((r) => r.status === "processando") ? 2000 : false),
   });
   const state = useQuery({ queryKey: ["olist-state"], queryFn: () => getState() });
 
-  // Mantém o modal aberto sincronizado com os dados mais recentes
   const detailFresh = detail ? (runs.data ?? []).find((r: any) => r.id === detail.id) ?? detail : null;
-
 
   const syncNow = useMutation({
     mutationFn: () => trigger(),
@@ -52,15 +53,43 @@ function OlistPage() {
     onError: (e: any) => toast.error(e?.message ?? "Falha na sincronização"),
   });
 
+  const cancelOne = useMutation({
+    mutationFn: (id: string) => cancelRun({ data: { id } }),
+    onSuccess: (r: any) => {
+      if (r?.ok) {
+        toast.success("Sincronização será interrompida em instantes.");
+        qc.invalidateQueries({ queryKey: ["olist-runs"] });
+      } else {
+        toast.error(r?.error ?? "Não foi possível cancelar");
+      }
+    },
+  });
+
+  const cancelStuckMut = useMutation({
+    mutationFn: () => cancelStuck(),
+    onSuccess: (r: any) => {
+      if (r?.ok) {
+        toast.success(r.cancelled ? `${r.cancelled} execução(ões) travada(s) cancelada(s).` : "Nenhuma execução travada.");
+        qc.invalidateQueries({ queryKey: ["olist-runs"] });
+      } else {
+        toast.error(r?.error ?? "Falha ao cancelar travadas");
+      }
+    },
+  });
+
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Sincronização com a Olist"
         description="Puxa produtos, variações, fotos e saldo de estoque da Olist/Tiny automaticamente a cada 20 minutos."
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => { runs.refetch(); state.refetch(); }}>
               <RefreshCw className="mr-2 h-4 w-4" />Atualizar
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => cancelStuckMut.mutate()} disabled={cancelStuckMut.isPending}>
+              <StopCircle className="mr-2 h-4 w-4" />Cancelar travadas
             </Button>
             <Button onClick={() => syncNow.mutate()} disabled={syncNow.isPending}>
               {syncNow.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
@@ -68,6 +97,7 @@ function OlistPage() {
             </Button>
           </div>
         }
+
       />
 
       <Card className="max-w-2xl">
@@ -138,11 +168,19 @@ function OlistPage() {
                       <TableCell className="text-right">{p.stock_adjusted ?? 0}</TableCell>
                       <TableCell className="text-right">{p.errors?.length ?? 0}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => setDetail(r)}>Detalhes</Button>
+                        <div className="flex justify-end gap-1">
+                          {r.status === "processando" && (
+                            <Button variant="ghost" size="sm" onClick={() => cancelOne.mutate(r.id)} disabled={cancelOne.isPending}>
+                              <StopCircle className="mr-1 h-3.5 w-3.5" />Parar
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="sm" onClick={() => setDetail(r)}>Detalhes</Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
                 })}
+
               </TableBody>
             </Table>
           </div>
@@ -182,7 +220,22 @@ function OlistPage() {
                     <Stat label="Fotos" value={p.photos_synced ?? 0} />
                     <Stat label="Estoque" value={p.stock_adjusted ?? 0} />
                   </div>
+                  {isRunning && p.current_product?.name && (
+                    <div className="mt-3 flex items-center gap-2 rounded bg-muted/40 px-3 py-2 text-xs">
+                      <Package className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-muted-foreground">Processando agora:</span>
+                      <span className="font-medium truncate">{p.current_product.name}</span>
+                    </div>
+                  )}
                 </div>
+                {isRunning && (
+                  <div className="flex justify-end">
+                    <Button variant="destructive" size="sm" onClick={() => cancelOne.mutate(detailFresh.id)} disabled={cancelOne.isPending}>
+                      <StopCircle className="mr-2 h-4 w-4" />Parar sincronização
+                    </Button>
+                  </div>
+                )}
+
                 {detailFresh.error_message && (
                   <div className="rounded bg-destructive/10 p-3 text-destructive text-xs">{detailFresh.error_message}</div>
                 )}
