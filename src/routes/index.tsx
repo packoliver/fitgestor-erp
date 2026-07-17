@@ -385,7 +385,7 @@ function BrowserChrome({ path, children }: { path: string; children: ReactNode }
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="ml-3 truncate text-[11px] text-muted-foreground">fitgestor.app{path}</span>
       </div>
-      <div className="bg-background">{children}</div>
+      <div className="bg-background overflow-x-auto">{children}</div>
     </div>
   );
 }
