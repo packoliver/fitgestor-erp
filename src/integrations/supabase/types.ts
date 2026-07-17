@@ -2046,6 +2046,38 @@ export type Database = {
           },
         ]
       }
+      olist_sync_state: {
+        Row: {
+          last_run_started_at: string | null
+          last_updated_estoque_at: string | null
+          last_updated_produtos_at: string | null
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          last_run_started_at?: string | null
+          last_updated_estoque_at?: string | null
+          last_updated_produtos_at?: string | null
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          last_run_started_at?: string | null
+          last_updated_estoque_at?: string | null
+          last_updated_produtos_at?: string | null
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "olist_sync_state_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_color_aliases: {
         Row: {
           alias_normalized: string
