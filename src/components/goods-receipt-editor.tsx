@@ -10,12 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Minus, Trash2, Search, Save, Package, CheckCircle2, Lock } from "lucide-react";
+import { Loader2, Plus, Minus, Trash2, Search, Save, Package, CheckCircle2, Lock, AlertTriangle, Layers, ClipboardList, ScanBarcode, ClipboardCheck, Boxes, Printer, History } from "lucide-react";
 import { formatDateTime } from "@/lib/erp";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { GoodsReceiptLabelsSection } from "@/components/goods-receipt-labels-section";
 import { ReceiptScannerPanel, type ScannedVariant, type IncrementResult } from "@/components/goods-receipt-scanner-panel";
 import { GoodsReceiptCountingPanel } from "@/components/goods-receipt-counting-panel";
+import { GoodsReceiptStockMovements } from "@/components/goods-receipt-stock-movements";
+import { GoodsReceiptTimeline } from "@/components/goods-receipt-timeline";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type Mode = "restock" | "new_variant" | "new_product" | "count_only";
@@ -236,17 +238,34 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     let qty = 0;
     let restock = 0, newVar = 0, newProd = 0, counting = 0;
     let unresolved = 0;
+    let restockQty = 0, newVarQty = 0, newProdQty = 0, countingQty = 0;
     for (const it of items) {
-      for (const c of it.cells) qty += c.quantity || 0;
-      if (it.mode === "restock") restock++;
-      else if (it.mode === "new_variant") newVar++;
-      else if (it.mode === "new_product") newProd++;
-      else counting++;
+      let itemQty = 0;
+      for (const c of it.cells) itemQty += c.quantity || 0;
+      qty += itemQty;
+      if (it.mode === "restock") { restock++; restockQty += itemQty; }
+      else if (it.mode === "new_variant") { newVar++; newVarQty += itemQty; }
+      else if (it.mode === "new_product") { newProd++; newProdQty += itemQty; }
+      else { counting++; countingQty += itemQty; }
       if (it.mode === "count_only" || (it.resolution_status && it.resolution_status !== "resolved")) {
         unresolved++;
       }
     }
-    return { qty, restock, newVar, newProd, counting, unresolved, itemCount: items.length };
+    return { qty, restock, newVar, newProd, counting, unresolved,
+      restockQty, newVarQty, newProdQty, countingQty,
+      itemCount: items.length };
+  }, [items]);
+
+  // Grupos por classificação para as abas Organização e Revisão
+  const grouped = useMemo(() => {
+    const existentes = items.filter((i) => i.mode === "restock");
+    const novasVariacoes = items.filter((i) => i.mode === "new_variant");
+    const novosProdutos = items.filter((i) => i.mode === "new_product");
+    const revisao = items.filter(
+      (i) => i.mode === "count_only" ||
+             (i.resolution_status && i.resolution_status !== "resolved")
+    );
+    return { existentes, novasVariacoes, novosProdutos, revisao };
   }, [items]);
 
   const save = useMutation({
@@ -628,9 +647,6 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {status === "confirmed" && draftId && (
-        <GoodsReceiptLabelsSection draftId={draftId} />
-      )}
       {status === "cancelled" && (
         <div className="rounded-md border border-rose-300 bg-rose-50 p-4 text-sm text-rose-900 flex items-start gap-3">
           <Lock className="h-5 w-5 mt-0.5 shrink-0" />
@@ -691,23 +707,63 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="counting" className="w-full">
-        <TabsList>
-          <TabsTrigger value="counting">Contagem manual</TabsTrigger>
-          <TabsTrigger value="grid">Produtos e grade</TabsTrigger>
-          <TabsTrigger value="scanner" disabled={readOnly}>Recebimento por leitor</TabsTrigger>
+      <Tabs defaultValue={status === "confirmed" ? "review" : "counting"} className="w-full">
+        <TabsList className="flex flex-wrap h-auto">
+          <TabsTrigger value="counting" className="gap-1">
+            <ClipboardList className="h-4 w-4" /> Contagem
+          </TabsTrigger>
+          <TabsTrigger value="organization" className="gap-1">
+            <Layers className="h-4 w-4" /> Organização
+            {(totals.itemCount > 0) && (
+              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">{totals.itemCount}</Badge>
+            )}
+            {totals.unresolved > 0 && (
+              <Badge variant="destructive" className="ml-1 h-4 px-1 text-[10px]">{totals.unresolved} pend.</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="review" className="gap-1">
+            <ClipboardCheck className="h-4 w-4" /> Revisão
+          </TabsTrigger>
+          <TabsTrigger value="stock" className="gap-1" disabled={!draftId || status === "draft"}>
+            <Boxes className="h-4 w-4" /> Estoque
+          </TabsTrigger>
+          <TabsTrigger value="labels" className="gap-1" disabled={status !== "confirmed" || !draftId}>
+            <Printer className="h-4 w-4" /> Etiquetas
+          </TabsTrigger>
+          <TabsTrigger value="history" className="gap-1" disabled={!draftId}>
+            <History className="h-4 w-4" /> Histórico
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="counting" className="mt-3">
+        {/* CONTAGEM ---------------------------------------------------------- */}
+        <TabsContent value="counting" className="mt-3 space-y-3">
           <GoodsReceiptCountingPanel
             items={items}
             setItems={setItems}
             disabled={readOnly}
             markDirty={markDirty}
           />
+          <details className="rounded-md border bg-muted/30">
+            <summary className="cursor-pointer px-3 py-2 text-sm font-medium flex items-center gap-2">
+              <ScanBarcode className="h-4 w-4" /> Recebimento por leitor de código de barras
+            </summary>
+            <div className="p-3 border-t">
+              <ReceiptScannerPanel
+                disabled={readOnly}
+                onIncrement={incrementRestockByVariant}
+                onDecrement={decrementRestockByVariant}
+                onSaveDraft={() => save.mutate()}
+                saving={save.isPending}
+                dirty={dirty}
+                totalPieces={totals.qty}
+                distinctVariantsCount={distinctScannedVariants}
+              />
+            </div>
+          </details>
         </TabsContent>
 
-        <TabsContent value="grid" className="space-y-3 mt-3">
+        {/* ORGANIZAÇÃO ------------------------------------------------------- */}
+        <TabsContent value="organization" className="mt-3 space-y-4">
           <ProductSearchCard
             onPickRestock={(p) => addItemFromProduct("restock", p)}
             onPickNewVariant={(p) => addItemFromProduct("new_variant", p)}
@@ -718,50 +774,215 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
 
           {items.length === 0 ? (
             <Card><CardContent className="py-10 text-center text-muted-foreground">
-              Nenhum produto adicionado ainda. Use a busca acima para localizar um produto existente ou cadastre um totalmente novo.
+              Nenhum item ainda. Comece pela aba <strong>Contagem</strong> ou busque um produto acima.
             </CardContent></Card>
           ) : (
-            <div className="space-y-3">
-              {items.filter((it) => it.mode !== "count_only").map((it) => (
-                <ItemBlock
-                  key={it.local_id}
-                  item={it}
-                  categories={categories.data ?? []}
-                  brands={brands.data ?? []}
-                  suppliers={suppliers.data ?? []}
-                  disabled={readOnly}
-                  onRemove={() => removeItem(it.local_id)}
-                  onUpdateCell={(idx, patch) => updateCell(it.local_id, idx, patch)}
-                  onAddSize={(sz) => addCellRow(it.local_id, sz)}
-                  onUpdateNewProduct={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_product_data: { ...(i.new_product_data ?? { name: "" }), ...patch } } : i)); markDirty(); }}
-                  onUpdateNewVariant={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_variant_data: { ...(i.new_variant_data ?? { size: "" }), ...patch } } : i)); markDirty(); }}
-                />
-              ))}
-              {items.some((it) => it.mode === "count_only") && (
-                <div className="text-xs text-muted-foreground">
-                  Existem itens em <strong>Contagem manual</strong> que ainda não foram vinculados. Alterne para a aba <em>Contagem manual</em> para organizá-los.
-                </div>
-              )}
+            <div className="space-y-4">
+              <OrgGroup
+                title="JÁ EXISTEM"
+                subtitle="Itens que apenas aumentarão o estoque das variações existentes."
+                tone="emerald"
+                count={grouped.existentes.length}
+                pieces={totals.restockQty}
+              >
+                {grouped.existentes.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2">
+                    Sem itens deste tipo neste lote.
+                  </div>
+                ) : (
+                  grouped.existentes.map((it) => (
+                    <ItemBlock
+                      key={it.local_id}
+                      item={it}
+                      categories={categories.data ?? []}
+                      brands={brands.data ?? []}
+                      suppliers={suppliers.data ?? []}
+                      disabled={readOnly}
+                      onRemove={() => removeItem(it.local_id)}
+                      onUpdateCell={(idx, patch) => updateCell(it.local_id, idx, patch)}
+                      onAddSize={(sz) => addCellRow(it.local_id, sz)}
+                      onUpdateNewProduct={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_product_data: { ...(i.new_product_data ?? { name: "" }), ...patch } } : i)); markDirty(); }}
+                      onUpdateNewVariant={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_variant_data: { ...(i.new_variant_data ?? { size: "" }), ...patch } } : i)); markDirty(); }}
+                    />
+                  ))
+                )}
+              </OrgGroup>
+
+              <OrgGroup
+                title="NOVAS VARIAÇÕES"
+                subtitle="Produtos já existentes que precisam de uma nova combinação de cor ou tamanho."
+                tone="sky"
+                count={grouped.novasVariacoes.length}
+                pieces={totals.newVarQty}
+              >
+                {grouped.novasVariacoes.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2">
+                    Sem novas variações neste lote.
+                  </div>
+                ) : (
+                  grouped.novasVariacoes.map((it) => (
+                    <ItemBlock
+                      key={it.local_id}
+                      item={it}
+                      categories={categories.data ?? []}
+                      brands={brands.data ?? []}
+                      suppliers={suppliers.data ?? []}
+                      disabled={readOnly}
+                      onRemove={() => removeItem(it.local_id)}
+                      onUpdateCell={(idx, patch) => updateCell(it.local_id, idx, patch)}
+                      onAddSize={(sz) => addCellRow(it.local_id, sz)}
+                      onUpdateNewProduct={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_product_data: { ...(i.new_product_data ?? { name: "" }), ...patch } } : i)); markDirty(); }}
+                      onUpdateNewVariant={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_variant_data: { ...(i.new_variant_data ?? { size: "" }), ...patch } } : i)); markDirty(); }}
+                    />
+                  ))
+                )}
+              </OrgGroup>
+
+              <OrgGroup
+                title="NOVOS PRODUTOS"
+                subtitle="Modelos que ainda não existem no cadastro e serão criados na confirmação."
+                tone="violet"
+                count={grouped.novosProdutos.length}
+                pieces={totals.newProdQty}
+              >
+                {grouped.novosProdutos.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2">
+                    Sem produtos novos neste lote.
+                  </div>
+                ) : (
+                  grouped.novosProdutos.map((it) => (
+                    <ItemBlock
+                      key={it.local_id}
+                      item={it}
+                      categories={categories.data ?? []}
+                      brands={brands.data ?? []}
+                      suppliers={suppliers.data ?? []}
+                      disabled={readOnly}
+                      onRemove={() => removeItem(it.local_id)}
+                      onUpdateCell={(idx, patch) => updateCell(it.local_id, idx, patch)}
+                      onAddSize={(sz) => addCellRow(it.local_id, sz)}
+                      onUpdateNewProduct={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_product_data: { ...(i.new_product_data ?? { name: "" }), ...patch } } : i)); markDirty(); }}
+                      onUpdateNewVariant={(patch) => { setItems((prev) => prev.map((i) => i.local_id === it.local_id ? { ...i, new_variant_data: { ...(i.new_variant_data ?? { size: "" }), ...patch } } : i)); markDirty(); }}
+                    />
+                  ))
+                )}
+              </OrgGroup>
+
+              <OrgGroup
+                title="PRECISAM DE REVISÃO"
+                subtitle="Itens sem correspondência segura, possível duplicidade ou ainda em contagem bruta."
+                tone="amber"
+                count={grouped.revisao.length}
+                pieces={totals.countingQty}
+              >
+                {grouped.revisao.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                    Nenhuma pendência. Todos os itens desta contagem estão vinculados.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3 text-amber-600" />
+                      Volte à aba <strong>Contagem</strong> para organizar estes itens antes de confirmar.
+                    </div>
+                    {grouped.revisao.map((it) => (
+                      <div key={it.local_id} className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs">
+                        <div className="font-medium">
+                          {it.raw_description || it.product_snapshot?.name || it.new_product_data?.name || "Item sem descrição"}
+                        </div>
+                        <div className="text-muted-foreground">
+                          {[it.raw_size_label, it.raw_color_label].filter(Boolean).join(" · ")}
+                          {(it.raw_counted_quantity ?? 0) > 0 && (
+                            <> · {it.raw_counted_quantity} peça(s) contadas</>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </OrgGroup>
             </div>
           )}
         </TabsContent>
 
-        <TabsContent value="scanner" className="mt-3">
-          <ReceiptScannerPanel
-            disabled={readOnly}
-            onIncrement={incrementRestockByVariant}
-            onDecrement={decrementRestockByVariant}
-            onSaveDraft={() => save.mutate()}
-            saving={save.isPending}
-            dirty={dirty}
-            totalPieces={totals.qty}
-            distinctVariantsCount={distinctScannedVariants}
-          />
-          {items.length > 0 && (
-            <div className="mt-3 text-xs text-muted-foreground">
-              O modo leitor edita o mesmo rascunho. Volte à aba <strong>Lançamento por grade</strong> para editar quantidades manualmente,
-              remover blocos ou cadastrar produtos novos e novas variações.
-            </div>
+        {/* REVISÃO ----------------------------------------------------------- */}
+        <TabsContent value="review" className="mt-3 space-y-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Resumo da entrada</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-3 md:grid-cols-4">
+                <SummaryStat label="Produtos existentes" value={grouped.existentes.length} pieces={totals.restockQty} tone="emerald" />
+                <SummaryStat label="Novas variações" value={grouped.novasVariacoes.length} pieces={totals.newVarQty} tone="sky" />
+                <SummaryStat label="Novos produtos" value={grouped.novosProdutos.length} pieces={totals.newProdQty} tone="violet" />
+                <SummaryStat label="Pendências" value={grouped.revisao.length} pieces={totals.countingQty} tone="amber" />
+              </div>
+              <div className="rounded-md border p-3 text-sm bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <span>Total de peças no lote</span>
+                  <strong className="text-lg">{totals.qty}</strong>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Etiquetas necessárias (uma por peça recebida)</span>
+                  <span>{totals.qty - totals.countingQty}</span>
+                </div>
+              </div>
+              {totals.unresolved > 0 && (
+                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 flex gap-2">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <div>
+                    <strong>{totals.unresolved} item(ns) precisam de revisão.</strong>{" "}
+                    Vincule ou cadastre cada item na aba <em>Contagem</em> ou <em>Organização</em> antes de confirmar.
+                  </div>
+                </div>
+              )}
+              {!locationId && status === "draft" && (
+                <div className="rounded-md border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900 flex gap-2">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <div>Selecione o <strong>local de estoque</strong> no cabeçalho antes de confirmar.</div>
+                </div>
+              )}
+              {totals.qty === 0 && status === "draft" && (
+                <div className="text-xs text-muted-foreground">
+                  Nenhuma peça lançada. A confirmação exige ao menos uma peça com quantidade &gt; 0.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ESTOQUE ----------------------------------------------------------- */}
+        <TabsContent value="stock" className="mt-3">
+          {draftId ? (
+            <GoodsReceiptStockMovements draftId={draftId} />
+          ) : (
+            <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">
+              Salve o rascunho para acompanhar as movimentações geradas por esta entrada.
+            </CardContent></Card>
+          )}
+        </TabsContent>
+
+        {/* ETIQUETAS --------------------------------------------------------- */}
+        <TabsContent value="labels" className="mt-3">
+          {status === "confirmed" && draftId ? (
+            <GoodsReceiptLabelsSection draftId={draftId} />
+          ) : (
+            <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">
+              As etiquetas ficam disponíveis após a confirmação da entrada. Cada etiqueta corresponde a uma peça recebida neste lote.
+            </CardContent></Card>
+          )}
+        </TabsContent>
+
+        {/* HISTÓRICO --------------------------------------------------------- */}
+        <TabsContent value="history" className="mt-3">
+          {draftId ? (
+            <GoodsReceiptTimeline draftId={draftId} />
+          ) : (
+            <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">
+              O histórico aparece após o primeiro salvamento do rascunho.
+            </CardContent></Card>
           )}
         </TabsContent>
       </Tabs>
@@ -1163,5 +1384,61 @@ function ItemBlock({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+type OrgTone = "emerald" | "sky" | "violet" | "amber";
+const toneClasses: Record<OrgTone, { border: string; bg: string; text: string; badge: string }> = {
+  emerald: { border: "border-emerald-300", bg: "bg-emerald-50/60", text: "text-emerald-900", badge: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+  sky: { border: "border-sky-300", bg: "bg-sky-50/60", text: "text-sky-900", badge: "bg-sky-100 text-sky-800 border-sky-300" },
+  violet: { border: "border-violet-300", bg: "bg-violet-50/60", text: "text-violet-900", badge: "bg-violet-100 text-violet-800 border-violet-300" },
+  amber: { border: "border-amber-300", bg: "bg-amber-50/60", text: "text-amber-900", badge: "bg-amber-100 text-amber-800 border-amber-300" },
+};
+
+function OrgGroup({
+  title, subtitle, tone, count, pieces, children,
+}: {
+  title: string;
+  subtitle: string;
+  tone: OrgTone;
+  count: number;
+  pieces: number;
+  children: React.ReactNode;
+}) {
+  const t = toneClasses[tone];
+  return (
+    <Card className={`${t.border}`}>
+      <CardHeader className={`py-3 ${t.bg}`}>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <CardTitle className={`text-sm font-semibold tracking-wider ${t.text}`}>{title}</CardTitle>
+            <div className="text-xs text-muted-foreground mt-0.5">{subtitle}</div>
+          </div>
+          <div className="flex gap-1.5">
+            <Badge variant="outline" className={t.badge}>{count} {count === 1 ? "linha" : "linhas"}</Badge>
+            <Badge variant="outline" className={t.badge}>{pieces} {pieces === 1 ? "peça" : "peças"}</Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-3 space-y-3">{children}</CardContent>
+    </Card>
+  );
+}
+
+function SummaryStat({
+  label, value, pieces, tone,
+}: {
+  label: string;
+  value: number;
+  pieces: number;
+  tone: OrgTone;
+}) {
+  const t = toneClasses[tone];
+  return (
+    <div className={`rounded-md border p-3 ${t.border} ${t.bg}`}>
+      <div className={`text-xs font-medium ${t.text}`}>{label}</div>
+      <div className="text-2xl font-semibold mt-1">{value}</div>
+      <div className="text-xs text-muted-foreground">{pieces} peça(s)</div>
+    </div>
   );
 }
