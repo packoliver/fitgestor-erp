@@ -532,6 +532,21 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
   };
 
   const startedAt = new Date();
+
+  // Evita execuções concorrentes na mesma organização
+  const { data: running } = await supabaseAdmin
+    .from("integration_events")
+    .select("id, received_at")
+    .eq("organization_id", orgId)
+    .eq("source", "olist")
+    .eq("event_type", "sync_run")
+    .eq("status", "processando")
+    .gt("received_at", new Date(Date.now() - 15 * 60 * 1000).toISOString())
+    .limit(1);
+  if (running && running.length > 0) {
+    throw new Error("Já existe uma sincronização em andamento. Aguarde ou cancele-a antes de iniciar outra.");
+  }
+
   const { data: eventRow } = await supabaseAdmin
     .from("integration_events")
     .insert({
@@ -544,6 +559,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
     .select("id")
     .single();
   const eventId = eventRow?.id as string | undefined;
+
 
   const { data: state } = await supabaseAdmin
     .from("olist_sync_state")
@@ -561,8 +577,18 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
   let productsTotal = 0;
   let productsProcessed = 0;
   let currentProduct: { id?: string; name?: string } | null = null;
+  let cancelledFlag = false;
   const persistProgress = async (extra: Record<string, any> = {}) => {
-    if (!eventId) return;
+    if (!eventId || cancelledFlag) return;
+    const { data: cur } = await supabaseAdmin
+      .from("integration_events")
+      .select("status")
+      .eq("id", eventId)
+      .maybeSingle();
+    if (cur?.status === "cancelado") {
+      cancelledFlag = true;
+      return;
+    }
     await supabaseAdmin
       .from("integration_events")
       .update({
@@ -579,14 +605,17 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
   };
 
   const isCancelled = async (): Promise<boolean> => {
+    if (cancelledFlag) return true;
     if (!eventId) return false;
     const { data } = await supabaseAdmin
       .from("integration_events")
       .select("status")
       .eq("id", eventId)
       .maybeSingle();
-    return data?.status === "cancelado";
+    if (data?.status === "cancelado") cancelledFlag = true;
+    return cancelledFlag;
   };
+
 
   try {
     // 1) Produtos
