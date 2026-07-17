@@ -207,19 +207,170 @@ function ClosingCta() {
 
 function SiteFooter() {
   return (
-    <footer>
-      <div className="mx-auto flex max-w-[1200px] flex-col items-start justify-between gap-6 px-6 py-12 sm:flex-row sm:items-center lg:px-10">
-        <BrandLockup size="sm" onDark />
-        <div className="flex flex-col items-start gap-1 sm:items-end">
-          <span className="text-[11px] text-muted-foreground">
-            Desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup>
-          </span>
-          <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-            © {new Date().getFullYear()} · Todos os direitos reservados
-          </span>
+    <footer className="fit-aurora relative overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 -top-20 h-40 bg-[radial-gradient(60%_100%_at_50%_100%,rgba(139,92,246,0.20),transparent_70%)] blur-2xl"
+      />
+      <div className="mx-auto max-w-[1200px] px-6 py-12 lg:px-10">
+        <div className="glass-medium flex flex-col items-start justify-between gap-6 rounded-[22px] px-6 py-6 sm:flex-row sm:items-center lg:px-8">
+          <BrandLockup size="sm" onDark />
+          <div className="flex flex-col items-start gap-1 sm:items-end">
+            <span className="text-[11px] text-muted-foreground">
+              Desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup>
+            </span>
+            <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+              © {new Date().getFullYear()} · Todos os direitos reservados
+            </span>
+          </div>
         </div>
       </div>
     </footer>
+  );
+}
+
+/* ----------------------------- Testimonials ----------------------------- */
+
+function Testimonials() {
+  const items = [
+    {
+      quote:
+        "Reduzimos em 70% o tempo do recebimento de mercadoria. A conciliação virou parte natural do fluxo, não um retrabalho.",
+      name: "Amanda Ribeiro",
+      role: "Gerente de operações",
+    },
+    {
+      quote:
+        "O PDV com trocas e crédito por cliente resolveu a maior dor do balcão. Hoje qualquer vendedor fecha uma troca sem depender do supervisor.",
+      name: "Rafael Nunes",
+      role: "Supervisor de loja",
+    },
+    {
+      quote:
+        "Ter estoque, etiquetas e vendas na mesma plataforma acabou com as planilhas paralelas. A operação inteira olha para os mesmos números.",
+      name: "Camila Duarte",
+      role: "Diretora comercial",
+    },
+  ];
+  return (
+    <section id="depoimentos" className="fit-aurora relative overflow-hidden border-b border-white/5">
+      <div className="mx-auto max-w-[1200px] px-6 py-24 lg:px-10 lg:py-28">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">
+            Quem opera com o FitGestor
+          </p>
+          <h2 className="mt-4 text-[30px] font-semibold leading-[1.15] tracking-[-0.025em] sm:text-[38px]">
+            Times que trocaram planilhas por{" "}
+            <span className="bg-gradient-to-r from-white via-white/75 to-white/40 bg-clip-text text-transparent">
+              uma única fonte de verdade
+            </span>
+            .
+          </h2>
+        </div>
+        <ul className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3">
+          {items.map((t) => (
+            <li
+              key={t.name}
+              className="liquid-card relative flex flex-col justify-between rounded-[20px] p-7"
+            >
+              <span
+                aria-hidden
+                className="absolute right-6 top-4 text-[80px] font-serif leading-none text-white/10 select-none"
+              >
+                &ldquo;
+              </span>
+              <p className="relative text-[14.5px] leading-relaxed text-foreground/90">
+                {t.quote}
+              </p>
+              <div className="relative mt-8 flex items-center gap-3 border-t border-white/10 pt-4">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/25 text-[13px] font-semibold text-white">
+                  {t.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .slice(0, 2)
+                    .join("")}
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-foreground">{t.name}</p>
+                  <p className="text-[11px] text-muted-foreground">{t.role}</p>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+/* --------------------------------- FAQ ---------------------------------- */
+
+function FaqSection() {
+  const faqs = [
+    {
+      q: "O FitGestor substitui meu ERP atual?",
+      a: "Sim, para lojas de varejo de moda e itens fitness ele cobre recebimento, estoque, etiquetas, PDV, trocas, entregas, funcionários e pós-venda em um único sistema, dispensando planilhas paralelas.",
+    },
+    {
+      q: "Precisa instalar algo na loja?",
+      a: "Não. É 100% web, rodando em qualquer navegador moderno. Balança, leitor de código de barras e impressora de etiquetas funcionam nativamente via USB/serial.",
+    },
+    {
+      q: "Como funciona o controle de trocas e crédito da loja?",
+      a: "Toda troca gera um vale ou crédito vinculado ao cliente. No PDV o crédito aparece automaticamente na hora do pagamento, com histórico completo e regras de expiração configuráveis.",
+    },
+    {
+      q: "Consigo controlar entregas e motoboys?",
+      a: "Sim. O módulo de expedição organiza fila, rotas e motoboys, com comprovantes digitais de entrega e rastreio por cliente.",
+    },
+    {
+      q: "Meus dados ficam seguros?",
+      a: "Sim. Todo acesso é autenticado, com perfis de permissão por cargo, trilha de auditoria e backups automáticos em ambiente corporativo.",
+    },
+  ];
+  return (
+    <section id="faq" className="fit-aurora relative overflow-hidden border-b border-white/5">
+      <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-14 px-6 py-24 lg:grid-cols-12 lg:gap-12 lg:px-10 lg:py-28">
+        <div className="lg:col-span-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">
+            Perguntas frequentes
+          </p>
+          <h2 className="mt-4 text-[30px] font-semibold leading-[1.15] tracking-[-0.025em] sm:text-[38px]">
+            Tudo o que a operação costuma perguntar,{" "}
+            <span className="text-muted-foreground">antes de trocar de sistema.</span>
+          </h2>
+          <p className="mt-6 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground">
+            Se restar dúvida, fale com o time da Quero Ser Fit
+            <sup className="text-[0.6em]">®</sup> — respondemos em horário comercial.
+          </p>
+        </div>
+        <ul className="space-y-3 lg:col-span-7">
+          {faqs.map((f, i) => (
+            <li key={f.q} className="liquid-card group rounded-[18px] p-1">
+              <details className="group/details rounded-[16px] p-5 open:pb-6">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left">
+                  <span className="flex items-baseline gap-3">
+                    <span className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="text-[15px] font-semibold text-foreground">{f.q}</span>
+                  </span>
+                  <span
+                    aria-hidden
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.05] text-foreground transition-transform duration-300 group-open/details:rotate-45"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="mt-4 pl-10 text-[14px] leading-relaxed text-muted-foreground">
+                  {f.a}
+                </p>
+              </details>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }
 
