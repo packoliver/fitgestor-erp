@@ -159,26 +159,40 @@ function ModuleSection({
 
 function ClosingCta() {
   return (
-    <section className="border-b border-border">
+    <section className="fit-aurora relative overflow-hidden border-b border-white/5">
       <div className="mx-auto max-w-[1200px] px-6 py-28 lg:px-10">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
-          <div className="lg:col-span-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">FitGestor</p>
-            <h2 className="mt-4 text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[48px] lg:text-[58px]">
-              A operação da empresa funciona melhor <br />
-              <span className="text-muted-foreground">quando o sistema entende o negócio.</span>
-            </h2>
-          </div>
-          <div className="flex items-end lg:col-span-4">
-            <div className="w-full">
-              <Button asChild size="lg" className="w-full rounded-[10px] bg-primary text-primary-foreground hover:bg-primary-hover">
-                <Link to="/auth">
-                  Entrar no sistema <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground">
-                Ambiente corporativo. Acesso restrito à equipe autorizada da Quero Ser Fit<sup className="text-[0.6em]">®</sup>.
-              </p>
+        <div className="liquid-surface relative overflow-hidden rounded-[28px] p-10 lg:p-14">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -left-24 -top-24 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.35),transparent_70%)] blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-32 right-[-120px] h-[380px] w-[380px] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.28),transparent_70%)] blur-3xl"
+          />
+          <div className="relative grid grid-cols-1 gap-10 lg:grid-cols-12">
+            <div className="lg:col-span-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">FitGestor</p>
+              <h2 className="mt-4 text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[48px] lg:text-[58px]">
+                A operação da empresa funciona melhor <br />
+                <span className="text-muted-foreground">quando o sistema entende o negócio.</span>
+              </h2>
+            </div>
+            <div className="flex items-end lg:col-span-4">
+              <div className="w-full">
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full rounded-full bg-primary text-primary-foreground shadow-[0_14px_36px_-8px_rgba(139,92,246,0.7)] hover:bg-primary-hover"
+                >
+                  <Link to="/auth">
+                    Entrar no sistema <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground">
+                  Ambiente corporativo. Acesso restrito à equipe autorizada da Quero Ser Fit<sup className="text-[0.6em]">®</sup>.
+                </p>
+              </div>
             </div>
           </div>
         </div>
