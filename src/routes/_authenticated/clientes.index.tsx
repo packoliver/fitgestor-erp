@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useState } from "react";
 import { Plus, Search, Trash2, Wallet } from "lucide-react";
 import { normalizeDigits, validCPF } from "@/lib/pos";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/clientes/")({
