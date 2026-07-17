@@ -178,6 +178,60 @@ function Dashboard() {
         </section>
       )}
 
+      {/* Ranking dos mais vendidos (últimos 30 dias) */}
+      {canReports && (
+        <section>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Mais vendidos (30 dias)
+            </h2>
+            <Button asChild variant="ghost" size="sm" className="gap-1">
+              <Link to="/relatorios/mais-vendidos">
+                Ver ranking completo <ArrowRight className="h-3 w-3" />
+              </Link>
+            </Button>
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              {topProducts.isLoading ? (
+                <div className="p-6 text-sm text-muted-foreground text-center">Carregando…</div>
+              ) : (topProducts.data ?? []).length === 0 ? (
+                <div className="p-6 text-sm text-muted-foreground text-center">
+                  Sem vendas concluídas nos últimos 30 dias.
+                </div>
+              ) : (
+                <ol className="divide-y">
+                  {(topProducts.data ?? []).map((p, i) => (
+                    <li key={i} className="flex items-center gap-3 p-3">
+                      <div className={
+                        "flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold shrink-0 " +
+                        (i === 0 ? "bg-amber-500/15 text-amber-600"
+                          : i === 1 ? "bg-slate-400/15 text-slate-600"
+                          : i === 2 ? "bg-orange-500/15 text-orange-600"
+                          : "bg-muted text-muted-foreground")
+                      }>
+                        {i < 3 ? <Trophy className="h-4 w-4" /> : `#${i + 1}`}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium truncate">{p.name}</div>
+                        {p.color && <div className="text-xs text-muted-foreground truncate">{p.color}</div>}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-sm font-semibold tabular-nums">{p.qty} pçs</div>
+                        <div className="text-xs text-muted-foreground tabular-nums">
+                          {new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(p.revenue)}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
+
       {/* 5. Ações rápidas */}
       <section>
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Alertas e ações</h2>
