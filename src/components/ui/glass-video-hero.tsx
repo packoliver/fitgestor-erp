@@ -116,7 +116,7 @@ export function GlassVideoHero({
             size="lg"
             className="rounded-full bg-primary px-6 text-primary-foreground shadow-[0_10px_30px_-8px_rgba(139,92,246,0.65)] hover:bg-primary-hover hover:shadow-[0_14px_36px_-8px_rgba(139,92,246,0.8)] focus-visible:ring-2 focus-visible:ring-primary-glow focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <Link to={primaryCta.to}>
+            <Link to={primaryCta.to as string}>
               {primaryCta.label} <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
