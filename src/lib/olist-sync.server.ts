@@ -338,47 +338,41 @@ async function syncOneProduct(
       let variantId = await findLocalVariantByExternal(orgId, varExternalId);
       if (!variantId) {
         const sku = v.codigo ?? null;
+        const barcode = v.gtin ?? null;
         variantId = await findVariantBySku(orgId, sku);
+        if (!variantId) variantId = await findVariantByBarcode(orgId, barcode);
         if (variantId) {
           await supabaseAdmin
             .from("product_variants")
             .update({
               size,
-              barcode: v.gtin ?? null,
               sale_price: Number(v.preco ?? price) || price,
               olist_variant_id: varExternalId,
             })
             .eq("id", variantId);
           counters.variants_updated++;
-          await upsertVariantMapping(orgId, varExternalId, variantId, { codigo: v.codigo, reused_by_sku: true });
+          await upsertVariantMapping(orgId, varExternalId, variantId, { codigo: v.codigo, reused: true });
         } else {
-          const { data: vr, error } = await supabaseAdmin
-            .from("product_variants")
-            .insert({
-              organization_id: orgId,
-              product_id: productId,
-              size,
-              sku,
-              barcode: v.gtin ?? null,
-              cost_price: Number(v.preco_custo ?? cost) || cost,
-              sale_price: Number(v.preco ?? price) || price,
-              status,
-              olist_variant_id: varExternalId,
-            })
-            .select("id")
-            .single();
-          if (error) throw error;
-          variantId = vr.id;
+          const ins = await insertVariantSafe({
+            organization_id: orgId,
+            product_id: productId,
+            size,
+            sku,
+            barcode,
+            cost_price: Number(v.preco_custo ?? cost) || cost,
+            sale_price: Number(v.preco ?? price) || price,
+            status,
+            olist_variant_id: varExternalId,
+          });
+          variantId = ins.id;
           counters.variants_created++;
-          await upsertVariantMapping(orgId, varExternalId, variantId, { codigo: v.codigo });
+          await upsertVariantMapping(orgId, varExternalId, variantId, { codigo: v.codigo, barcode_dropped: ins.barcode_dropped });
         }
       } else {
         await supabaseAdmin
           .from("product_variants")
           .update({
             size,
-            sku: v.codigo ?? null,
-            barcode: v.gtin ?? null,
             sale_price: Number(v.preco ?? price) || price,
           })
           .eq("id", variantId);
