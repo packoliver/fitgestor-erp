@@ -165,6 +165,34 @@ function AppSidebar({
         </button>
       </div>
 
+      {/* Essential toggle — compacto no topo */}
+      {!collapsed && (
+        <div className="px-2 pt-2">
+          <div className="flex items-center gap-2 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 px-2.5 py-1.5">
+            <Sparkles className="h-3.5 w-3.5 shrink-0 text-sidebar-foreground/60" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[11.5px] font-medium text-sidebar-foreground truncate leading-tight">Menu essencial</p>
+            </div>
+            {essential && !expandedAll && (
+              <button
+                type="button"
+                onClick={() => setExpandedAll(true)}
+                className="rounded-md border border-sidebar-border/60 px-1.5 py-0.5 text-[10.5px] font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent transition-colors"
+              >
+                Ver todos
+              </button>
+            )}
+            <Switch
+              checked={essential}
+              onCheckedChange={(v) => { setEssential(v); setExpandedAll(false); }}
+              aria-label="Alternar menu essencial"
+              className="scale-90"
+            />
+          </div>
+        </div>
+      )}
+
+
       <SidebarContent className="px-2 py-2 gap-0.5">
         {groups.map((g) => {
           const open = isGroupOpen(g.label);
