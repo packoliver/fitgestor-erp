@@ -297,25 +297,41 @@ async function syncOneProduct(
     const externalVariantId = `${externalId}:unico`;
     let variantId = await findLocalVariantByExternal(orgId, externalVariantId);
     if (!variantId) {
-      const { data: v, error } = await supabaseAdmin
-        .from("product_variants")
-        .insert({
-          organization_id: orgId,
-          product_id: productId,
-          size: "ÚNICO",
-          sku: p.codigo ?? null,
-          barcode: p.gtin ?? null,
-          cost_price: cost,
-          sale_price: price,
-          status,
-          olist_variant_id: externalId,
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
-      variantId = v.id;
-      counters.variants_created++;
-      await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico" });
+      const sku = p.codigo ?? null;
+      variantId = await findVariantBySku(orgId, sku);
+      if (variantId) {
+        await supabaseAdmin
+          .from("product_variants")
+          .update({
+            barcode: p.gtin ?? null,
+            sale_price: price,
+            status,
+            olist_variant_id: externalId,
+          })
+          .eq("id", variantId);
+        counters.variants_updated++;
+        await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico", reused_by_sku: true });
+      } else {
+        const { data: v, error } = await supabaseAdmin
+          .from("product_variants")
+          .insert({
+            organization_id: orgId,
+            product_id: productId,
+            size: "ÚNICO",
+            sku,
+            barcode: p.gtin ?? null,
+            cost_price: cost,
+            sale_price: price,
+            status,
+            olist_variant_id: externalId,
+          })
+          .select("id")
+          .single();
+        if (error) throw error;
+        variantId = v.id;
+        counters.variants_created++;
+        await upsertVariantMapping(orgId, externalVariantId, variantId, { codigo: p.codigo, tipo: "unico" });
+      }
     }
     const saldo = Number(p.estoque_atual ?? p.saldo ?? 0) || 0;
     await adjustStockForVariant(orgId, variantId, locationId, saldo, counters);
@@ -325,25 +341,41 @@ async function syncOneProduct(
       const size: string = v.grade?.[0]?.valor ?? v.descricao ?? v.codigo ?? "ÚNICO";
       let variantId = await findLocalVariantByExternal(orgId, varExternalId);
       if (!variantId) {
-        const { data: vr, error } = await supabaseAdmin
-          .from("product_variants")
-          .insert({
-            organization_id: orgId,
-            product_id: productId,
-            size,
-            sku: v.codigo ?? null,
-            barcode: v.gtin ?? null,
-            cost_price: Number(v.preco_custo ?? cost) || cost,
-            sale_price: Number(v.preco ?? price) || price,
-            status,
-            olist_variant_id: varExternalId,
-          })
-          .select("id")
-          .single();
-        if (error) throw error;
-        variantId = vr.id;
-        counters.variants_created++;
-        await upsertVariantMapping(orgId, varExternalId, variantId, { codigo: v.codigo });
+        const sku = v.codigo ?? null;
+        variantId = await findVariantBySku(orgId, sku);
+        if (variantId) {
+          await supabaseAdmin
+            .from("product_variants")
+            .update({
+              size,
+              barcode: v.gtin ?? null,
+              sale_price: Number(v.preco ?? price) || price,
+              olist_variant_id: varExternalId,
+            })
+            .eq("id", variantId);
+          counters.variants_updated++;
+          await upsertVariantMapping(orgId, varExternalId, variantId, { codigo: v.codigo, reused_by_sku: true });
+        } else {
+          const { data: vr, error } = await supabaseAdmin
+            .from("product_variants")
+            .insert({
+              organization_id: orgId,
+              product_id: productId,
+              size,
+              sku,
+              barcode: v.gtin ?? null,
+              cost_price: Number(v.preco_custo ?? cost) || cost,
+              sale_price: Number(v.preco ?? price) || price,
+              status,
+              olist_variant_id: varExternalId,
+            })
+            .select("id")
+            .single();
+          if (error) throw error;
+          variantId = vr.id;
+          counters.variants_created++;
+          await upsertVariantMapping(orgId, varExternalId, variantId, { codigo: v.codigo });
+        }
       } else {
         await supabaseAdmin
           .from("product_variants")
@@ -361,6 +393,18 @@ async function syncOneProduct(
     }
   }
 }
+
+async function findVariantBySku(orgId: string, sku: string | null | undefined): Promise<string | undefined> {
+  if (!sku) return undefined;
+  const { data } = await supabaseAdmin
+    .from("product_variants")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("sku", sku)
+    .maybeSingle();
+  return data?.id;
+}
+
 
 async function adjustStockForVariant(
   orgId: string,
