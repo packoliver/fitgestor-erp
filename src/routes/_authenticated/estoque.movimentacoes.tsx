@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/erp";
+import { StockLaunchDialog } from "@/components/stock-launch-dialog";
 
 export const Route = createFileRoute("/_authenticated/estoque/movimentacoes")({
   component: Movs,
@@ -29,7 +30,12 @@ function Movs() {
 
   return (
     <div>
-      <PageHeader title="Movimentações de estoque" description="Histórico auditável de todas as movimentações." />
+      <PageHeader
+        title="Movimentações de estoque"
+        description="Histórico auditável de todas as movimentações."
+        actions={<StockLaunchDialog />}
+      />
+
       <Card>
         <Table>
           <TableHeader>

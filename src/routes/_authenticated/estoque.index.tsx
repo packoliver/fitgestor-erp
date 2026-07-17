@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { StockLaunchDialog } from "@/components/stock-launch-dialog";
 
 export const Route = createFileRoute("/_authenticated/estoque/")({
   component: EstoquePage,
@@ -37,8 +38,9 @@ function EstoquePage() {
         actions={
           <>
             <Button asChild variant="outline"><Link to="/estoque/movimentacoes"><ArrowRight className="mr-2 h-4 w-4" />Movimentações</Link></Button>
-            <Button asChild variant="outline"><Link to="/estoque/entrada">Entrada</Link></Button>
+            <Button asChild variant="outline"><Link to="/estoque/entrada">Entrada em lote</Link></Button>
             <Button asChild variant="outline"><Link to="/estoque/inventario">Inventário</Link></Button>
+            <StockLaunchDialog />
           </>
         }
       />
