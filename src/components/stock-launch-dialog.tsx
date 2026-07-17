@@ -72,16 +72,21 @@ export function StockLaunchDialog({
   const currentBalance = useQuery({
     queryKey: ["stock-launch-balance", selectedVariantId, locationId],
     enabled: !!selectedVariantId && !!locationId && kind === "balanco",
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("inventory_balances")
         .select("physical_quantity")
         .eq("variant_id", selectedVariantId!)
         .eq("location_id", locationId!)
         .maybeSingle();
+      if (error) throw error;
       return data?.physical_quantity ?? 0;
     },
   });
+
 
   function reset() {
     setKind("entrada");
@@ -99,7 +104,9 @@ export function StockLaunchDialog({
     mutationFn: async () => {
       if (!selectedVariantId) throw new Error("Selecione uma variação");
       if (!locationId) throw new Error("Selecione o local de estoque");
-      const qty = Number((quantity || "0").replace(",", "."));
+      const raw = (quantity || "").trim().replace(",", ".");
+      if (raw === "") throw new Error("Informe a quantidade");
+      const qty = Number(raw);
       if (Number.isNaN(qty) || qty < 0) throw new Error("Quantidade inválida");
 
       let movementType: "entrada" | "ajuste_negativo" | "inventario";
@@ -108,20 +115,40 @@ export function StockLaunchDialog({
 
       if (kind === "entrada") {
         if (qty <= 0) throw new Error("Informe uma quantidade maior que zero");
+        if (!Number.isInteger(qty)) throw new Error("A quantidade deve ser um número inteiro");
         movementType = "entrada";
         delta = qty;
         reason = notes || "Entrada manual";
       } else if (kind === "saida") {
         if (qty <= 0) throw new Error("Informe uma quantidade maior que zero");
+        if (!Number.isInteger(qty)) throw new Error("A quantidade deve ser um número inteiro");
         movementType = "ajuste_negativo";
         delta = -qty;
         reason = notes || "Saída manual";
       } else {
-        const cur = currentBalance.data ?? 0;
+        // Balanço: garante que temos o saldo atual antes de calcular o ajuste
+        if (!Number.isInteger(qty)) throw new Error("O saldo contado deve ser um número inteiro");
+        if (currentBalance.isLoading || currentBalance.isFetching) {
+          throw new Error("Aguardando saldo atual… tente novamente em instantes");
+        }
+        if (currentBalance.isError || currentBalance.data === undefined) {
+          throw new Error("Não foi possível ler o saldo atual. Recarregue e tente de novo.");
+        }
+        // Releitura defensiva do saldo no momento do commit (evita usar valor obsoleto)
+        const fresh = await supabase
+          .from("inventory_balances")
+          .select("physical_quantity")
+          .eq("variant_id", selectedVariantId)
+          .eq("location_id", locationId)
+          .maybeSingle();
+        if (fresh.error) throw fresh.error;
+        const cur = fresh.data?.physical_quantity ?? 0;
         delta = qty - cur;
-        if (delta === 0) throw new Error("O saldo informado é igual ao atual");
+        if (delta === 0) throw new Error("O saldo informado é igual ao atual — nenhum ajuste necessário");
+        const sign = delta > 0 ? "+" : "";
+        const noteSuffix = notes ? ` — ${notes}` : "";
         movementType = "inventario";
-        reason = notes ? `Balanço: ${notes}` : `Balanço (saldo ajustado para ${qty})`;
+        reason = `Balanço: ${cur} → ${qty} (${sign}${delta})${noteSuffix}`;
       }
 
       const { error } = await supabase.rpc("apply_stock_movement", {
@@ -130,8 +157,8 @@ export function StockLaunchDialog({
         _movement_type: movementType,
         _quantity: delta,
         _reason: reason,
-        _reference_type: "manual_launch",
-        _source: "lancamento",
+        _reference_type: kind === "balanco" ? "inventory" : "manual_launch",
+        _source: kind === "balanco" ? "balanco" : "lancamento",
       });
       if (error) throw error;
 
@@ -141,9 +168,16 @@ export function StockLaunchDialog({
           await supabase.from("product_variants").update({ cost_price: price }).eq("id", selectedVariantId);
         }
       }
+
+      return { kind, delta };
     },
-    onSuccess: () => {
-      toast.success("Lançamento registrado");
+    onSuccess: (res) => {
+      if (res?.kind === "balanco") {
+        const sign = res.delta > 0 ? "+" : "";
+        toast.success(`Balanço aplicado (ajuste ${sign}${res.delta}) e registrado no histórico`);
+      } else {
+        toast.success("Lançamento registrado");
+      }
       qc.invalidateQueries();
       reset();
       setOpen(false);
@@ -151,6 +185,7 @@ export function StockLaunchDialog({
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
@@ -233,18 +268,38 @@ export function StockLaunchDialog({
               <Input
                 type="number"
                 min="0"
-                inputMode="decimal"
+                step="1"
+                inputMode="numeric"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 placeholder="0"
               />
-              {kind === "balanco" && selectedVariantId && locationId && (
-                <p className="text-xs text-muted-foreground">
-                  Saldo atual: <strong>{currentBalance.data ?? 0}</strong>
-                </p>
-              )}
+              {kind === "balanco" && selectedVariantId && locationId && (() => {
+                const cur = currentBalance.data ?? 0;
+                const raw = (quantity || "").trim().replace(",", ".");
+                const parsed = raw === "" ? null : Number(raw);
+                const valid = parsed !== null && !Number.isNaN(parsed) && Number.isInteger(parsed) && parsed >= 0;
+                const diff = valid ? (parsed as number) - cur : null;
+                return (
+                  <div className="text-xs space-y-0.5">
+                    <p className="text-muted-foreground">
+                      Saldo atual:{" "}
+                      <strong className="text-foreground">
+                        {currentBalance.isLoading || currentBalance.isFetching ? "…" : cur}
+                      </strong>
+                    </p>
+                    {diff !== null && (
+                      <p className={diff === 0 ? "text-muted-foreground" : diff > 0 ? "text-emerald-600" : "text-rose-600"}>
+                        Ajuste: {diff > 0 ? `+${diff}` : diff}
+                        {diff !== 0 && ` (${cur} → ${parsed})`}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
+
 
           {kind === "entrada" && (
             <div className="space-y-1.5">
@@ -271,7 +326,13 @@ export function StockLaunchDialog({
 
         <DialogFooter className="mt-2">
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={() => submit.mutate()} disabled={submit.isPending}>
+          <Button
+            onClick={() => submit.mutate()}
+            disabled={
+              submit.isPending ||
+              (kind === "balanco" && !!selectedVariantId && !!locationId && (currentBalance.isLoading || currentBalance.isFetching))
+            }
+          >
             {submit.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Salvar
           </Button>
