@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
-import { useMutation, useQuery, useServerFn } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { PageHeader } from "@/components/page-header";
@@ -424,7 +424,7 @@ function ImportPage() {
                   <Table>
                     <TableHeader><TableRow><TableHead>Linha</TableHead><TableHead>Mensagem</TableHead></TableRow></TableHeader>
                     <TableBody>
-                      {result.errors.slice(0, 100).map((e, i) => (
+                      {result.errors.slice(0, 100).map((e: { row: number; message: string }, i: number) => (
                         <TableRow key={i}><TableCell>{e.row}</TableCell><TableCell className="text-xs">{e.message}</TableCell></TableRow>
                       ))}
                     </TableBody>
