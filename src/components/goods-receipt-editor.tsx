@@ -205,6 +205,7 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
     setCancelledAt(d.cancelled_at ?? null);
     setCancellationReason(d.cancellation_reason ?? null);
     setConfirmationSummary((d as unknown as { confirmation_summary?: unknown }).confirmation_summary ?? null);
+    setSubStatus((d as unknown as { sub_status?: string | null }).sub_status ?? null);
     setItems(
       d.items.map((it) => ({
         local_id: uid(),
