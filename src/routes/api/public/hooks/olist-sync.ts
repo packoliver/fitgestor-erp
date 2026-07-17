@@ -8,9 +8,9 @@ export const Route = createFileRoute("/api/public/hooks/olist-sync")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const key = request.headers.get("apikey");
-        const expected = process.env.SUPABASE_PUBLISHABLE_KEY;
-        if (!expected || key !== expected) {
+        const key = request.headers.get("x-cron-secret") ?? request.headers.get("apikey");
+        const expected = process.env.CRON_SYNC_SECRET;
+        if (!expected || !key || key !== expected) {
           return new Response("Unauthorized", { status: 401 });
         }
         try {
