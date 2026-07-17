@@ -12,7 +12,7 @@ import { Loader2, Upload } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 
-export const Route = createFileRoute("/_authenticated/configuracoes")({
+export const Route = createFileRoute("/_authenticated/configuracoes/")({
   component: Config,
 });
 

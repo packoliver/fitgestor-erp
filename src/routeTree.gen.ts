@@ -22,7 +22,6 @@ import { Route as AuthenticatedFuncionariosRouteImport } from './routes/_authent
 import { Route as AuthenticatedFornecedoresRouteImport } from './routes/_authenticated/fornecedores'
 import { Route as AuthenticatedEtiquetasRouteImport } from './routes/_authenticated/etiquetas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedConfiguracaoInicialRouteImport } from './routes/_authenticated/configuracao-inicial'
 import { Route as AuthenticatedCategoriasRouteImport } from './routes/_authenticated/categorias'
 import { Route as AuthenticatedCargosRouteImport } from './routes/_authenticated/cargos'
@@ -34,6 +33,7 @@ import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedPosVendaIndexRouteImport } from './routes/_authenticated/pos-venda.index'
 import { Route as AuthenticatedExpedicaoIndexRouteImport } from './routes/_authenticated/expedicao.index'
 import { Route as AuthenticatedEstoqueIndexRouteImport } from './routes/_authenticated/estoque.index'
+import { Route as AuthenticatedConfiguracoesIndexRouteImport } from './routes/_authenticated/configuracoes.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
 import { Route as AuthenticatedVendasIdRouteImport } from './routes/_authenticated/vendas.$id'
 import { Route as AuthenticatedTrocasValesRouteImport } from './routes/_authenticated/trocas.vales'
@@ -134,12 +134,6 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedConfiguracoesRoute =
-  AuthenticatedConfiguracoesRouteImport.update({
-    id: '/configuracoes',
-    path: '/configuracoes',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedConfiguracaoInicialRoute =
   AuthenticatedConfiguracaoInicialRouteImport.update({
     id: '/configuracao-inicial',
@@ -200,6 +194,12 @@ const AuthenticatedEstoqueIndexRoute =
   AuthenticatedEstoqueIndexRouteImport.update({
     id: '/estoque/',
     path: '/estoque/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConfiguracoesIndexRoute =
+  AuthenticatedConfiguracoesIndexRouteImport.update({
+    id: '/configuracoes/',
+    path: '/configuracoes/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedClientesIndexRoute =
@@ -308,33 +308,33 @@ const AuthenticatedEstoqueEntradaRoute =
   } as any)
 const AuthenticatedConfiguracoesTrocasRoute =
   AuthenticatedConfiguracoesTrocasRouteImport.update({
-    id: '/trocas',
-    path: '/trocas',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+    id: '/configuracoes/trocas',
+    path: '/configuracoes/trocas',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedConfiguracoesTamanhosRoute =
   AuthenticatedConfiguracoesTamanhosRouteImport.update({
-    id: '/tamanhos',
-    path: '/tamanhos',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+    id: '/configuracoes/tamanhos',
+    path: '/configuracoes/tamanhos',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedConfiguracoesPosVendaRoute =
   AuthenticatedConfiguracoesPosVendaRouteImport.update({
-    id: '/pos-venda',
-    path: '/pos-venda',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+    id: '/configuracoes/pos-venda',
+    path: '/configuracoes/pos-venda',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedConfiguracoesOlistRoute =
   AuthenticatedConfiguracoesOlistRouteImport.update({
-    id: '/olist',
-    path: '/olist',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+    id: '/configuracoes/olist',
+    path: '/configuracoes/olist',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedConfiguracoesImportarRoute =
   AuthenticatedConfiguracoesImportarRouteImport.update({
-    id: '/importar',
-    path: '/importar',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+    id: '/configuracoes/importar',
+    path: '/configuracoes/importar',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
   id: '/clientes/$id',
@@ -405,7 +405,6 @@ export interface FileRoutesByFullPath {
   '/cargos': typeof AuthenticatedCargosRoute
   '/categorias': typeof AuthenticatedCategoriasRoute
   '/configuracao-inicial': typeof AuthenticatedConfiguracaoInicialRoute
-  '/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/etiquetas': typeof AuthenticatedEtiquetasRouteWithChildren
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
@@ -438,6 +437,7 @@ export interface FileRoutesByFullPath {
   '/trocas/vales': typeof AuthenticatedTrocasValesRoute
   '/vendas/$id': typeof AuthenticatedVendasIdRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
+  '/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
   '/estoque/': typeof AuthenticatedEstoqueIndexRoute
   '/expedicao/': typeof AuthenticatedExpedicaoIndexRoute
   '/pos-venda/': typeof AuthenticatedPosVendaIndexRoute
@@ -464,7 +464,6 @@ export interface FileRoutesByTo {
   '/cargos': typeof AuthenticatedCargosRoute
   '/categorias': typeof AuthenticatedCategoriasRoute
   '/configuracao-inicial': typeof AuthenticatedConfiguracaoInicialRoute
-  '/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/etiquetas': typeof AuthenticatedEtiquetasRouteWithChildren
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
@@ -497,6 +496,7 @@ export interface FileRoutesByTo {
   '/trocas/vales': typeof AuthenticatedTrocasValesRoute
   '/vendas/$id': typeof AuthenticatedVendasIdRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesIndexRoute
   '/estoque': typeof AuthenticatedEstoqueIndexRoute
   '/expedicao': typeof AuthenticatedExpedicaoIndexRoute
   '/pos-venda': typeof AuthenticatedPosVendaIndexRoute
@@ -525,7 +525,6 @@ export interface FileRoutesById {
   '/_authenticated/cargos': typeof AuthenticatedCargosRoute
   '/_authenticated/categorias': typeof AuthenticatedCategoriasRoute
   '/_authenticated/configuracao-inicial': typeof AuthenticatedConfiguracaoInicialRoute
-  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/etiquetas': typeof AuthenticatedEtiquetasRouteWithChildren
   '/_authenticated/fornecedores': typeof AuthenticatedFornecedoresRoute
@@ -558,6 +557,7 @@ export interface FileRoutesById {
   '/_authenticated/trocas/vales': typeof AuthenticatedTrocasValesRoute
   '/_authenticated/vendas/$id': typeof AuthenticatedVendasIdRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
+  '/_authenticated/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
   '/_authenticated/estoque/': typeof AuthenticatedEstoqueIndexRoute
   '/_authenticated/expedicao/': typeof AuthenticatedExpedicaoIndexRoute
   '/_authenticated/pos-venda/': typeof AuthenticatedPosVendaIndexRoute
@@ -586,7 +586,6 @@ export interface FileRouteTypes {
     | '/cargos'
     | '/categorias'
     | '/configuracao-inicial'
-    | '/configuracoes'
     | '/dashboard'
     | '/etiquetas'
     | '/fornecedores'
@@ -619,6 +618,7 @@ export interface FileRouteTypes {
     | '/trocas/vales'
     | '/vendas/$id'
     | '/clientes/'
+    | '/configuracoes/'
     | '/estoque/'
     | '/expedicao/'
     | '/pos-venda/'
@@ -645,7 +645,6 @@ export interface FileRouteTypes {
     | '/cargos'
     | '/categorias'
     | '/configuracao-inicial'
-    | '/configuracoes'
     | '/dashboard'
     | '/etiquetas'
     | '/fornecedores'
@@ -678,6 +677,7 @@ export interface FileRouteTypes {
     | '/trocas/vales'
     | '/vendas/$id'
     | '/clientes'
+    | '/configuracoes'
     | '/estoque'
     | '/expedicao'
     | '/pos-venda'
@@ -705,7 +705,6 @@ export interface FileRouteTypes {
     | '/_authenticated/cargos'
     | '/_authenticated/categorias'
     | '/_authenticated/configuracao-inicial'
-    | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/etiquetas'
     | '/_authenticated/fornecedores'
@@ -738,6 +737,7 @@ export interface FileRouteTypes {
     | '/_authenticated/trocas/vales'
     | '/_authenticated/vendas/$id'
     | '/_authenticated/clientes/'
+    | '/_authenticated/configuracoes/'
     | '/_authenticated/estoque/'
     | '/_authenticated/expedicao/'
     | '/_authenticated/pos-venda/'
@@ -857,13 +857,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/configuracoes': {
-      id: '/_authenticated/configuracoes'
-      path: '/configuracoes'
-      fullPath: '/configuracoes'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/configuracao-inicial': {
       id: '/_authenticated/configuracao-inicial'
       path: '/configuracao-inicial'
@@ -939,6 +932,13 @@ declare module '@tanstack/react-router' {
       path: '/estoque'
       fullPath: '/estoque/'
       preLoaderRoute: typeof AuthenticatedEstoqueIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/configuracoes/': {
+      id: '/_authenticated/configuracoes/'
+      path: '/configuracoes'
+      fullPath: '/configuracoes/'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/clientes/': {
@@ -1069,38 +1069,38 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/configuracoes/trocas': {
       id: '/_authenticated/configuracoes/trocas'
-      path: '/trocas'
+      path: '/configuracoes/trocas'
       fullPath: '/configuracoes/trocas'
       preLoaderRoute: typeof AuthenticatedConfiguracoesTrocasRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/configuracoes/tamanhos': {
       id: '/_authenticated/configuracoes/tamanhos'
-      path: '/tamanhos'
+      path: '/configuracoes/tamanhos'
       fullPath: '/configuracoes/tamanhos'
       preLoaderRoute: typeof AuthenticatedConfiguracoesTamanhosRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/configuracoes/pos-venda': {
       id: '/_authenticated/configuracoes/pos-venda'
-      path: '/pos-venda'
+      path: '/configuracoes/pos-venda'
       fullPath: '/configuracoes/pos-venda'
       preLoaderRoute: typeof AuthenticatedConfiguracoesPosVendaRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/configuracoes/olist': {
       id: '/_authenticated/configuracoes/olist'
-      path: '/olist'
+      path: '/configuracoes/olist'
       fullPath: '/configuracoes/olist'
       preLoaderRoute: typeof AuthenticatedConfiguracoesOlistRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/configuracoes/importar': {
       id: '/_authenticated/configuracoes/importar'
-      path: '/importar'
+      path: '/configuracoes/importar'
       fullPath: '/configuracoes/importar'
       preLoaderRoute: typeof AuthenticatedConfiguracoesImportarRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/clientes/$id': {
       id: '/_authenticated/clientes/$id'
@@ -1175,32 +1175,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedConfiguracoesRouteChildren {
-  AuthenticatedConfiguracoesImportarRoute: typeof AuthenticatedConfiguracoesImportarRoute
-  AuthenticatedConfiguracoesOlistRoute: typeof AuthenticatedConfiguracoesOlistRoute
-  AuthenticatedConfiguracoesPosVendaRoute: typeof AuthenticatedConfiguracoesPosVendaRoute
-  AuthenticatedConfiguracoesTamanhosRoute: typeof AuthenticatedConfiguracoesTamanhosRoute
-  AuthenticatedConfiguracoesTrocasRoute: typeof AuthenticatedConfiguracoesTrocasRoute
-}
-
-const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteChildren =
-  {
-    AuthenticatedConfiguracoesImportarRoute:
-      AuthenticatedConfiguracoesImportarRoute,
-    AuthenticatedConfiguracoesOlistRoute: AuthenticatedConfiguracoesOlistRoute,
-    AuthenticatedConfiguracoesPosVendaRoute:
-      AuthenticatedConfiguracoesPosVendaRoute,
-    AuthenticatedConfiguracoesTamanhosRoute:
-      AuthenticatedConfiguracoesTamanhosRoute,
-    AuthenticatedConfiguracoesTrocasRoute:
-      AuthenticatedConfiguracoesTrocasRoute,
-  }
-
-const AuthenticatedConfiguracoesRouteWithChildren =
-  AuthenticatedConfiguracoesRoute._addFileChildren(
-    AuthenticatedConfiguracoesRouteChildren,
-  )
-
 interface AuthenticatedEtiquetasRouteChildren {
   AuthenticatedEtiquetasLotesIdRoute: typeof AuthenticatedEtiquetasLotesIdRoute
 }
@@ -1221,7 +1195,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCargosRoute: typeof AuthenticatedCargosRoute
   AuthenticatedCategoriasRoute: typeof AuthenticatedCategoriasRoute
   AuthenticatedConfiguracaoInicialRoute: typeof AuthenticatedConfiguracaoInicialRoute
-  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEtiquetasRoute: typeof AuthenticatedEtiquetasRouteWithChildren
   AuthenticatedFornecedoresRoute: typeof AuthenticatedFornecedoresRoute
@@ -1231,6 +1204,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPdvRoute: typeof AuthenticatedPdvRoute
   AuthenticatedTrabalhoRoute: typeof AuthenticatedTrabalhoRoute
   AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRoute
+  AuthenticatedConfiguracoesImportarRoute: typeof AuthenticatedConfiguracoesImportarRoute
+  AuthenticatedConfiguracoesOlistRoute: typeof AuthenticatedConfiguracoesOlistRoute
+  AuthenticatedConfiguracoesPosVendaRoute: typeof AuthenticatedConfiguracoesPosVendaRoute
+  AuthenticatedConfiguracoesTamanhosRoute: typeof AuthenticatedConfiguracoesTamanhosRoute
+  AuthenticatedConfiguracoesTrocasRoute: typeof AuthenticatedConfiguracoesTrocasRoute
   AuthenticatedEstoqueEntradaRoute: typeof AuthenticatedEstoqueEntradaRoute
   AuthenticatedEstoqueInventarioRoute: typeof AuthenticatedEstoqueInventarioRoute
   AuthenticatedEstoqueMovimentacoesRoute: typeof AuthenticatedEstoqueMovimentacoesRoute
@@ -1249,6 +1227,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTrocasValesRoute: typeof AuthenticatedTrocasValesRoute
   AuthenticatedVendasIdRoute: typeof AuthenticatedVendasIdRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
+  AuthenticatedConfiguracoesIndexRoute: typeof AuthenticatedConfiguracoesIndexRoute
   AuthenticatedEstoqueIndexRoute: typeof AuthenticatedEstoqueIndexRoute
   AuthenticatedExpedicaoIndexRoute: typeof AuthenticatedExpedicaoIndexRoute
   AuthenticatedPosVendaIndexRoute: typeof AuthenticatedPosVendaIndexRoute
@@ -1270,7 +1249,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCargosRoute: AuthenticatedCargosRoute,
   AuthenticatedCategoriasRoute: AuthenticatedCategoriasRoute,
   AuthenticatedConfiguracaoInicialRoute: AuthenticatedConfiguracaoInicialRoute,
-  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEtiquetasRoute: AuthenticatedEtiquetasRouteWithChildren,
   AuthenticatedFornecedoresRoute: AuthenticatedFornecedoresRoute,
@@ -1280,6 +1258,14 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPdvRoute: AuthenticatedPdvRoute,
   AuthenticatedTrabalhoRoute: AuthenticatedTrabalhoRoute,
   AuthenticatedClientesIdRoute: AuthenticatedClientesIdRoute,
+  AuthenticatedConfiguracoesImportarRoute:
+    AuthenticatedConfiguracoesImportarRoute,
+  AuthenticatedConfiguracoesOlistRoute: AuthenticatedConfiguracoesOlistRoute,
+  AuthenticatedConfiguracoesPosVendaRoute:
+    AuthenticatedConfiguracoesPosVendaRoute,
+  AuthenticatedConfiguracoesTamanhosRoute:
+    AuthenticatedConfiguracoesTamanhosRoute,
+  AuthenticatedConfiguracoesTrocasRoute: AuthenticatedConfiguracoesTrocasRoute,
   AuthenticatedEstoqueEntradaRoute: AuthenticatedEstoqueEntradaRoute,
   AuthenticatedEstoqueInventarioRoute: AuthenticatedEstoqueInventarioRoute,
   AuthenticatedEstoqueMovimentacoesRoute:
@@ -1300,6 +1286,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTrocasValesRoute: AuthenticatedTrocasValesRoute,
   AuthenticatedVendasIdRoute: AuthenticatedVendasIdRoute,
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
+  AuthenticatedConfiguracoesIndexRoute: AuthenticatedConfiguracoesIndexRoute,
   AuthenticatedEstoqueIndexRoute: AuthenticatedEstoqueIndexRoute,
   AuthenticatedExpedicaoIndexRoute: AuthenticatedExpedicaoIndexRoute,
   AuthenticatedPosVendaIndexRoute: AuthenticatedPosVendaIndexRoute,
