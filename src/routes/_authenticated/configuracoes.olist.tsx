@@ -10,9 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatDateTime } from "@/lib/erp";
-import { AlertCircle, Loader2, RefreshCw, PlayCircle } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw, PlayCircle, StopCircle, Package } from "lucide-react";
 import { toast } from "sonner";
-import { triggerOlistSync, listOlistRuns, getOlistSyncState } from "@/lib/olist-sync.functions";
+import { triggerOlistSync, listOlistRuns, getOlistSyncState, cancelOlistRun, cancelStuckOlistRuns } from "@/lib/olist-sync.functions";
+
 
 export const Route = createFileRoute("/_authenticated/configuracoes/olist")({
   component: OlistPage,
