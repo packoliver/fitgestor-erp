@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { StockLaunchDialog } from "@/components/stock-launch-dialog";
 
 export const Route = createFileRoute("/_authenticated/estoque/")({
   component: EstoquePage,
