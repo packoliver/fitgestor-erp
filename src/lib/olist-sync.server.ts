@@ -405,6 +405,42 @@ async function findVariantBySku(orgId: string, sku: string | null | undefined): 
   return data?.id;
 }
 
+async function findVariantByBarcode(orgId: string, barcode: string | null | undefined): Promise<string | undefined> {
+  if (!barcode) return undefined;
+  const { data } = await supabaseAdmin
+    .from("product_variants")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("barcode", barcode)
+    .maybeSingle();
+  return data?.id;
+}
+
+/**
+ * Insere uma variante lidando com colisões de barcode:
+ * se o INSERT falhar por `product_variants_org_barcode_uniq`, tenta novamente com barcode = null
+ * (evita abortar o produto inteiro só porque a Olist reutiliza GTIN entre variações).
+ */
+async function insertVariantSafe(row: Record<string, any>): Promise<{ id: string; barcode_dropped: boolean }> {
+  const { data, error } = await supabaseAdmin
+    .from("product_variants")
+    .insert(row)
+    .select("id")
+    .single();
+  if (!error) return { id: data!.id, barcode_dropped: false };
+  const msg = String(error.message ?? "");
+  if (row.barcode && /product_variants_org_barcode_uniq/.test(msg)) {
+    const { data: d2, error: e2 } = await supabaseAdmin
+      .from("product_variants")
+      .insert({ ...row, barcode: null })
+      .select("id")
+      .single();
+    if (e2) throw e2;
+    return { id: d2!.id, barcode_dropped: true };
+  }
+  throw error;
+}
+
 
 async function adjustStockForVariant(
   orgId: string,
