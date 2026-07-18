@@ -748,3 +748,43 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
 
   return counters;
 }
+
+/** Sincroniza UM produto pela id externa (usado por webhook produto.*). */
+export async function syncOlistProductById(externalId: string, orgId?: string): Promise<Counters> {
+  const counters: Counters = {
+    products_created: 0, products_updated: 0, variants_created: 0, variants_updated: 0,
+    photos_synced: 0, stock_adjusted: 0, errors: [],
+  };
+  const org = orgId ?? (await firstOrgId());
+  await syncOneProduct(org, String(externalId), counters);
+  return counters;
+}
+
+/** Ajusta estoque de UMA variação pela id externa (usado por webhook estoque.*). */
+export async function syncOlistStockByExternalId(
+  externalId: string,
+  saldo: number,
+  orgId?: string,
+): Promise<Counters> {
+  const counters: Counters = {
+    products_created: 0, products_updated: 0, variants_created: 0, variants_updated: 0,
+    photos_synced: 0, stock_adjusted: 0, errors: [],
+  };
+  const org = orgId ?? (await firstOrgId());
+  let variantId = await findLocalVariantByExternal(org, String(externalId));
+  if (!variantId) variantId = await findLocalVariantByExternal(org, `${externalId}:unico`);
+  if (!variantId) {
+    // Produto ainda não sincronizado no FitGestor — puxa antes
+    await syncOneProduct(org, String(externalId), counters);
+    variantId = await findLocalVariantByExternal(org, String(externalId));
+    if (!variantId) variantId = await findLocalVariantByExternal(org, `${externalId}:unico`);
+  }
+  if (!variantId) {
+    counters.errors.push({ scope: "webhook.stock", id: externalId, message: "Variante não encontrada" });
+    return counters;
+  }
+  const locationId = await defaultLocationId(org);
+  await adjustStockForVariant(org, variantId, locationId, Number(saldo) || 0, counters);
+  return counters;
+}
+
