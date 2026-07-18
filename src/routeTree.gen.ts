@@ -60,6 +60,7 @@ import { Route as AuthenticatedConfiguracoesImportarRouteImport } from './routes
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedExpedicaoRotasIndexRouteImport } from './routes/_authenticated/expedicao.rotas.index'
 import { Route as AuthenticatedEstoqueRecebimentosIndexRouteImport } from './routes/_authenticated/estoque.recebimentos.index'
+import { Route as ApiPublicHooksOlistWebhookRouteImport } from './routes/api/public/hooks/olist-webhook'
 import { Route as ApiPublicHooksOlistSyncRouteImport } from './routes/api/public/hooks/olist-sync'
 import { Route as AuthenticatedExpedicaoRotasNovaRouteImport } from './routes/_authenticated/expedicao.rotas.nova'
 import { Route as AuthenticatedExpedicaoRotasIdRouteImport } from './routes/_authenticated/expedicao.rotas.$id'
@@ -353,6 +354,12 @@ const AuthenticatedEstoqueRecebimentosIndexRoute =
     path: '/estoque/recebimentos/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHooksOlistWebhookRoute =
+  ApiPublicHooksOlistWebhookRouteImport.update({
+    id: '/api/public/hooks/olist-webhook',
+    path: '/api/public/hooks/olist-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksOlistSyncRoute = ApiPublicHooksOlistSyncRouteImport.update({
   id: '/api/public/hooks/olist-sync',
   path: '/api/public/hooks/olist-sync',
@@ -451,6 +458,7 @@ export interface FileRoutesByFullPath {
   '/expedicao/rotas/$id': typeof AuthenticatedExpedicaoRotasIdRoute
   '/expedicao/rotas/nova': typeof AuthenticatedExpedicaoRotasNovaRoute
   '/api/public/hooks/olist-sync': typeof ApiPublicHooksOlistSyncRoute
+  '/api/public/hooks/olist-webhook': typeof ApiPublicHooksOlistWebhookRoute
   '/estoque/recebimentos/': typeof AuthenticatedEstoqueRecebimentosIndexRoute
   '/expedicao/rotas/': typeof AuthenticatedExpedicaoRotasIndexRoute
 }
@@ -510,6 +518,7 @@ export interface FileRoutesByTo {
   '/expedicao/rotas/$id': typeof AuthenticatedExpedicaoRotasIdRoute
   '/expedicao/rotas/nova': typeof AuthenticatedExpedicaoRotasNovaRoute
   '/api/public/hooks/olist-sync': typeof ApiPublicHooksOlistSyncRoute
+  '/api/public/hooks/olist-webhook': typeof ApiPublicHooksOlistWebhookRoute
   '/estoque/recebimentos': typeof AuthenticatedEstoqueRecebimentosIndexRoute
   '/expedicao/rotas': typeof AuthenticatedExpedicaoRotasIndexRoute
 }
@@ -571,6 +580,7 @@ export interface FileRoutesById {
   '/_authenticated/expedicao/rotas/$id': typeof AuthenticatedExpedicaoRotasIdRoute
   '/_authenticated/expedicao/rotas/nova': typeof AuthenticatedExpedicaoRotasNovaRoute
   '/api/public/hooks/olist-sync': typeof ApiPublicHooksOlistSyncRoute
+  '/api/public/hooks/olist-webhook': typeof ApiPublicHooksOlistWebhookRoute
   '/_authenticated/estoque/recebimentos/': typeof AuthenticatedEstoqueRecebimentosIndexRoute
   '/_authenticated/expedicao/rotas/': typeof AuthenticatedExpedicaoRotasIndexRoute
 }
@@ -632,6 +642,7 @@ export interface FileRouteTypes {
     | '/expedicao/rotas/$id'
     | '/expedicao/rotas/nova'
     | '/api/public/hooks/olist-sync'
+    | '/api/public/hooks/olist-webhook'
     | '/estoque/recebimentos/'
     | '/expedicao/rotas/'
   fileRoutesByTo: FileRoutesByTo
@@ -691,6 +702,7 @@ export interface FileRouteTypes {
     | '/expedicao/rotas/$id'
     | '/expedicao/rotas/nova'
     | '/api/public/hooks/olist-sync'
+    | '/api/public/hooks/olist-webhook'
     | '/estoque/recebimentos'
     | '/expedicao/rotas'
   id:
@@ -751,6 +763,7 @@ export interface FileRouteTypes {
     | '/_authenticated/expedicao/rotas/$id'
     | '/_authenticated/expedicao/rotas/nova'
     | '/api/public/hooks/olist-sync'
+    | '/api/public/hooks/olist-webhook'
     | '/_authenticated/estoque/recebimentos/'
     | '/_authenticated/expedicao/rotas/'
   fileRoutesById: FileRoutesById
@@ -762,6 +775,7 @@ export interface RootRouteChildren {
   SetupRoute: typeof SetupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiPublicHooksOlistSyncRoute: typeof ApiPublicHooksOlistSyncRoute
+  ApiPublicHooksOlistWebhookRoute: typeof ApiPublicHooksOlistWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1123,6 +1137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEstoqueRecebimentosIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/olist-webhook': {
+      id: '/api/public/hooks/olist-webhook'
+      path: '/api/public/hooks/olist-webhook'
+      fullPath: '/api/public/hooks/olist-webhook'
+      preLoaderRoute: typeof ApiPublicHooksOlistWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/olist-sync': {
       id: '/api/public/hooks/olist-sync'
       path: '/api/public/hooks/olist-sync'
@@ -1315,6 +1336,7 @@ const rootRouteChildren: RootRouteChildren = {
   SetupRoute: SetupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiPublicHooksOlistSyncRoute: ApiPublicHooksOlistSyncRoute,
+  ApiPublicHooksOlistWebhookRoute: ApiPublicHooksOlistWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

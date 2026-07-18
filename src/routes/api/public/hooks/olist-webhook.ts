@@ -45,9 +45,17 @@ export const Route = createFileRoute("/api/public/hooks/olist-webhook")({
 
         // Registra o webhook para diagnóstico
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: orgRow } = await supabaseAdmin
+          .from("organizations")
+          .select("id")
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        const orgId = orgRow?.id;
         const { data: evt } = await supabaseAdmin
           .from("integration_events")
           .insert({
+            organization_id: orgId!,
             source: "olist",
             event_type: "webhook",
             status: "processando",
@@ -56,6 +64,7 @@ export const Route = createFileRoute("/api/public/hooks/olist-webhook")({
           .select("id")
           .single();
         const evtId = evt?.id;
+
 
         try {
           const { syncOlistProductById, syncOlistStockByExternalId } = await import("@/lib/olist-sync.server");
