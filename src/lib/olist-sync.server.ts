@@ -585,10 +585,11 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
       .select("status")
       .eq("id", eventId)
       .maybeSingle();
-    if (cur?.status === "cancelado") {
+    if (!cur || cur.status !== "processando") {
       cancelledFlag = true;
       return;
     }
+    // Update condicional: só grava se ainda estiver "processando" (evita corrida com cancelamento)
     await supabaseAdmin
       .from("integration_events")
       .update({
@@ -601,7 +602,8 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
           ...extra,
         },
       })
-      .eq("id", eventId);
+      .eq("id", eventId)
+      .eq("status", "processando");
   };
 
   const isCancelled = async (): Promise<boolean> => {
@@ -612,7 +614,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
       .select("status")
       .eq("id", eventId)
       .maybeSingle();
-    if (data?.status === "cancelado") cancelledFlag = true;
+    if (!data || data.status !== "processando") cancelledFlag = true;
     return cancelledFlag;
   };
 
