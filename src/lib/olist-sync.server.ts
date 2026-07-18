@@ -298,7 +298,7 @@ async function syncOneProduct(
     let variantId = await findLocalVariantByExternal(orgId, externalVariantId);
     if (!variantId) {
       const sku = p.codigo ?? null;
-      const barcode = p.gtin ?? null;
+      const barcode = normalizeBarcode(p.gtin);
       variantId = await findVariantBySku(orgId, sku);
       if (!variantId) variantId = await findVariantByBarcode(orgId, barcode);
       if (variantId) {
@@ -338,7 +338,7 @@ async function syncOneProduct(
       let variantId = await findLocalVariantByExternal(orgId, varExternalId);
       if (!variantId) {
         const sku = v.codigo ?? null;
-        const barcode = v.gtin ?? null;
+        const barcode = normalizeBarcode(v.gtin);
         variantId = await findVariantBySku(orgId, sku);
         if (!variantId) variantId = await findVariantByBarcode(orgId, barcode);
         if (variantId) {
@@ -391,19 +391,37 @@ async function findVariantBySku(orgId: string, sku: string | null | undefined): 
     .select("id")
     .eq("organization_id", orgId)
     .eq("sku", sku)
-    .maybeSingle();
-  return data?.id;
+    .limit(1);
+  return data?.[0]?.id;
 }
 
 async function findVariantByBarcode(orgId: string, barcode: string | null | undefined): Promise<string | undefined> {
-  if (!barcode) return undefined;
+  const normalized = normalizeBarcode(barcode);
+  if (!normalized) return undefined;
   const { data } = await supabaseAdmin
     .from("product_variants")
     .select("id")
     .eq("organization_id", orgId)
-    .eq("barcode", barcode)
-    .maybeSingle();
-  return data?.id;
+    .eq("barcode", normalized)
+    .limit(1);
+  return data?.[0]?.id;
+}
+
+function normalizeBarcode(value: unknown): string | null {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+
+  const upper = raw.toUpperCase();
+  if (["0", "SEM GTIN", "SEMGTIN", "N/A", "NA", "NULL", "ISENTO"].includes(upper)) return null;
+
+  const compact = raw.replace(/[\s.-]/g, "");
+  if (!compact || /^0+$/.test(compact)) return null;
+  return compact;
+}
+
+function isBarcodeUniqueError(error: any): boolean {
+  const text = [error?.code, error?.message, error?.details, error?.hint].filter(Boolean).join(" ");
+  return /product_variants_org_barcode_uniq|barcode/i.test(text) && /23505|duplicate key|unique constraint/i.test(text);
 }
 
 /**
@@ -412,14 +430,18 @@ async function findVariantByBarcode(orgId: string, barcode: string | null | unde
  * (evita abortar o produto inteiro só porque a Olist reutiliza GTIN entre variações).
  */
 async function insertVariantSafe(row: any): Promise<{ id: string; barcode_dropped: boolean }> {
+  const barcode = normalizeBarcode(row.barcode);
+  const barcodeAlreadyUsed = barcode ? await findVariantByBarcode(row.organization_id, barcode) : undefined;
+  const safeRow = { ...row, barcode: barcodeAlreadyUsed ? null : barcode };
+
   const { data, error } = await supabaseAdmin
     .from("product_variants")
-    .insert(row)
+    .insert(safeRow)
     .select("id")
     .single();
-  if (!error) return { id: data!.id, barcode_dropped: false };
-  const msg = String(error.message ?? "");
-  if (row.barcode && /product_variants_org_barcode_uniq/.test(msg)) {
+  if (!error) return { id: data!.id, barcode_dropped: Boolean(barcodeAlreadyUsed) };
+
+  if (barcode && isBarcodeUniqueError(error)) {
     const { data: d2, error: e2 } = await supabaseAdmin
       .from("product_variants")
       .insert({ ...row, barcode: null })
