@@ -237,8 +237,38 @@ function OlistPage() {
                 )}
 
                 {detailFresh.error_message && (
-                  <div className="rounded bg-destructive/10 p-3 text-destructive text-xs">{detailFresh.error_message}</div>
+                  <div className="rounded bg-destructive/10 p-3 text-destructive text-xs">
+                    <div className="mb-1 font-semibold">Erro geral:</div>
+                    {detailFresh.error_message}
+                  </div>
                 )}
+
+                {Array.isArray(p.errors) && p.errors.length > 0 && (
+                  <div className="rounded border border-destructive/30 bg-destructive/5 p-3">
+                    <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-destructive">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      {p.errors.length} erro(s) durante a sincronização
+                    </div>
+                    <div className="max-h-64 space-y-1 overflow-auto">
+                      {p.errors.slice(0, 100).map((err: any, i: number) => {
+                        const name = typeof err === "object" && err !== null ? (err.product ?? err.name ?? err.sku ?? err.id ?? "—") : "—";
+                        const msg = typeof err === "object" && err !== null ? (err.message ?? err.error ?? JSON.stringify(err)) : String(err);
+                        return (
+                          <div key={i} className="rounded bg-background/50 px-2 py-1 text-[11px]">
+                            <div className="font-medium truncate">{name}</div>
+                            <div className="text-muted-foreground break-words">{msg}</div>
+                          </div>
+                        );
+                      })}
+                      {p.errors.length > 100 && (
+                        <div className="pt-1 text-center text-[10px] text-muted-foreground">
+                          + {p.errors.length - 100} erro(s) — veja o JSON completo abaixo
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <details>
                   <summary className="cursor-pointer text-xs text-muted-foreground">Ver JSON completo</summary>
                   <pre className="mt-2 max-h-96 overflow-auto rounded bg-muted p-3 text-xs">{JSON.stringify(detailFresh.payload, null, 2)}</pre>
