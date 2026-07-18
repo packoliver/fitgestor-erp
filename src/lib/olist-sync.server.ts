@@ -614,7 +614,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
       .select("status")
       .eq("id", eventId)
       .maybeSingle();
-    if (data?.status === "cancelado") cancelledFlag = true;
+    if (!data || data.status !== "processando") cancelledFlag = true;
     return cancelledFlag;
   };
 
