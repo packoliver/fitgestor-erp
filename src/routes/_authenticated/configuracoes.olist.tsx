@@ -123,6 +123,33 @@ function OlistPage() {
           </div>
         </CardContent>
       </Card>
+      <Card className="max-w-3xl">
+        <CardHeader><CardTitle>Webhook (sync em tempo real)</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <p className="text-muted-foreground">
+            Cole esta URL no painel da Olist em <strong>Configurações → Notificações/Webhooks</strong>.
+            Ela será chamada automaticamente quando um produto ou saldo de estoque mudar — sem esperar o cron de 20 min.
+          </p>
+          <div className="flex items-center gap-2 rounded border bg-muted/40 p-2 font-mono text-xs">
+            <code className="flex-1 truncate">{typeof window !== "undefined" ? `${window.location.origin}/api/public/hooks/olist-webhook` : "/api/public/hooks/olist-webhook"}</code>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  navigator.clipboard.writeText(`${window.location.origin}/api/public/hooks/olist-webhook`);
+                  toast.success("URL copiada");
+                }
+              }}
+            >Copiar</Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Na Olist, defina o <strong>token</strong> do webhook com o mesmo valor salvo aqui em <code>OLIST_WEBHOOK_SECRET</code>.
+            Enviamos e validamos esse token em cada chamada — nenhuma requisição sem token válido é aceita.
+          </p>
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader><CardTitle>Últimas execuções</CardTitle></CardHeader>
