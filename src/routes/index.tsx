@@ -180,29 +180,36 @@ function OperationOverview() {
     { n: "06", t: "Relatórios", d: "Decisões com dados" },
   ];
   return (
-    <section id="operacao" className="border-b border-border">
-      <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-12 px-6 py-24 lg:grid-cols-12 lg:gap-10 lg:px-10">
+    <section id="operacao" className="border-b border-white/10 bg-[#0a0a0a]">
+      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-12 px-6 py-24 lg:grid-cols-12 lg:gap-10 lg:px-10">
         <div className="lg:col-span-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">A operação</p>
-          <h2 className="mt-4 text-[30px] font-semibold leading-[1.15] tracking-[-0.025em] sm:text-[36px]">
-            Um sistema para tudo o que acontece entre a caixa aberta e o cliente na porta.
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-[#FF4D00]">
+            — A Operação
+          </p>
+          <h2 className="mt-6 font-['Bebas_Neue'] text-[56px] leading-[0.9] tracking-tight text-white uppercase sm:text-[68px]">
+            Um sistema<br /><span className="text-[#FF4D00]">para tudo</span><br />o que acontece.
           </h2>
+          <p className="mt-6 max-w-sm text-[14px] leading-relaxed text-white/60">
+            Da caixa aberta ao cliente na porta — entrada, PDV, estoque, trocas e relatórios sob o mesmo teto.
+          </p>
         </div>
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-8 lg:grid-cols-3">
-          {items.map((it) => (
+        <ul className="grid grid-cols-1 gap-0 sm:grid-cols-2 lg:col-span-8 lg:grid-cols-3">
+          {items.map((it, i) => (
             <li
               key={it.n}
-              className="liquid-card group relative flex flex-col justify-between overflow-hidden rounded-[18px] p-6 transition-transform duration-300 hover:-translate-y-0.5"
+              className="group relative flex flex-col justify-between border border-white/10 bg-[#111] p-7 transition-all duration-300 hover:z-10 hover:-translate-y-1 hover:border-[#FF4D00] hover:bg-[#151515]"
+              style={{ marginLeft: i % 3 === 0 ? 0 : "-1px", marginTop: i >= 3 ? "-1px" : 0 }}
             >
-              <span className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground">{it.n}</span>
-              <div className="mt-8">
-                <p className="text-[15px] font-semibold text-foreground">{it.t}</p>
-                <p className="mt-1 text-[13px] text-muted-foreground">{it.d}</p>
+              <span className="font-['Bebas_Neue'] text-4xl leading-none text-[#FFD700] transition-colors group-hover:text-[#FF4D00]">
+                {it.n}
+              </span>
+              <div className="mt-10">
+                <p className="font-['Bebas_Neue'] text-2xl leading-none tracking-wide text-white uppercase">
+                  {it.t}
+                </p>
+                <p className="mt-2 text-[13px] text-white/60">{it.d}</p>
               </div>
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(167,139,250,0.35),transparent_70%)] opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
-              />
+              <span aria-hidden className="mt-6 h-0.5 w-8 bg-white/20 transition-all duration-300 group-hover:w-16 group-hover:bg-[#FF4D00]" />
             </li>
           ))}
         </ul>
@@ -210,6 +217,7 @@ function OperationOverview() {
     </section>
   );
 }
+
 
 /* ---------------------------- Module section ----------------------------- */
 
