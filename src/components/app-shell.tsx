@@ -616,10 +616,11 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-10 gap-2 pl-1.5 pr-3 rounded-xl">
-                  <Avatar className="h-7 w-7"><AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{initials}</AvatarFallback></Avatar>
+                <Button variant="ghost" className="h-10 gap-2 pl-1.5 pr-3 rounded-xl text-white/80 hover:bg-white/10 hover:text-white">
+                  <Avatar className="h-7 w-7"><AvatarFallback className="bg-primary/20 text-primary-glow text-xs font-semibold">{initials}</AvatarFallback></Avatar>
                   <span className="hidden sm:inline text-sm font-medium max-w-[160px] truncate">{userEmail}</span>
                 </Button>
+
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-xl">
                 <DropdownMenuLabel className="font-normal">
