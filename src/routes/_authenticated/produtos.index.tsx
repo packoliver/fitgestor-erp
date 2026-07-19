@@ -172,16 +172,19 @@ function ProdutosList() {
           {selected && (
             <>
               <SheetHeader>
-                <SheetTitle className="flex items-center gap-2">
-                  Variações
-                  <Button asChild size="sm" variant="ghost" className="ml-auto">
-                    <Link to="/produtos/$id" params={{ id: selected.id }}><Pencil className="mr-1 h-3.5 w-3.5" />editar</Link>
+                <SheetTitle className="flex flex-wrap items-center gap-2">
+                  <span>Variações</span>
+                  <Button asChild size="sm" className="ml-auto">
+                    <Link to="/produtos/$id" params={{ id: selected.id }}>
+                      <Pencil className="mr-1 h-3.5 w-3.5" />Editar produto
+                    </Link>
                   </Button>
                 </SheetTitle>
                 <SheetDescription className="text-foreground">
                   {selected.name}{selected.color ? ` — ${selected.color}` : ""}
                 </SheetDescription>
               </SheetHeader>
+
 
               {/* Fotos */}
               {(selected.product_images ?? []).length > 0 && (
@@ -208,26 +211,35 @@ function ProdutosList() {
                       <TableHead>GTIN/EAN</TableHead>
                       <TableHead className="text-right">Preço</TableHead>
                       <TableHead className="text-right">Estoque</TableHead>
+                      <TableHead className="w-10" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {(selected.product_variants ?? []).length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">Sem variações.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">Sem variações.</TableCell></TableRow>
                     ) : (selected.product_variants as any[]).map((v: any) => {
                       const stock = (v.inventory_balances ?? []).reduce((s: number, b: any) => s + Number(b.physical_quantity ?? 0), 0);
                       return (
-                        <TableRow key={v.id}>
+                        <TableRow key={v.id} className="group">
                           <TableCell className="font-medium">{v.size}</TableCell>
                           <TableCell className="font-mono text-xs">{v.sku ?? "—"}</TableCell>
                           <TableCell className="font-mono text-xs">{v.barcode ?? "—"}</TableCell>
                           <TableCell className="text-right">{formatBRL(v.sale_price ?? selected.sale_price)}</TableCell>
                           <TableCell className={`text-right ${stock === 0 ? "text-destructive" : ""}`}>{stock.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button asChild size="sm" variant="ghost" className="h-7 px-2 opacity-60 group-hover:opacity-100">
+                              <Link to="/produtos/$id" params={{ id: selected.id }} aria-label={`Editar ${v.size}`}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       );
                     })}
                   </TableBody>
                 </Table>
               </div>
+
             </>
           )}
         </SheetContent>
