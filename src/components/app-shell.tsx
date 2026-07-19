@@ -593,26 +593,27 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
           userEmail={userEmail}
         />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="glass-soft h-16 flex items-center gap-3 border-0 border-b border-border/60 px-4 sm:px-6 sticky top-0 z-20 rounded-none">
-            <SidebarTrigger className="h-9 w-9 rounded-lg hover:bg-muted" />
+          <header className="h-16 flex items-center gap-3 px-4 sm:px-6 sticky top-0 z-20 bg-[#0D0D10] text-white border-b border-white/10">
+            <SidebarTrigger className="h-9 w-9 rounded-lg text-white/80 hover:bg-white/10 hover:text-white" />
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="hidden md:flex relative flex-1 max-w-md h-10 items-center rounded-xl border border-border bg-muted/40 pl-9 pr-14 text-left text-sm text-muted-foreground/80 hover:bg-card focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+              className="hidden md:flex relative flex-1 max-w-md h-10 items-center rounded-xl border border-white/10 bg-white/5 pl-9 pr-14 text-left text-sm text-white/60 hover:bg-white/10 hover:text-white/80 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all"
               aria-label="Buscar no FitGestor"
             >
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
               <span>Buscar no FitGestor</span>
-              <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 hidden lg:inline-flex h-6 items-center rounded-md border border-border bg-card px-1.5 text-[10.5px] font-medium text-muted-foreground">⌘K</kbd>
+              <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 hidden lg:inline-flex h-6 items-center rounded-md border border-white/10 bg-white/5 px-1.5 text-[10.5px] font-medium text-white/60">⌘K</kbd>
             </button>
             <div className="flex-1 md:hidden" />
-            <Button variant="ghost" size="icon" aria-label="Buscar" onClick={() => setSearchOpen(true)} className="md:hidden">
+            <Button variant="ghost" size="icon" aria-label="Buscar" onClick={() => setSearchOpen(true)} className="md:hidden text-white/80 hover:bg-white/10 hover:text-white">
               <Search className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" aria-label="Notificações" className="relative">
+            <Button variant="ghost" size="icon" aria-label="Notificações" className="relative text-white/80 hover:bg-white/10 hover:text-white">
               <Bell className="h-4 w-4" />
-              <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-primary-glow" />
             </Button>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-10 gap-2 pl-1.5 pr-3 rounded-xl">
