@@ -197,6 +197,16 @@ export const NAV_GROUPS: NavGroup[] = [
   "Início","Cadastros","Suprimentos","Vendas","Entregas","Relatórios","Configurações",
 ];
 
+export const NAV_GROUP_META: Record<NavGroup, { icon: ComponentType<{ className?: string }>; description: string }> = {
+  "Início":        { icon: Home,          description: "Visão geral e área de trabalho" },
+  "Cadastros":     { icon: UserSquare2,   description: "Clientes, produtos, fornecedores" },
+  "Suprimentos":   { icon: Boxes,         description: "Estoque, entradas e etiquetas" },
+  "Vendas":        { icon: ShoppingCart,  description: "PDV, caixa, trocas e pós-venda" },
+  "Entregas":      { icon: Truck,         description: "Expedição, rotas e motoboys" },
+  "Relatórios":    { icon: FileBarChart,  description: "Indicadores e desempenho" },
+  "Configurações": { icon: Settings,      description: "Equipe, permissões e ajustes" },
+};
+
 /** IDs shown by default when "Menu essencial" is on. */
 export const ESSENTIAL_ITEM_IDS = new Set(
   NAV_ITEMS.filter((i) => i.essential).map((i) => i.id),
