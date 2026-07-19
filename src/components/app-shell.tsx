@@ -39,7 +39,7 @@ import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  NAV_ITEMS, itemsByGroup, filterByPermission,
+  NAV_ITEMS, itemsByGroup, filterByPermission, NAV_GROUPS, NAV_GROUP_META,
   ESSENTIAL_ITEM_IDS, type NavItem, type NavGroup,
 } from "@/config/navigation";
 
