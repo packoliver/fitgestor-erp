@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
-import { BrandMark, BrandLockup } from "@/components/brand-logo";
-import { GlassVideoHero } from "@/components/ui/glass-video-hero";
+import { BrandLockup } from "@/components/brand-logo";
+import heroAthlete from "@/assets/hero-athlete.jpg";
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="dark fit-aurora min-h-screen text-foreground selection:bg-primary/30 selection:text-foreground">
+    <div className="dark min-h-screen bg-[#0a0a0a] text-foreground selection:bg-[#FF4D00] selection:text-white">
       <SiteHeader />
       <main>
         <Hero />
@@ -34,7 +34,6 @@ function Landing() {
         <ClosingCta />
       </main>
       <SiteFooter />
-
     </div>
   );
 }
@@ -43,19 +42,31 @@ function Landing() {
 
 function SiteHeader() {
   return (
-    <header className="glass-medium sticky top-0 z-30 rounded-none border-0 border-b border-white/10">
-      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6 lg:px-10">
+    <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0a0a0a]/85 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between px-6 lg:px-10">
         <Link to="/" className="flex items-center gap-2.5">
-          <BrandMark size={30} />
-          <span className="text-[15px] font-semibold tracking-[-0.02em] text-foreground">FitGestor</span>
+          <div className="flex h-8 w-8 items-center justify-center bg-[#FF4D00]">
+            <span className="font-['Bebas_Neue'] text-xl leading-none text-black">F</span>
+          </div>
+          <span className="font-['Bebas_Neue'] text-2xl leading-none tracking-[0.08em] text-white">
+            FITGESTOR
+          </span>
         </Link>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="ghost" size="sm" className="rounded-full text-muted-foreground hover:bg-white/[0.08] hover:text-foreground">
-            <Link to="/auth">Entrar</Link>
-          </Button>
-          <Button asChild size="sm" className="rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-10px_rgba(139,92,246,0.75)] hover:bg-primary-hover">
-            <Link to="/auth">Acessar sistema</Link>
-          </Button>
+        <nav className="hidden items-center gap-8 md:flex">
+          <a href="#operacao" className="text-[10px] font-black uppercase tracking-[0.28em] text-white/70 transition-colors hover:text-[#FF4D00]">Operação</a>
+          <a href="#depoimentos" className="text-[10px] font-black uppercase tracking-[0.28em] text-white/70 transition-colors hover:text-[#FF4D00]">Times</a>
+          <a href="#faq" className="text-[10px] font-black uppercase tracking-[0.28em] text-white/70 transition-colors hover:text-[#FF4D00]">FAQ</a>
+        </nav>
+        <div className="flex items-center gap-3">
+          <Link to="/auth" className="hidden text-[10px] font-black uppercase tracking-[0.28em] text-white/70 transition-colors hover:text-white sm:inline">
+            Entrar
+          </Link>
+          <Link
+            to="/auth"
+            className="bg-[#FF4D00] px-5 py-3 text-[10px] font-black uppercase tracking-[0.24em] text-white transition-all hover:-translate-y-0.5 hover:bg-white hover:text-black active:translate-y-0"
+          >
+            Acessar
+          </Link>
         </div>
       </div>
     </header>
@@ -66,24 +77,95 @@ function SiteHeader() {
 
 function Hero() {
   return (
-    <GlassVideoHero
-      eyebrow="FitGestor · Sistema de Gestão"
-      title={
-        <>
-          Da entrada da mercadoria à venda,{" "}
-          <span className="bg-gradient-to-r from-white via-white/75 to-white/40 bg-clip-text text-transparent">
-            tudo sob controle.
-          </span>
-        </>
-      }
-      description="Controle estoque, produtos, etiquetas, vendas, entregas, funcionários e pós-venda em um único sistema."
-      primaryCta={{ label: "Acessar o sistema", to: "/auth" }}
-      secondaryCta={{ label: "Conhecer recursos", href: "#operacao" }}
-      videoSrc="/videos/fitgestor-hero.mp4"
-      posterSrc="/images/fitgestor-hero-poster.webp"
-    />
+    <section className="relative w-full overflow-hidden bg-[#0a0a0a] px-4 py-6 md:p-8">
+      <div className="relative mx-auto flex w-full max-w-[1400px] flex-col overflow-hidden border-4 border-white bg-[#1a1a1a] shadow-[0_0_50px_rgba(0,0,0,0.5)] md:aspect-[16/9] md:flex-row">
+        {/* Diagonal energy stripes */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+          <div className="absolute -top-1/2 -right-1/4 h-[200%] w-[80%] translate-x-10 rotate-[25deg] bg-[#FF4D00]" />
+          <div className="absolute -top-1/2 -right-1/3 h-[200%] w-[80%] translate-x-40 rotate-[25deg] bg-[#FFD700] opacity-80" />
+        </div>
+
+        {/* Content layer */}
+        <div className="relative z-20 flex w-full flex-col md:h-full md:flex-row">
+          {/* Left: editorial headline box */}
+          <div className="flex w-full items-center justify-center p-6 py-14 md:h-full md:w-5/12 md:p-12 lg:p-16">
+            <div className="w-full -rotate-1 bg-white p-6 shadow-[10px_10px_0px_0px_#FF4D00] md:p-10 md:shadow-[15px_15px_0px_0px_#FF4D00] lg:p-12">
+              <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-black/60">
+                FitGestor · Sistema de Gestão
+              </p>
+              <h1 className="font-['Bebas_Neue'] text-[68px] leading-[0.85] tracking-tight text-[#FF4D00] uppercase md:text-[92px] lg:text-[112px]">
+                ENTRADA.<br />ESTOQUE.<br />VENDA.
+              </h1>
+              <p className="mt-6 border-l-4 border-black pl-4 text-[15px] font-black leading-tight text-black md:text-lg">
+                O ERP QUE ENTENDE O RITMO DA SUA LOJA DE MODA FITNESS.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  to="/auth"
+                  className="inline-flex items-center justify-center gap-2 bg-black px-8 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-white transition-all hover:-translate-y-1 hover:bg-[#FF4D00] active:translate-y-0"
+                >
+                  Acessar o sistema <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                <a
+                  href="#operacao"
+                  className="inline-flex items-center justify-center border-2 border-black px-8 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-black transition-all hover:bg-black hover:text-white"
+                >
+                  Conhecer módulos
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: hero image + vertical text */}
+          <div className="relative flex min-h-[420px] w-full flex-col justify-end md:h-full md:w-7/12 md:min-h-0">
+            <div className="absolute inset-0 z-10">
+              <img
+                src={heroAthlete}
+                alt="Atleta em movimento"
+                width={1200}
+                height={1600}
+                className="h-full w-full object-cover object-center grayscale contrast-125"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            </div>
+
+            {/* Giant vertical text overlay */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center overflow-hidden">
+              <div className="rotate-90 whitespace-nowrap font-['Bebas_Neue'] text-[16rem] leading-none tracking-tighter text-white/10 md:text-[22rem]">
+                FITGESTOR
+              </div>
+            </div>
+
+            {/* Bottom branding bar */}
+            <div className="relative z-30 flex w-full items-end justify-between p-6 md:p-8">
+              <div className="text-white">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.28em] opacity-70">
+                  Management System
+                </div>
+                <div className="h-1 w-24 bg-[#FFD700]" />
+              </div>
+              <div className="bg-[#FFD700] p-3 text-[10px] font-black uppercase tracking-[0.22em] text-black md:p-4">
+                Powering Fitness Retail
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Decorative frame elements */}
+        <div aria-hidden className="absolute left-4 top-4 z-40 flex space-x-2 md:left-6 md:top-6">
+          <div className="h-2 w-2 bg-[#FF4D00]" />
+          <div className="h-2 w-2 bg-white" />
+          <div className="h-2 w-2 bg-[#FFD700]" />
+        </div>
+        <div aria-hidden className="absolute bottom-4 right-4 z-40 font-mono text-[9px] text-white/40 md:bottom-6 md:right-6 md:text-[10px]">
+          SYSTEM_ID: 04-GESTOR-MODA
+        </div>
+      </div>
+    </section>
   );
 }
+
+
 
 
 /* --------------------------- Operation overview -------------------------- */
