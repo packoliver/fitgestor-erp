@@ -4,9 +4,6 @@ import { BrandMark } from "@/components/brand-logo";
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -44,15 +41,9 @@ import {
 } from "@/config/navigation";
 
 
-const LS_GROUPS = "fg:nav:groups-open";
 const LS_ESSENTIAL = "fg:nav:essential";
 const LS_PINNED = "fg:nav:pinned";
 
-function loadOpenGroups(): Record<string, boolean> {
-  if (typeof window === "undefined") return {};
-  try { return JSON.parse(window.localStorage.getItem(LS_GROUPS) || "{}"); }
-  catch { return {}; }
-}
 function loadEssentialDefault(): boolean {
   if (typeof window === "undefined") return true;
   const v = window.localStorage.getItem(LS_ESSENTIAL);
@@ -150,14 +141,10 @@ function AppSidebar({
   const { has, hasAny, isLoading } = usePermissions();
   const badges = useNavBadges(hasAny, isLoading);
 
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => loadOpenGroups());
   const [essential, setEssential] = useState<boolean>(() => loadEssentialDefault());
   const [expandedAll, setExpandedAll] = useState<boolean>(false);
   const [selectedGroup, setSelectedGroup] = useState<NavGroup>("Início");
 
-  useEffect(() => {
-    if (typeof window !== "undefined") window.localStorage.setItem(LS_GROUPS, JSON.stringify(openGroups));
-  }, [openGroups]);
   useEffect(() => {
     if (typeof window !== "undefined") window.localStorage.setItem(LS_ESSENTIAL, essential ? "1" : "0");
   }, [essential]);
@@ -181,15 +168,6 @@ function AppSidebar({
   useEffect(() => {
     if (activeGroup) setSelectedGroup(activeGroup);
   }, [activeGroup]);
-
-  const isGroupOpen = (g: string) => {
-    if (openGroups[g] !== undefined) return openGroups[g];
-    if (g === "Início") return true;
-    if (g === activeGroup) return true;
-    return false;
-  };
-  const toggleGroup = (g: string) =>
-    setOpenGroups((prev) => ({ ...prev, [g]: !isGroupOpen(g) }));
 
   // If sidebar is in "hidden" mode (not pinned) on desktop, close after nav.
   const handleNav = () => {
