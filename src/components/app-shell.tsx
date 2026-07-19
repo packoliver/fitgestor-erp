@@ -233,12 +233,10 @@ function AppSidebar({
     >
       <SidebarHeader className="border-b border-sidebar-border h-16 justify-center">
         <div className="flex items-center gap-2 px-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-primary text-primary-foreground">
-            <span className="text-[15px] font-semibold leading-none tracking-[-0.03em]">F</span>
-          </div>
+          <BrandMark size={36} />
           {!collapsed && (
             <>
-              <span className="text-[15px] font-semibold tracking-[-0.02em] text-sidebar-foreground truncate flex-1">
+              <span className="flex-1 truncate text-[15px] font-semibold tracking-[-0.02em] text-sidebar-foreground">
                 FitGestor
               </span>
               {!isMobile && (
