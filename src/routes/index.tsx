@@ -343,46 +343,45 @@ function Testimonials() {
     },
   ];
   return (
-    <section id="depoimentos" className="fit-aurora relative overflow-hidden border-b border-white/5">
-      <div className="mx-auto max-w-[1200px] px-6 py-24 lg:px-10 lg:py-28">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">
-            Quem opera com o FitGestor
-          </p>
-          <h2 className="mt-4 text-[30px] font-semibold leading-[1.15] tracking-[-0.025em] sm:text-[38px]">
-            Times que trocaram planilhas por{" "}
-            <span className="bg-gradient-to-r from-white via-white/75 to-white/40 bg-clip-text text-transparent">
-              uma única fonte de verdade
-            </span>
-            .
-          </h2>
+    <section id="depoimentos" className="relative overflow-hidden border-b border-white/10 bg-[#0f0f0f]">
+      <div className="mx-auto max-w-[1240px] px-6 py-24 lg:px-10 lg:py-28">
+        <div className="flex flex-col items-start justify-between gap-6 border-b border-white/10 pb-10 md:flex-row md:items-end">
+          <div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-[#FFD700]">
+              — Quem opera com o FitGestor
+            </p>
+            <h2 className="mt-6 font-['Bebas_Neue'] text-[56px] leading-[0.9] tracking-tight text-white uppercase sm:text-[72px]">
+              Times que trocaram planilhas<br /><span className="text-[#FF4D00]">por uma fonte de verdade.</span>
+            </h2>
+          </div>
+          <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">
+            03 · Depoimentos
+          </span>
         </div>
-        <ul className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3">
-          {items.map((t) => (
+        <ul className="mt-12 grid grid-cols-1 gap-0 md:grid-cols-3">
+          {items.map((t, i) => (
             <li
               key={t.name}
-              className="liquid-card relative flex flex-col justify-between rounded-[20px] p-7"
+              className="relative flex flex-col justify-between border border-white/10 bg-[#151515] p-8 transition-all duration-300 hover:z-10 hover:border-[#FF4D00] hover:bg-[#191919]"
+              style={{ marginLeft: i === 0 ? 0 : "-1px" }}
             >
-              <span
-                aria-hidden
-                className="absolute right-6 top-4 text-[80px] font-serif leading-none text-white/10 select-none"
-              >
-                &ldquo;
+              <span aria-hidden className="font-['Bebas_Neue'] text-6xl leading-none text-[#FF4D00]">
+                “
               </span>
-              <p className="relative text-[14.5px] leading-relaxed text-foreground/90">
+              <p className="mt-4 text-[15px] leading-relaxed text-white/85">
                 {t.quote}
               </p>
-              <div className="relative mt-8 flex items-center gap-3 border-t border-white/10 pt-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/25 text-[13px] font-semibold text-white">
-                  {t.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .slice(0, 2)
-                    .join("")}
+              <div className="mt-8 flex items-center gap-3 border-t border-white/10 pt-5">
+                <div className="flex h-10 w-10 items-center justify-center bg-[#FF4D00] font-['Bebas_Neue'] text-lg leading-none text-black">
+                  {t.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold text-foreground">{t.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{t.role}</p>
+                  <p className="font-['Bebas_Neue'] text-lg leading-none tracking-wide text-white uppercase">
+                    {t.name}
+                  </p>
+                  <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">
+                    {t.role}
+                  </p>
                 </div>
               </div>
             </li>
@@ -392,6 +391,7 @@ function Testimonials() {
     </section>
   );
 }
+
 
 /* --------------------------------- FAQ ---------------------------------- */
 
