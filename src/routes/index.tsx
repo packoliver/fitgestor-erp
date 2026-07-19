@@ -251,38 +251,36 @@ function ModuleSection({
 
 function ClosingCta() {
   return (
-    <section className="fit-aurora relative overflow-hidden border-b border-white/5">
-      <div className="mx-auto max-w-[1200px] px-6 py-28 lg:px-10">
-        <div className="liquid-surface relative overflow-hidden rounded-[28px] p-10 lg:p-14">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -left-24 -top-24 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.35),transparent_70%)] blur-3xl"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -bottom-32 right-[-120px] h-[380px] w-[380px] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.28),transparent_70%)] blur-3xl"
-          />
-          <div className="relative grid grid-cols-1 gap-10 lg:grid-cols-12">
+    <section className="relative overflow-hidden border-b border-white/10 bg-[#0a0a0a]">
+      <div className="mx-auto max-w-[1240px] px-6 py-24 lg:px-10 lg:py-32">
+        <div className="relative overflow-hidden border-4 border-white bg-[#1a1a1a]">
+          {/* diagonal stripes */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden opacity-90">
+            <div className="absolute -top-1/2 -left-1/4 h-[200%] w-[70%] -rotate-[20deg] bg-[#FF4D00]" />
+            <div className="absolute -top-1/2 left-[10%] h-[200%] w-[70%] -rotate-[20deg] bg-[#FFD700] opacity-70" />
+          </div>
+          <div className="relative grid grid-cols-1 gap-10 p-10 lg:grid-cols-12 lg:p-16">
             <div className="lg:col-span-8">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">FitGestor</p>
-              <h2 className="mt-4 text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[48px] lg:text-[58px]">
-                A operação da empresa funciona melhor <br />
-                <span className="text-muted-foreground">quando o sistema entende o negócio.</span>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-white/90">
+                — FitGestor Access
+              </p>
+              <h2 className="mt-6 font-['Bebas_Neue'] text-[56px] leading-[0.88] tracking-tight text-white uppercase sm:text-[80px] lg:text-[104px]">
+                A operação<br />funciona melhor<br /><span className="text-black">com o sistema certo.</span>
               </h2>
             </div>
             <div className="flex items-end lg:col-span-4">
-              <div className="w-full">
-                <Button
-                  asChild
-                  size="lg"
-                  className="w-full rounded-full bg-primary text-primary-foreground shadow-[0_14px_36px_-8px_rgba(139,92,246,0.7)] hover:bg-primary-hover"
+              <div className="w-full -rotate-1 bg-white p-8 shadow-[10px_10px_0px_0px_#000] md:p-10">
+                <p className="mb-6 border-l-4 border-[#FF4D00] pl-4 text-[13px] font-black uppercase tracking-widest text-black">
+                  Acesso corporativo
+                </p>
+                <Link
+                  to="/auth"
+                  className="inline-flex w-full items-center justify-center gap-2 bg-black px-8 py-4 text-[11px] font-black uppercase tracking-[0.24em] text-white transition-all hover:-translate-y-1 hover:bg-[#FF4D00] active:translate-y-0"
                 >
-                  <Link to="/auth">
-                    Entrar no sistema <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground">
-                  Ambiente corporativo. Acesso restrito à equipe autorizada da Quero Ser Fit<sup className="text-[0.6em]">®</sup>.
+                  Entrar no sistema <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                <p className="mt-4 text-[11px] leading-relaxed text-black/60">
+                  Restrito à equipe autorizada da Quero Ser Fit<sup className="text-[0.6em]">®</sup>.
                 </p>
               </div>
             </div>
@@ -297,20 +295,21 @@ function ClosingCta() {
 
 function SiteFooter() {
   return (
-    <footer className="fit-aurora relative overflow-hidden">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 -top-20 h-40 bg-[radial-gradient(60%_100%_at_50%_100%,rgba(139,92,246,0.20),transparent_70%)] blur-2xl"
-      />
-      <div className="mx-auto max-w-[1200px] px-6 py-12 lg:px-10">
-        <div className="glass-medium flex flex-col items-start justify-between gap-6 rounded-[22px] px-6 py-6 sm:flex-row sm:items-center lg:px-8">
-          <BrandLockup size="sm" onDark />
+    <footer className="relative overflow-hidden bg-black">
+      <div className="mx-auto max-w-[1240px] px-6 py-10 lg:px-10">
+        <div className="flex flex-col items-start justify-between gap-6 border-t-2 border-[#FF4D00] pt-8 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center bg-[#FF4D00]">
+              <span className="font-['Bebas_Neue'] text-xl leading-none text-black">F</span>
+            </div>
+            <span className="font-['Bebas_Neue'] text-2xl leading-none tracking-[0.08em] text-white">FITGESTOR</span>
+          </div>
           <div className="flex flex-col items-start gap-1 sm:items-end">
-            <span className="text-[11px] text-muted-foreground">
-              Desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup>
+            <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/50">
+              Quero Ser Fit<sup className="text-[0.6em]">®</sup> · Sistema de Gestão
             </span>
-            <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-              © {new Date().getFullYear()} · Todos os direitos reservados
+            <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">
+              © {new Date().getFullYear()} — Todos os direitos reservados
             </span>
           </div>
         </div>
@@ -318,6 +317,7 @@ function SiteFooter() {
     </footer>
   );
 }
+
 
 /* ----------------------------- Testimonials ----------------------------- */
 
