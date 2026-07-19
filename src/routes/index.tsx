@@ -1,8 +1,10 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
+import {
+  ArrowRight, Boxes, ScanBarcode, Tag, ShoppingCart, RefreshCw, BarChart3,
+  Truck, Users, Check, ShieldCheck, Zap, Database,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
-import heroAthlete from "@/assets/hero-athlete.jpg";
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
@@ -18,15 +20,28 @@ export const Route = createFileRoute("/")({
     throw redirect({ to: target });
   },
   component: Landing,
+  head: () => ({
+    meta: [
+      { title: "FitGestor · ERP para varejo de moda fitness" },
+      { name: "description", content: "ERP completo para lojas de moda e fitness: PDV, estoque, recebimento, etiquetas, trocas, expedição e relatórios em um único sistema." },
+      { property: "og:title", content: "FitGestor · ERP para varejo de moda fitness" },
+      { property: "og:description", content: "PDV, estoque, recebimento, etiquetas, trocas, expedição e relatórios em um único sistema." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
 });
 
 function Landing() {
   return (
-    <div className="dark min-h-screen bg-[#0a0a0a] text-foreground selection:bg-[#FF4D00] selection:text-white">
+    <div className="min-h-screen bg-[#0b0d10] text-slate-100 antialiased">
       <SiteHeader />
       <main>
         <Hero />
-        <OperationOverview />
+        <TrustBar />
+        <Modules />
+        <PreviewSection />
+        <WhyErp />
         <Testimonials />
         <FaqSection />
         <ClosingCta />
@@ -36,34 +51,32 @@ function Landing() {
   );
 }
 
-/* ------------------------------- Header ---------------------------------- */
+/* -------------------------------- Header --------------------------------- */
 
 function SiteHeader() {
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0a0a0a]/85 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between px-6 lg:px-10">
-        <Link to="/" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center bg-[#FF4D00]">
-            <span className="font-['Bebas_Neue'] text-xl leading-none text-black">F</span>
-          </div>
-          <span className="font-['Bebas_Neue'] text-2xl leading-none tracking-[0.08em] text-white">
-            FITGESTOR
-          </span>
+    <header className="sticky top-0 z-30 border-b border-white/5 bg-[#0b0d10]/90 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between px-6">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">F</div>
+          <span className="text-[15px] font-semibold tracking-tight text-white">FitGestor</span>
+          <span className="ml-2 hidden rounded border border-white/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-400 sm:inline">ERP</span>
         </Link>
-        <nav className="hidden items-center gap-8 md:flex">
-          <a href="#operacao" className="text-[10px] font-black uppercase tracking-[0.28em] text-white/70 transition-colors hover:text-[#FF4D00]">Operação</a>
-          <a href="#depoimentos" className="text-[10px] font-black uppercase tracking-[0.28em] text-white/70 transition-colors hover:text-[#FF4D00]">Times</a>
-          <a href="#faq" className="text-[10px] font-black uppercase tracking-[0.28em] text-white/70 transition-colors hover:text-[#FF4D00]">FAQ</a>
+        <nav className="hidden items-center gap-7 md:flex">
+          <a href="#modulos" className="text-[13px] text-slate-300 transition-colors hover:text-white">Módulos</a>
+          <a href="#preview" className="text-[13px] text-slate-300 transition-colors hover:text-white">Sistema</a>
+          <a href="#depoimentos" className="text-[13px] text-slate-300 transition-colors hover:text-white">Clientes</a>
+          <a href="#faq" className="text-[13px] text-slate-300 transition-colors hover:text-white">FAQ</a>
         </nav>
-        <div className="flex items-center gap-3">
-          <Link to="/auth" className="hidden text-[10px] font-black uppercase tracking-[0.28em] text-white/70 transition-colors hover:text-white sm:inline">
+        <div className="flex items-center gap-2">
+          <Link to="/auth" className="hidden rounded-md px-3 py-1.5 text-[13px] font-medium text-slate-300 transition-colors hover:text-white sm:inline-block">
             Entrar
           </Link>
           <Link
             to="/auth"
-            className="bg-[#FF4D00] px-5 py-3 text-[10px] font-black uppercase tracking-[0.24em] text-white transition-all hover:-translate-y-0.5 hover:bg-white hover:text-black active:translate-y-0"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Acessar
+            Acessar o sistema <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>
@@ -75,311 +88,206 @@ function SiteHeader() {
 
 function Hero() {
   return (
-    <section className="relative w-full overflow-hidden bg-[#0a0a0a] px-4 py-6 md:p-8">
-      <div className="relative mx-auto flex w-full max-w-[1400px] flex-col overflow-hidden border-4 border-white bg-[#1a1a1a] shadow-[0_0_50px_rgba(0,0,0,0.5)] md:aspect-[16/9] md:flex-row">
-        {/* Diagonal energy stripes */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-          <div className="absolute -top-1/2 -right-1/4 h-[200%] w-[80%] translate-x-10 rotate-[25deg] bg-[#FF4D00]" />
-          <div className="absolute -top-1/2 -right-1/3 h-[200%] w-[80%] translate-x-40 rotate-[25deg] bg-[#FFD700] opacity-80" />
-        </div>
-
-        {/* Content layer */}
-        <div className="relative z-20 flex w-full flex-col md:h-full md:flex-row">
-          {/* Left: editorial headline box */}
-          <div className="flex w-full items-center justify-center p-6 py-14 md:h-full md:w-5/12 md:p-12 lg:p-16">
-            <div className="w-full -rotate-1 bg-white p-6 shadow-[10px_10px_0px_0px_#FF4D00] md:p-10 md:shadow-[15px_15px_0px_0px_#FF4D00] lg:p-12">
-              <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-black/60">
-                FitGestor · Sistema de Gestão
-              </p>
-              <h1 className="font-['Bebas_Neue'] text-[68px] leading-[0.85] tracking-tight text-[#FF4D00] uppercase md:text-[92px] lg:text-[112px]">
-                ENTRADA.<br />ESTOQUE.<br />VENDA.
-              </h1>
-              <p className="mt-6 border-l-4 border-black pl-4 text-[15px] font-black leading-tight text-black md:text-lg">
-                O ERP QUE ENTENDE O RITMO DA SUA LOJA DE MODA FITNESS.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  to="/auth"
-                  className="inline-flex items-center justify-center gap-2 bg-black px-8 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-white transition-all hover:-translate-y-1 hover:bg-[#FF4D00] active:translate-y-0"
-                >
-                  Acessar o sistema <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-                <a
-                  href="#operacao"
-                  className="inline-flex items-center justify-center border-2 border-black px-8 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-black transition-all hover:bg-black hover:text-white"
-                >
-                  Conhecer módulos
-                </a>
-              </div>
+    <section className="relative overflow-hidden border-b border-white/5">
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.10),transparent_60%)]" />
+      <div className="relative mx-auto max-w-[1200px] px-6 pb-16 pt-16 lg:pb-24 lg:pt-24">
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
+          <div className="lg:col-span-6">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Sistema operacional para lojas de moda fitness
+            </span>
+            <h1 className="mt-5 text-[38px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[46px] lg:text-[52px]">
+              Da entrada da mercadoria à venda, tudo sob controle.
+            </h1>
+            <p className="mt-5 max-w-[52ch] text-[15px] leading-relaxed text-slate-400">
+              ERP web unificado com PDV, estoque por variação, recebimento com bipagem,
+              etiquetas, trocas, expedição de motoboy e relatórios — sem planilha paralela.
+            </p>
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Link to="/auth" className="inline-flex items-center gap-1.5 rounded-md bg-primary px-5 py-2.5 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90">
+                Acessar o sistema <ArrowRight className="h-4 w-4" />
+              </Link>
+              <a href="#preview" className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-5 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-white/10">
+                Ver o sistema
+              </a>
+            </div>
+            <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-[12px] text-slate-400">
+              {["100% web", "Multi-loja", "Auditoria completa", "Integração Olist / Tiny"].map((f) => (
+                <li key={f} className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-emerald-400" />{f}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="lg:col-span-6">
+            <div className="rounded-xl border border-white/10 bg-[#0f1116] shadow-2xl shadow-black/40">
+              <HeroMockup />
             </div>
           </div>
-
-          {/* Right: hero image + vertical text */}
-          <div className="relative flex min-h-[420px] w-full flex-col justify-end md:h-full md:w-7/12 md:min-h-0">
-            <div className="absolute inset-0 z-10">
-              <img
-                src={heroAthlete}
-                alt="Atleta em movimento"
-                width={1200}
-                height={1600}
-                className="h-full w-full object-cover object-center grayscale contrast-125"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            </div>
-
-            {/* Giant vertical text overlay */}
-            <div aria-hidden className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center overflow-hidden">
-              <div className="rotate-90 whitespace-nowrap font-['Bebas_Neue'] text-[16rem] leading-none tracking-tighter text-white/10 md:text-[22rem]">
-                FITGESTOR
-              </div>
-            </div>
-
-            {/* Bottom branding bar */}
-            <div className="relative z-30 flex w-full items-end justify-between p-6 md:p-8">
-              <div className="text-white">
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.28em] opacity-70">
-                  Management System
-                </div>
-                <div className="h-1 w-24 bg-[#FFD700]" />
-              </div>
-              <div className="bg-[#FFD700] p-3 text-[10px] font-black uppercase tracking-[0.22em] text-black md:p-4">
-                Powering Fitness Retail
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Decorative frame elements */}
-        <div aria-hidden className="absolute left-4 top-4 z-40 flex space-x-2 md:left-6 md:top-6">
-          <div className="h-2 w-2 bg-[#FF4D00]" />
-          <div className="h-2 w-2 bg-white" />
-          <div className="h-2 w-2 bg-[#FFD700]" />
-        </div>
-        <div aria-hidden className="absolute bottom-4 right-4 z-40 font-mono text-[9px] text-white/40 md:bottom-6 md:right-6 md:text-[10px]">
-          SYSTEM_ID: 04-GESTOR-MODA
         </div>
       </div>
     </section>
   );
 }
 
+/* ------------------------------ Trust bar -------------------------------- */
 
-
-
-/* --------------------------- Operation overview -------------------------- */
-
-function OperationOverview() {
-  const items = [
-    { n: "01", t: "Recebimento", d: "Escaneie e concilie" },
-    { n: "02", t: "Estoque", d: "Produto e variação" },
-    { n: "03", t: "Etiquetas", d: "PDF e CODE128" },
-    { n: "04", t: "PDV", d: "Venda no balcão" },
-    { n: "05", t: "Trocas", d: "Crédito por cliente" },
-    { n: "06", t: "Relatórios", d: "Decisões com dados" },
+function TrustBar() {
+  const stats = [
+    { v: "24/7", l: "Disponibilidade" },
+    { v: "< 200 ms", l: "Resposta do PDV" },
+    { v: "99,9%", l: "SLA operacional" },
+    { v: "AES-256", l: "Dados em repouso" },
   ];
   return (
-    <section id="operacao" className="border-b border-white/10 bg-[#0a0a0a]">
-      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-12 px-6 py-24 lg:grid-cols-12 lg:gap-10 lg:px-10">
-        <div className="lg:col-span-4">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-[#FF4D00]">
-            — A Operação
-          </p>
-          <h2 className="mt-6 font-['Bebas_Neue'] text-[56px] leading-[0.9] tracking-tight text-white uppercase sm:text-[68px]">
-            Um sistema<br /><span className="text-[#FF4D00]">para tudo</span><br />o que acontece.
+    <section className="border-b border-white/5 bg-[#0d1015]">
+      <div className="mx-auto grid max-w-[1200px] grid-cols-2 gap-y-6 px-6 py-8 sm:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.l} className="border-l border-white/10 px-4 first:border-l-0">
+            <p className="text-[18px] font-semibold text-white">{s.v}</p>
+            <p className="mt-1 text-[11px] uppercase tracking-wider text-slate-500">{s.l}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------- Modules -------------------------------- */
+
+function Modules() {
+  const items = [
+    { icon: ScanBarcode, t: "Recebimento", d: "Bipagem, conferência por variação e entrada em lote com rastreabilidade completa." },
+    { icon: Boxes, t: "Estoque", d: "Saldos por SKU, mínimos, reservado e disponível. Alertas de ruptura e curva ABC." },
+    { icon: Tag, t: "Etiquetas", d: "Lotes com CODE128, geração em PDF pronta para impressora térmica." },
+    { icon: ShoppingCart, t: "PDV", d: "Venda de balcão com cliente, vendedor, formas de pagamento e recibo." },
+    { icon: RefreshCw, t: "Trocas", d: "Vale-troca e crédito por cliente, aplicados automaticamente no PDV." },
+    { icon: Truck, t: "Expedição", d: "Fila de entregas, rotas, motoboy e comprovante digital do cliente." },
+    { icon: Users, t: "Funcionários", d: "Cargos, permissões granulares e trilha de auditoria por ação." },
+    { icon: BarChart3, t: "Relatórios", d: "Vendas, ticket médio, mais vendidos, trocas e desempenho por vendedor." },
+  ];
+  return (
+    <section id="modulos" className="border-b border-white/5">
+      <div className="mx-auto max-w-[1200px] px-6 py-20">
+        <div className="max-w-2xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">Módulos</p>
+          <h2 className="mt-3 text-[30px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[36px]">
+            Um sistema, oito operações — uma única fonte de verdade.
           </h2>
-          <p className="mt-6 max-w-sm text-[14px] leading-relaxed text-white/60">
-            Da caixa aberta ao cliente na porta — entrada, PDV, estoque, trocas e relatórios sob o mesmo teto.
+          <p className="mt-3 text-[14px] leading-relaxed text-slate-400">
+            Cada módulo do FitGestor conversa com os demais em tempo real: o estoque cai na venda, a troca gera crédito, a etiqueta sai do recebimento.
           </p>
         </div>
-        <ul className="grid grid-cols-1 gap-0 sm:grid-cols-2 lg:col-span-8 lg:grid-cols-3">
-          {items.map((it, i) => (
-            <li
-              key={it.n}
-              className="group relative flex flex-col justify-between border border-white/10 bg-[#111] p-7 transition-all duration-300 hover:z-10 hover:-translate-y-1 hover:border-[#FF4D00] hover:bg-[#151515]"
-              style={{ marginLeft: i % 3 === 0 ? 0 : "-1px", marginTop: i >= 3 ? "-1px" : 0 }}
-            >
-              <span className="font-['Bebas_Neue'] text-4xl leading-none text-[#FFD700] transition-colors group-hover:text-[#FF4D00]">
-                {it.n}
-              </span>
-              <div className="mt-10">
-                <p className="font-['Bebas_Neue'] text-2xl leading-none tracking-wide text-white uppercase">
-                  {it.t}
-                </p>
-                <p className="mt-2 text-[13px] text-white/60">{it.d}</p>
+        <div className="mt-10 grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:grid-cols-2 lg:grid-cols-4">
+          {items.map(({ icon: Icon, t, d }) => (
+            <div key={t} className="flex flex-col gap-3 bg-[#0f1116] p-5 transition-colors hover:bg-[#12151b]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-primary-glow">
+                <Icon className="h-4.5 w-4.5" strokeWidth={1.75} />
               </div>
-              <span aria-hidden className="mt-6 h-0.5 w-8 bg-white/20 transition-all duration-300 group-hover:w-16 group-hover:bg-[#FF4D00]" />
-            </li>
+              <div>
+                <p className="text-[14px] font-semibold text-white">{t}</p>
+                <p className="mt-1 text-[12.5px] leading-relaxed text-slate-400">{d}</p>
+              </div>
+            </div>
           ))}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
-
-/* ---------------------------- Module section ----------------------------- */
-
-function ModuleSection({
-  index, eyebrow, title, body, reverse, mockup,
-}: { index: string; eyebrow: string; title: string; body: string; reverse: boolean; mockup: ReactNode }) {
-  return (
-    <section className="border-b border-border">
-      <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-12 px-6 py-24 lg:grid-cols-12 lg:gap-14 lg:px-10 lg:py-28">
-        <div className={`lg:col-span-5 ${reverse ? "lg:order-2" : ""}`}>
-          <div className="flex items-baseline gap-4">
-            <span className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground">{index}</span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">{eyebrow}</span>
-          </div>
-          <h3 className="mt-5 text-[28px] font-semibold leading-[1.15] tracking-[-0.025em] sm:text-[34px]">
-            {title}
-          </h3>
-          <p className="mt-5 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground">{body}</p>
-        </div>
-        <div className={`lg:col-span-7 ${reverse ? "lg:order-1" : ""}`}>
-          <div className="overflow-hidden rounded-[14px] border border-border bg-card">
-            {mockup}
-          </div>
         </div>
       </div>
     </section>
   );
 }
 
-/* ------------------------------- Closing --------------------------------- */
+/* ----------------------------- Preview section --------------------------- */
 
-function ClosingCta() {
+function PreviewSection() {
   return (
-    <section className="relative overflow-hidden border-b border-white/10 bg-[#0a0a0a]">
-      <div className="mx-auto max-w-[1240px] px-6 py-24 lg:px-10 lg:py-32">
-        <div className="relative overflow-hidden border-4 border-white bg-[#1a1a1a]">
-          {/* diagonal stripes */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden opacity-90">
-            <div className="absolute -top-1/2 -left-1/4 h-[200%] w-[70%] -rotate-[20deg] bg-[#FF4D00]" />
-            <div className="absolute -top-1/2 left-[10%] h-[200%] w-[70%] -rotate-[20deg] bg-[#FFD700] opacity-70" />
-          </div>
-          <div className="relative grid grid-cols-1 gap-10 p-10 lg:grid-cols-12 lg:p-16">
-            <div className="lg:col-span-8">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-white/90">
-                — FitGestor Access
-              </p>
-              <h2 className="mt-6 font-['Bebas_Neue'] text-[56px] leading-[0.88] tracking-tight text-white uppercase sm:text-[80px] lg:text-[104px]">
-                A operação<br />funciona melhor<br /><span className="text-black">com o sistema certo.</span>
-              </h2>
-            </div>
-            <div className="flex items-end lg:col-span-4">
-              <div className="w-full -rotate-1 bg-white p-8 shadow-[10px_10px_0px_0px_#000] md:p-10">
-                <p className="mb-6 border-l-4 border-[#FF4D00] pl-4 text-[13px] font-black uppercase tracking-widest text-black">
-                  Acesso corporativo
-                </p>
-                <Link
-                  to="/auth"
-                  className="inline-flex w-full items-center justify-center gap-2 bg-black px-8 py-4 text-[11px] font-black uppercase tracking-[0.24em] text-white transition-all hover:-translate-y-1 hover:bg-[#FF4D00] active:translate-y-0"
-                >
-                  Entrar no sistema <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-                <p className="mt-4 text-[11px] leading-relaxed text-black/60">
-                  Restrito à equipe autorizada da Quero Ser Fit<sup className="text-[0.6em]">®</sup>.
-                </p>
-              </div>
-            </div>
-          </div>
+    <section id="preview" className="border-b border-white/5 bg-[#0d1015]">
+      <div className="mx-auto max-w-[1200px] px-6 py-20">
+        <div className="max-w-2xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">O sistema por dentro</p>
+          <h2 className="mt-3 text-[30px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[36px]">
+            Interface pensada para quem opera no dia a dia.
+          </h2>
+        </div>
+        <div className="mt-10 space-y-6">
+          <ModuleRow eyebrow="01 · Recebimento" title="Bipe o código de barras, confira por variação, encerre o lote." body="Substitua a planilha de conferência. O rascunho salva a cada bipagem, e o encerramento gera o movimento de entrada com rastreabilidade." mockup={<ReceivingMockup />} />
+          <ModuleRow eyebrow="02 · Estoque" reverse title="Saldos por SKU, com alerta de ruptura e mínimo." body="Filtre por marca, categoria, cor, tamanho ou situação. Exporte para conferência ou dispare recontagem de inventário." mockup={<StockMockup />} />
+          <ModuleRow eyebrow="03 · PDV" title="Venda em segundos, com cliente, crédito e trocas integrados." body="Atalhos de teclado, formas de pagamento múltiplas e recibo pronto para impressão em térmica ou envio por WhatsApp." mockup={<PdvMockup />} />
+          <ModuleRow eyebrow="04 · Relatórios" reverse title="Números que dão base para decisão — não para achismo." body="Vendas por período, ticket médio, mais vendidos, desempenho por vendedor e giro de estoque com comparativo." mockup={<ReportsMockup />} />
         </div>
       </div>
     </section>
   );
 }
 
-/* -------------------------------- Footer --------------------------------- */
-
-function SiteFooter() {
+function ModuleRow({ eyebrow, title, body, reverse, mockup }: { eyebrow: string; title: string; body: string; reverse?: boolean; mockup: ReactNode }) {
   return (
-    <footer className="relative overflow-hidden bg-black">
-      <div className="mx-auto max-w-[1240px] px-6 py-10 lg:px-10">
-        <div className="flex flex-col items-start justify-between gap-6 border-t-2 border-[#FF4D00] pt-8 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center bg-[#FF4D00]">
-              <span className="font-['Bebas_Neue'] text-xl leading-none text-black">F</span>
-            </div>
-            <span className="font-['Bebas_Neue'] text-2xl leading-none tracking-[0.08em] text-white">FITGESTOR</span>
-          </div>
-          <div className="flex flex-col items-start gap-1 sm:items-end">
-            <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/50">
-              Quero Ser Fit<sup className="text-[0.6em]">®</sup> · Sistema de Gestão
-            </span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">
-              © {new Date().getFullYear()} — Todos os direitos reservados
-            </span>
-          </div>
+    <div className="grid grid-cols-1 items-center gap-8 rounded-xl border border-white/10 bg-[#0f1116] p-6 lg:grid-cols-12 lg:gap-10 lg:p-8">
+      <div className={`lg:col-span-4 ${reverse ? "lg:order-2" : ""}`}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">{eyebrow}</p>
+        <h3 className="mt-3 text-[22px] font-semibold leading-tight tracking-[-0.015em] text-white">{title}</h3>
+        <p className="mt-3 text-[13.5px] leading-relaxed text-slate-400">{body}</p>
+      </div>
+      <div className={`lg:col-span-8 ${reverse ? "lg:order-1" : ""}`}>
+        <div className="overflow-hidden rounded-lg border border-white/10 bg-background">
+          {mockup}
         </div>
       </div>
-    </footer>
+    </div>
   );
 }
 
+/* -------------------------------- Why ERP -------------------------------- */
+
+function WhyErp() {
+  const items = [
+    { icon: Database, t: "Dado único", d: "Cadastro, estoque, venda e cliente centralizados — sem planilhas paralelas." },
+    { icon: ShieldCheck, t: "Controle real", d: "Permissões por cargo, aprovações e trilha completa de auditoria." },
+    { icon: Zap, t: "Operação rápida", d: "Fluxos otimizados para balcão, sem cliques desnecessários." },
+  ];
+  return (
+    <section className="border-b border-white/5">
+      <div className="mx-auto grid max-w-[1200px] gap-10 px-6 py-20 lg:grid-cols-3">
+        {items.map(({ icon: Icon, t, d }) => (
+          <div key={t}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-md border border-white/10 bg-white/5 text-primary-glow">
+              <Icon className="h-5 w-5" strokeWidth={1.75} />
+            </div>
+            <p className="mt-4 text-[16px] font-semibold text-white">{t}</p>
+            <p className="mt-1 text-[13.5px] leading-relaxed text-slate-400">{d}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 /* ----------------------------- Testimonials ----------------------------- */
 
 function Testimonials() {
   const items = [
-    {
-      quote:
-        "Reduzimos em 70% o tempo do recebimento de mercadoria. A conciliação virou parte natural do fluxo, não um retrabalho.",
-      name: "Amanda Ribeiro",
-      role: "Gerente de operações",
-    },
-    {
-      quote:
-        "O PDV com trocas e crédito por cliente resolveu a maior dor do balcão. Hoje qualquer vendedor fecha uma troca sem depender do supervisor.",
-      name: "Rafael Nunes",
-      role: "Supervisor de loja",
-    },
-    {
-      quote:
-        "Ter estoque, etiquetas e vendas na mesma plataforma acabou com as planilhas paralelas. A operação inteira olha para os mesmos números.",
-      name: "Camila Duarte",
-      role: "Diretora comercial",
-    },
+    { quote: "Reduzimos em 70% o tempo do recebimento. A conciliação virou parte natural do fluxo.", name: "Amanda Ribeiro", role: "Gerente de operações" },
+    { quote: "O PDV com trocas e crédito resolveu a maior dor do balcão. Qualquer vendedor fecha sozinho.", name: "Rafael Nunes", role: "Supervisor de loja" },
+    { quote: "Estoque, etiquetas e vendas na mesma plataforma acabou com as planilhas paralelas.", name: "Camila Duarte", role: "Diretora comercial" },
   ];
   return (
-    <section id="depoimentos" className="relative overflow-hidden border-b border-white/10 bg-[#0f0f0f]">
-      <div className="mx-auto max-w-[1240px] px-6 py-24 lg:px-10 lg:py-28">
-        <div className="flex flex-col items-start justify-between gap-6 border-b border-white/10 pb-10 md:flex-row md:items-end">
-          <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-[#FFD700]">
-              — Quem opera com o FitGestor
-            </p>
-            <h2 className="mt-6 font-['Bebas_Neue'] text-[56px] leading-[0.9] tracking-tight text-white uppercase sm:text-[72px]">
-              Times que trocaram planilhas<br /><span className="text-[#FF4D00]">por uma fonte de verdade.</span>
-            </h2>
-          </div>
-          <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">
-            03 · Depoimentos
-          </span>
+    <section id="depoimentos" className="border-b border-white/5 bg-[#0d1015]">
+      <div className="mx-auto max-w-[1200px] px-6 py-20">
+        <div className="max-w-2xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">Clientes</p>
+          <h2 className="mt-3 text-[30px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[36px]">
+            Times que trocaram planilhas por uma fonte de verdade.
+          </h2>
         </div>
-        <ul className="mt-12 grid grid-cols-1 gap-0 md:grid-cols-3">
-          {items.map((t, i) => (
-            <li
-              key={t.name}
-              className="relative flex flex-col justify-between border border-white/10 bg-[#151515] p-8 transition-all duration-300 hover:z-10 hover:border-[#FF4D00] hover:bg-[#191919]"
-              style={{ marginLeft: i === 0 ? 0 : "-1px" }}
-            >
-              <span aria-hidden className="font-['Bebas_Neue'] text-6xl leading-none text-[#FF4D00]">
-                “
-              </span>
-              <p className="mt-4 text-[15px] leading-relaxed text-white/85">
-                {t.quote}
-              </p>
-              <div className="mt-8 flex items-center gap-3 border-t border-white/10 pt-5">
-                <div className="flex h-10 w-10 items-center justify-center bg-[#FF4D00] font-['Bebas_Neue'] text-lg leading-none text-black">
+        <ul className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {items.map((t) => (
+            <li key={t.name} className="flex flex-col rounded-lg border border-white/10 bg-[#0f1116] p-6">
+              <p className="text-[14px] leading-relaxed text-slate-200">"{t.quote}"</p>
+              <div className="mt-6 flex items-center gap-3 border-t border-white/10 pt-4">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-[12px] font-semibold text-primary-glow">
                   {t.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
                 </div>
                 <div>
-                  <p className="font-['Bebas_Neue'] text-lg leading-none tracking-wide text-white uppercase">
-                    {t.name}
-                  </p>
-                  <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">
-                    {t.role}
-                  </p>
+                  <p className="text-[13px] font-medium text-white">{t.name}</p>
+                  <p className="text-[11.5px] text-slate-400">{t.role}</p>
                 </div>
               </div>
             </li>
@@ -390,69 +298,38 @@ function Testimonials() {
   );
 }
 
-
-/* --------------------------------- FAQ ---------------------------------- */
+/* ---------------------------------- FAQ ---------------------------------- */
 
 function FaqSection() {
   const faqs = [
-    {
-      q: "O FitGestor substitui meu ERP atual?",
-      a: "Sim, para lojas de varejo de moda e itens fitness ele cobre recebimento, estoque, etiquetas, PDV, trocas, entregas, funcionários e pós-venda em um único sistema, dispensando planilhas paralelas.",
-    },
-    {
-      q: "Precisa instalar algo na loja?",
-      a: "Não. É 100% web, rodando em qualquer navegador moderno. Balança, leitor de código de barras e impressora de etiquetas funcionam nativamente via USB/serial.",
-    },
-    {
-      q: "Como funciona o controle de trocas e crédito da loja?",
-      a: "Toda troca gera um vale ou crédito vinculado ao cliente. No PDV o crédito aparece automaticamente na hora do pagamento, com histórico completo e regras de expiração configuráveis.",
-    },
-    {
-      q: "Consigo controlar entregas e motoboys?",
-      a: "Sim. O módulo de expedição organiza fila, rotas e motoboys, com comprovantes digitais de entrega e rastreio por cliente.",
-    },
-    {
-      q: "Meus dados ficam seguros?",
-      a: "Sim. Todo acesso é autenticado, com perfis de permissão por cargo, trilha de auditoria e backups automáticos em ambiente corporativo.",
-    },
+    { q: "O FitGestor substitui meu ERP atual?", a: "Sim. Para lojas de varejo de moda e itens fitness ele cobre recebimento, estoque, etiquetas, PDV, trocas, entregas, funcionários e pós-venda em um único sistema, dispensando planilhas paralelas." },
+    { q: "Precisa instalar algo na loja?", a: "Não. É 100% web em qualquer navegador moderno. Balança, leitor de código de barras e impressora de etiquetas funcionam nativamente via USB/serial." },
+    { q: "Como funciona o controle de trocas e crédito?", a: "Toda troca gera vale ou crédito vinculado ao cliente. No PDV o crédito aparece na hora do pagamento, com histórico completo e regras de expiração configuráveis." },
+    { q: "Consigo controlar entregas e motoboys?", a: "Sim. O módulo de expedição organiza fila, rotas e motoboys, com comprovantes digitais e rastreio por cliente." },
+    { q: "Meus dados ficam seguros?", a: "Todo acesso é autenticado, com perfis de permissão por cargo, trilha de auditoria e backups automáticos em ambiente corporativo." },
+    { q: "Integra com Olist / Tiny?", a: "Sim. Sincronização automática de produtos, variações, fotos e saldo de estoque, com webhook para atualizações em tempo real." },
   ];
   return (
-    <section id="faq" className="relative overflow-hidden border-b border-white/10 bg-[#0a0a0a]">
-      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-14 px-6 py-24 lg:grid-cols-12 lg:gap-12 lg:px-10 lg:py-28">
-        <div className="lg:col-span-5">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-[#FF4D00]">
-            — Perguntas frequentes
-          </p>
-          <h2 className="mt-6 font-['Bebas_Neue'] text-[56px] leading-[0.9] tracking-tight text-white uppercase sm:text-[72px]">
-            Tudo o que a operação<br /><span className="text-white/40">costuma perguntar.</span>
+    <section id="faq" className="border-b border-white/5">
+      <div className="mx-auto grid max-w-[1200px] gap-10 px-6 py-20 lg:grid-cols-12">
+        <div className="lg:col-span-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">FAQ</p>
+          <h2 className="mt-3 text-[28px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[32px]">
+            Perguntas frequentes.
           </h2>
-          <p className="mt-6 max-w-[38ch] text-[14px] leading-relaxed text-white/60">
-            Se restar dúvida, fale com o time da Quero Ser Fit<sup className="text-[0.6em]">®</sup> — respondemos em horário comercial.
+          <p className="mt-3 text-[13.5px] leading-relaxed text-slate-400">
+            Não achou o que precisa? Fale com o time da Quero Ser Fit<sup className="text-[0.6em]">®</sup>.
           </p>
         </div>
-        <ul className="lg:col-span-7">
-          {faqs.map((f, i) => (
-            <li key={f.q} className="border-t border-white/10 last:border-b">
-              <details className="group/details">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-6 text-left">
-                  <span className="flex items-baseline gap-5">
-                    <span className="font-mono text-[11px] font-bold text-[#FFD700]">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <span className="font-['Bebas_Neue'] text-2xl leading-tight tracking-wide text-white uppercase">
-                      {f.q}
-                    </span>
-                  </span>
-                  <span
-                    aria-hidden
-                    className="flex h-8 w-8 shrink-0 items-center justify-center border border-white/20 text-lg text-white transition-transform duration-300 group-open/details:rotate-45 group-open/details:border-[#FF4D00] group-open/details:text-[#FF4D00]"
-                  >
-                    +
-                  </span>
+        <ul className="divide-y divide-white/10 lg:col-span-8">
+          {faqs.map((f) => (
+            <li key={f.q}>
+              <details className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5">
+                  <span className="text-[14.5px] font-medium text-white">{f.q}</span>
+                  <span aria-hidden className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/15 text-slate-400 transition-transform group-open:rotate-45 group-open:border-primary/60 group-open:text-primary-glow">+</span>
                 </summary>
-                <p className="pb-6 pl-10 text-[14px] leading-relaxed text-white/60">
-                  {f.a}
-                </p>
+                <p className="pb-5 pr-10 text-[13.5px] leading-relaxed text-slate-400">{f.a}</p>
               </details>
             </li>
           ))}
@@ -462,19 +339,61 @@ function FaqSection() {
   );
 }
 
+/* ------------------------------ Closing CTA ----------------------------- */
+
+function ClosingCta() {
+  return (
+    <section className="border-b border-white/5 bg-[#0d1015]">
+      <div className="mx-auto max-w-[1200px] px-6 py-20">
+        <div className="flex flex-col items-start justify-between gap-6 rounded-xl border border-white/10 bg-[#0f1116] p-8 lg:flex-row lg:items-center lg:p-10">
+          <div className="max-w-xl">
+            <h2 className="text-[26px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[30px]">
+              Pronto para operar tudo em um só sistema?
+            </h2>
+            <p className="mt-3 text-[14px] leading-relaxed text-slate-400">
+              Acesso restrito à equipe autorizada da Quero Ser Fit<sup className="text-[0.6em]">®</sup>. Solicite credenciais ao administrador.
+            </p>
+          </div>
+          <Link to="/auth" className="inline-flex items-center gap-1.5 rounded-md bg-primary px-5 py-2.5 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90">
+            Acessar o sistema <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------- Footer -------------------------------- */
+
+function SiteFooter() {
+  return (
+    <footer className="bg-[#0b0d10]">
+      <div className="mx-auto flex max-w-[1200px] flex-col items-start justify-between gap-4 px-6 py-8 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">F</div>
+          <span className="text-[13.5px] font-semibold text-white">FitGestor</span>
+          <span className="text-[11.5px] text-slate-500">· ERP para varejo de moda fitness</span>
+        </div>
+        <p className="text-[11.5px] text-slate-500">
+          © {new Date().getFullYear()} Quero Ser Fit<sup className="text-[0.6em]">®</sup> — Todos os direitos reservados.
+        </p>
+      </div>
+    </footer>
+  );
+}
 
 /* =============================== Mockups ================================ */
 
 function BrowserChrome({ path, children }: { path: string; children: ReactNode }) {
   return (
     <div>
-      <div className="flex items-center gap-2 border-b border-border bg-background/80 px-4 py-3">
+      <div className="flex items-center gap-2 border-b border-border bg-background/80 px-4 py-2.5">
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="ml-3 truncate text-[11px] text-muted-foreground">fitgestor.app{path}</span>
       </div>
-      <div className="bg-background overflow-x-auto">{children}</div>
+      <div className="overflow-x-auto bg-background">{children}</div>
     </div>
   );
 }
@@ -485,15 +404,12 @@ function AppFrame({ active, children }: { active: string; children: ReactNode })
     <div className="grid grid-cols-12">
       <aside className="col-span-3 hidden border-r border-border bg-[#0D0D10] p-3 text-[11px] sm:block">
         <div className="mb-3 flex items-center gap-2 px-2 py-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-[6px] bg-primary text-[10px] font-semibold text-white">F</div>
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-[10px] font-semibold text-white">F</div>
           <span className="text-[12px] font-semibold text-white/90">FitGestor</span>
         </div>
         <nav className="space-y-0.5">
           {nav.map((l) => (
-            <div key={l}
-              className={`flex items-center gap-2 rounded-[8px] px-2.5 py-1.5 ${
-                l === active ? "bg-primary/15 text-white" : "text-white/55"
-              }`}>
+            <div key={l} className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 ${l === active ? "bg-primary/15 text-white" : "text-white/55"}`}>
               <span className={`h-1 w-1 rounded-full ${l === active ? "bg-primary-glow" : "bg-white/20"}`} />
               {l}
             </div>
@@ -507,55 +423,51 @@ function AppFrame({ active, children }: { active: string; children: ReactNode })
 
 function HeroMockup() {
   return (
-    <div className="liquid-surface rounded-[24px] p-2 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.55)]">
-      <div className="rounded-[18px] border border-white/10 bg-[#0d0d12] overflow-hidden">
-      <BrowserChrome path="/dashboard">
-        <AppFrame active="Dashboard">
-          <div className="space-y-4 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Visão geral</p>
-                <p className="mt-1 text-[18px] font-semibold tracking-[-0.02em]">Hoje, 16 de julho</p>
-              </div>
-              <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">Loja Centro</span>
+    <BrowserChrome path="/dashboard">
+      <AppFrame active="Dashboard">
+        <div className="space-y-4 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Visão geral</p>
+              <p className="mt-1 text-[18px] font-semibold tracking-[-0.02em]">Hoje, 19 de julho</p>
             </div>
-            <div className="grid grid-cols-3 gap-2.5">
+            <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">Loja Centro</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2.5">
+            {[
+              { l: "Vendas do dia", v: "R$ 4.820", d: "+12%" },
+              { l: "Ticket médio", v: "R$ 187", d: "26 vendas" },
+              { l: "Estoque baixo", v: "8", d: "SKUs" },
+            ].map((k) => (
+              <div key={k.l} className="rounded-md border border-border bg-background p-3">
+                <p className="text-[10px] text-muted-foreground">{k.l}</p>
+                <p className="mt-1.5 text-[18px] font-semibold leading-none tracking-[-0.02em] text-foreground">{k.v}</p>
+                <p className="mt-1.5 text-[10px] text-primary-glow">{k.d}</p>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-md border border-border bg-background p-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-medium text-foreground">Últimos recebimentos</p>
+              <span className="text-[10px] text-muted-foreground">RC-0128 · RC-0127 · RC-0126</span>
+            </div>
+            <div className="mt-3 space-y-2">
               {[
-                { l: "Vendas do dia", v: "R$ 4.820", d: "+12%" },
-                { l: "Ticket médio", v: "R$ 187", d: "26 vendas" },
-                { l: "Estoque baixo", v: "8", d: "SKUs" },
-              ].map((k) => (
-                <div key={k.l} className="rounded-[10px] border border-border bg-background p-3">
-                  <p className="text-[10px] text-muted-foreground">{k.l}</p>
-                  <p className="mt-1.5 text-[18px] font-semibold leading-none tracking-[-0.02em] text-foreground">{k.v}</p>
-                  <p className="mt-1.5 text-[10px] text-primary-glow">{k.d}</p>
+                ["Fornecedor Alfa", "142 peças", "Concluído"],
+                ["Fornecedor Nova", "38 peças", "Rascunho"],
+                ["Fornecedor Sul", "96 peças", "Concluído"],
+              ].map(([f, q, s]) => (
+                <div key={f} className="flex items-center justify-between text-[11px]">
+                  <span className="text-foreground">{f}</span>
+                  <span className="text-muted-foreground">{q}</span>
+                  <span className={s === "Rascunho" ? "text-primary-glow" : "text-muted-foreground"}>{s}</span>
                 </div>
               ))}
             </div>
-            <div className="rounded-[10px] border border-border bg-background p-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-medium text-foreground">Últimos recebimentos</p>
-                <span className="text-[10px] text-muted-foreground">RC-0128 · RC-0127 · RC-0126</span>
-              </div>
-              <div className="mt-3 space-y-2">
-                {[
-                  ["Fornecedor Alfa", "142 peças", "Concluído"],
-                  ["Fornecedor Nova", "38 peças", "Rascunho"],
-                  ["Fornecedor Sul", "96 peças", "Concluído"],
-                ].map(([f, q, s]) => (
-                  <div key={f} className="flex items-center justify-between text-[11px]">
-                    <span className="text-foreground">{f}</span>
-                    <span className="text-muted-foreground">{q}</span>
-                    <span className={s === "Rascunho" ? "text-primary-glow" : "text-muted-foreground"}>{s}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
-        </AppFrame>
-      </BrowserChrome>
-      </div>
-    </div>
+        </div>
+      </AppFrame>
+    </BrowserChrome>
   );
 }
 
@@ -572,14 +484,14 @@ function ReceivingMockup() {
             <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] text-primary-glow">Rascunho v3</span>
           </div>
           <div className="mt-4 grid grid-cols-5 gap-3">
-            <div className="col-span-2 space-y-2 rounded-[10px] border border-border bg-background p-3">
+            <div className="col-span-2 space-y-2 rounded-md border border-border bg-background p-3">
               <p className="text-[10px] text-muted-foreground">Bipar código de barras</p>
-              <div className="rounded-[8px] border border-dashed border-border p-3 text-center font-mono text-[12px] text-foreground">
+              <div className="rounded-md border border-dashed border-border p-3 text-center font-mono text-[12px] text-foreground">
                 7898·23140·00218
               </div>
               <p className="text-[10px] text-primary-glow">+1 unidade · Camiseta Slim · Preto · M</p>
             </div>
-            <div className="col-span-3 rounded-[10px] border border-border bg-background">
+            <div className="col-span-3 rounded-md border border-border bg-background">
               <div className="grid grid-cols-6 border-b border-border px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground">
                 <span className="col-span-3">Produto</span><span>P</span><span>M</span><span>G</span>
               </div>
@@ -626,7 +538,7 @@ function StockMockup() {
               <span className="rounded-full border border-border bg-white/5 px-2 py-0.5 text-[10px] text-foreground">Baixo (8)</span>
             </div>
           </div>
-          <div className="mt-4 overflow-hidden rounded-[10px] border border-border">
+          <div className="mt-4 overflow-hidden rounded-md border border-border">
             <div className="grid grid-cols-12 border-b border-border bg-background/60 px-4 py-2 text-[10px] uppercase tracking-wider text-muted-foreground">
               <span className="col-span-4">Produto</span>
               <span className="col-span-2">Cor</span>
@@ -642,42 +554,7 @@ function StockMockup() {
                 <span className="col-span-1 text-muted-foreground">{r[2]}</span>
                 <span className="col-span-3 font-mono text-[10.5px] text-muted-foreground">{r[3]}</span>
                 <span className="col-span-1 text-right text-foreground">{r[4]}</span>
-                <span className={`col-span-1 text-right text-[10px] ${
-                  r[5] === "OK" ? "text-muted-foreground" : r[5] === "Baixo" ? "text-primary-glow" : "text-destructive"
-                }`}>{r[5]}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </AppFrame>
-    </BrowserChrome>
-  );
-}
-
-function LabelsMockup() {
-  return (
-    <BrowserChrome path="/etiquetas">
-      <AppFrame active="Etiquetas">
-        <div className="p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Lote de etiquetas</p>
-              <p className="mt-1 text-[18px] font-semibold tracking-[-0.02em]">LT-042 · 48 etiquetas</p>
-            </div>
-            <span className="rounded-[8px] border border-primary/40 bg-primary/10 px-2 py-1 text-[10px] text-primary-glow">Gerar PDF</span>
-          </div>
-          <div className="mt-4 grid grid-cols-4 gap-2.5">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="rounded-[8px] border border-border bg-[#F4F1ED] p-2 text-[9px] text-[#0D0D10]">
-                <p className="truncate font-semibold">Camiseta Slim</p>
-                <p className="mt-0.5 text-[8px] text-neutral-600">Preto · M</p>
-                <div className="mt-2 flex h-6 items-end gap-[1px]">
-                  {Array.from({ length: 28 }).map((__, j) => (
-                    <span key={j} className="w-[2px] bg-[#0D0D10]"
-                      style={{ height: `${40 + ((j * 13) % 60)}%`, opacity: j % 3 === 0 ? 1 : 0.85 }} />
-                  ))}
-                </div>
-                <p className="mt-1 text-center font-mono text-[8px]">CS-PT-M-{100 + i}</p>
+                <span className={`col-span-1 text-right text-[10px] ${r[5] === "OK" ? "text-muted-foreground" : r[5] === "Baixo" ? "text-primary-glow" : "text-destructive"}`}>{r[5]}</span>
               </div>
             ))}
           </div>
@@ -692,7 +569,7 @@ function PdvMockup() {
     <BrowserChrome path="/pdv">
       <AppFrame active="PDV">
         <div className="grid grid-cols-5 gap-4 p-5">
-          <div className="col-span-3 rounded-[10px] border border-border bg-background p-3">
+          <div className="col-span-3 rounded-md border border-border bg-background p-3">
             <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Carrinho</p>
             <div className="mt-3 space-y-2">
               {[
@@ -714,56 +591,19 @@ function PdvMockup() {
             </div>
           </div>
           <div className="col-span-2 space-y-3">
-            <div className="rounded-[10px] border border-border bg-background p-3">
+            <div className="rounded-md border border-border bg-background p-3">
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Pagamento</p>
               <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
                 {["Dinheiro", "Pix", "Débito", "Crédito"].map((p, i) => (
-                  <div key={p} className={`rounded-[8px] border px-2 py-2 text-center ${i === 1 ? "border-primary/60 bg-primary/10 text-foreground" : "border-border text-muted-foreground"}`}>
+                  <div key={p} className={`rounded-md border px-2 py-2 text-center ${i === 1 ? "border-primary/60 bg-primary/10 text-foreground" : "border-border text-muted-foreground"}`}>
                     {p}
                   </div>
                 ))}
               </div>
             </div>
-            <div className="rounded-[10px] bg-primary p-3 text-center text-[12px] font-semibold text-primary-foreground">
+            <div className="rounded-md bg-primary p-3 text-center text-[12px] font-semibold text-primary-foreground">
               Finalizar venda
             </div>
-          </div>
-        </div>
-      </AppFrame>
-    </BrowserChrome>
-  );
-}
-
-function ExchangeMockup() {
-  return (
-    <BrowserChrome path="/trocas">
-      <AppFrame active="Trocas">
-        <div className="p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Nova troca</p>
-              <p className="mt-1 text-[18px] font-semibold tracking-[-0.02em]">TR-0087 · Maria Andrade</p>
-            </div>
-            <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">Venda VD-1204</span>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="rounded-[10px] border border-border bg-background p-3">
-              <p className="text-[10px] text-muted-foreground">Devolvido</p>
-              <p className="mt-2 text-[12px] text-foreground">Legging Alta · Grafite · P</p>
-              <p className="mt-1 font-mono text-[11px] text-muted-foreground">R$ 149,90</p>
-            </div>
-            <div className="rounded-[10px] border border-border bg-background p-3">
-              <p className="text-[10px] text-muted-foreground">Trocado por</p>
-              <p className="mt-2 text-[12px] text-foreground">Legging Alta · Grafite · M</p>
-              <p className="mt-1 font-mono text-[11px] text-muted-foreground">R$ 149,90</p>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center justify-between rounded-[10px] border border-primary/40 bg-primary/10 p-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-primary-glow">Crédito gerado</p>
-              <p className="mt-1 text-[16px] font-semibold tracking-[-0.02em] text-foreground">R$ 0,00</p>
-            </div>
-            <span className="rounded-[8px] bg-primary px-3 py-1.5 text-[11px] text-primary-foreground">Confirmar troca</span>
           </div>
         </div>
       </AppFrame>
@@ -790,8 +630,8 @@ function ReportsMockup() {
           </div>
           <div className="mt-6 flex h-40 items-end gap-2">
             {bars.map((h, i) => (
-              <div key={i} className="flex-1 rounded-t-[3px] bg-white/8" style={{ height: `${h}%` }}>
-                <div className="h-full w-full rounded-t-[3px] bg-primary/70" style={{ opacity: i === bars.length - 1 ? 1 : 0.55 }} />
+              <div key={i} className="flex-1 rounded-t bg-white/8" style={{ height: `${h}%` }}>
+                <div className="h-full w-full rounded-t bg-primary/70" style={{ opacity: i === bars.length - 1 ? 1 : 0.55 }} />
               </div>
             ))}
           </div>
