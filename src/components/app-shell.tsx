@@ -605,7 +605,7 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
   const showFloatingReopen = !isMobile && !pinned && !sidebarOpen;
 
   return (
-    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen} style={{ ["--sidebar-width" as any]: "19rem" }}>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar
           onOpenSearch={() => setSearchOpen(true)}
