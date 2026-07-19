@@ -1,9 +1,7 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
-import { BrandLockup } from "@/components/brand-logo";
 import heroAthlete from "@/assets/hero-athlete.jpg";
 
 export const Route = createFileRoute("/")({
