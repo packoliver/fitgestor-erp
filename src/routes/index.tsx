@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
+import { BrandMark } from "@/components/brand-logo";
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
@@ -58,7 +59,7 @@ function SiteHeader() {
     <header className="sticky top-0 z-30 border-b border-white/5 bg-[#0b0d10]/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between px-6">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">F</div>
+          <BrandMark size={28} />
           <span className="text-[15px] font-semibold tracking-tight text-white">FitGestor</span>
           <span className="ml-2 hidden rounded border border-white/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-400 sm:inline">ERP</span>
         </Link>
@@ -370,7 +371,7 @@ function SiteFooter() {
     <footer className="bg-[#0b0d10]">
       <div className="mx-auto flex max-w-[1200px] flex-col items-start justify-between gap-4 px-6 py-8 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">F</div>
+          <BrandMark size={28} />
           <span className="text-[13.5px] font-semibold text-white">FitGestor</span>
           <span className="text-[11.5px] text-slate-500">· ERP para varejo de moda fitness</span>
         </div>
@@ -404,7 +405,7 @@ function AppFrame({ active, children }: { active: string; children: ReactNode })
     <div className="grid grid-cols-12">
       <aside className="col-span-3 hidden border-r border-border bg-[#0D0D10] p-3 text-[11px] sm:block">
         <div className="mb-3 flex items-center gap-2 px-2 py-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-[10px] font-semibold text-white">F</div>
+          <BrandMark size={22} />
           <span className="text-[12px] font-semibold text-white/90">FitGestor</span>
         </div>
         <nav className="space-y-0.5">

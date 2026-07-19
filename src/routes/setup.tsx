@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { BrandMark } from "@/components/brand-logo";
 
 export const Route = createFileRoute("/setup")({
   component: SetupPage,
@@ -67,8 +68,8 @@ function SetupPage() {
     <div className="min-h-screen bg-muted/30 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <span className="font-display text-2xl font-semibold">F</span>
+          <div className="mx-auto mb-3 flex items-center justify-center">
+            <BrandMark size={56} />
           </div>
           <h1 className="font-display text-3xl font-semibold">Configure sua loja</h1>
           <p className="mt-1 text-sm text-muted-foreground">

@@ -1,4 +1,6 @@
 import { cn } from "@/lib/utils";
+import iconAsset from "@/assets/fitgestor-icon.png.asset.json";
+import lockupAsset from "@/assets/fitgestor-lockup.png.asset.json";
 
 /**
  * Marca oficial do sistema — FitGestor.
@@ -12,21 +14,14 @@ export function BrandMark({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "flex shrink-0 items-center justify-center rounded-[10px] bg-primary text-primary-foreground",
-        className,
-      )}
+    <img
+      src={iconAsset.url}
+      alt="FitGestor"
+      width={size}
+      height={size}
+      className={cn("shrink-0 object-contain", className)}
       style={{ width: size, height: size }}
-      aria-hidden
-    >
-      <span
-        className="font-semibold leading-none tracking-[-0.04em]"
-        style={{ fontSize: Math.round(size * 0.5) }}
-      >
-        F
-      </span>
-    </div>
+    />
   );
 }
 
@@ -43,36 +38,29 @@ export function BrandLockup({
   showSignature?: boolean;
   className?: string;
 }) {
-  const scale =
-    size === "lg"
-      ? { mark: 52, title: "text-[30px]", sub: "text-[13px]", sig: "text-[11.5px]" }
-      : size === "sm"
-        ? { mark: 30, title: "text-[16px]", sub: "text-[11px]", sig: "text-[10.5px]" }
-        : { mark: 38, title: "text-[20px]", sub: "text-[12px]", sig: "text-[11px]" };
-
-  const strong = onDark ? "text-white" : "text-foreground";
-  const muted = onDark ? "text-white/55" : "text-muted-foreground";
+  const height = size === "lg" ? 52 : size === "sm" ? 28 : 38;
+  const sigCls = size === "lg" ? "text-[11.5px]" : size === "sm" ? "text-[10.5px]" : "text-[11px]";
+  const muted = onDark ? "text-white/60" : "text-muted-foreground";
 
   return (
     <div
       className={cn(
-        "flex items-center gap-3",
-        align === "center" && "flex-col text-center gap-3",
+        "flex items-center gap-2",
+        align === "center" && "flex-col text-center gap-2",
         className,
       )}
     >
-      <BrandMark size={scale.mark} />
-      <div className={cn("min-w-0", align === "center" ? "" : "leading-tight")}>
-        <p className={cn("font-semibold tracking-[-0.02em]", scale.title, strong)}>
-          FitGestor
+      <img
+        src={lockupAsset.url}
+        alt="FitGestor"
+        style={{ height, width: "auto" }}
+        className={cn("object-contain", onDark && "brightness-0 invert")}
+      />
+      {showSignature && (
+        <p className={cn("mt-1 font-medium", sigCls, muted)}>
+          Desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup>
         </p>
-        <p className={cn("mt-0.5 font-medium", scale.sub, muted)}>Sistema de Gestão</p>
-        {showSignature && (
-          <p className={cn("mt-1.5 font-medium", scale.sig, muted)}>
-            Desenvolvido pela Quero Ser Fit<sup className="text-[0.6em]">®</sup>
-          </p>
-        )}
-      </div>
+      )}
     </div>
   );
 }
