@@ -419,40 +419,40 @@ function FaqSection() {
     },
   ];
   return (
-    <section id="faq" className="fit-aurora relative overflow-hidden border-b border-white/5">
-      <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-14 px-6 py-24 lg:grid-cols-12 lg:gap-12 lg:px-10 lg:py-28">
+    <section id="faq" className="relative overflow-hidden border-b border-white/10 bg-[#0a0a0a]">
+      <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-14 px-6 py-24 lg:grid-cols-12 lg:gap-12 lg:px-10 lg:py-28">
         <div className="lg:col-span-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-glow">
-            Perguntas frequentes
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-[#FF4D00]">
+            — Perguntas frequentes
           </p>
-          <h2 className="mt-4 text-[30px] font-semibold leading-[1.15] tracking-[-0.025em] sm:text-[38px]">
-            Tudo o que a operação costuma perguntar,{" "}
-            <span className="text-muted-foreground">antes de trocar de sistema.</span>
+          <h2 className="mt-6 font-['Bebas_Neue'] text-[56px] leading-[0.9] tracking-tight text-white uppercase sm:text-[72px]">
+            Tudo o que a operação<br /><span className="text-white/40">costuma perguntar.</span>
           </h2>
-          <p className="mt-6 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground">
-            Se restar dúvida, fale com o time da Quero Ser Fit
-            <sup className="text-[0.6em]">®</sup> — respondemos em horário comercial.
+          <p className="mt-6 max-w-[38ch] text-[14px] leading-relaxed text-white/60">
+            Se restar dúvida, fale com o time da Quero Ser Fit<sup className="text-[0.6em]">®</sup> — respondemos em horário comercial.
           </p>
         </div>
-        <ul className="space-y-3 lg:col-span-7">
+        <ul className="lg:col-span-7">
           {faqs.map((f, i) => (
-            <li key={f.q} className="liquid-card group rounded-[18px] p-1">
-              <details className="group/details rounded-[16px] p-5 open:pb-6">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left">
-                  <span className="flex items-baseline gap-3">
-                    <span className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground">
+            <li key={f.q} className="border-t border-white/10 last:border-b">
+              <details className="group/details">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-6 text-left">
+                  <span className="flex items-baseline gap-5">
+                    <span className="font-mono text-[11px] font-bold text-[#FFD700]">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="text-[15px] font-semibold text-foreground">{f.q}</span>
+                    <span className="font-['Bebas_Neue'] text-2xl leading-tight tracking-wide text-white uppercase">
+                      {f.q}
+                    </span>
                   </span>
                   <span
                     aria-hidden
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.05] text-foreground transition-transform duration-300 group-open/details:rotate-45"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center border border-white/20 text-lg text-white transition-transform duration-300 group-open/details:rotate-45 group-open/details:border-[#FF4D00] group-open/details:text-[#FF4D00]"
                   >
                     +
                   </span>
                 </summary>
-                <p className="mt-4 pl-10 text-[14px] leading-relaxed text-muted-foreground">
+                <p className="pb-6 pl-10 text-[14px] leading-relaxed text-white/60">
                   {f.a}
                 </p>
               </details>
@@ -463,6 +463,7 @@ function FaqSection() {
     </section>
   );
 }
+
 
 /* =============================== Mockups ================================ */
 
