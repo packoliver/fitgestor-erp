@@ -153,6 +153,7 @@ function AppSidebar({
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => loadOpenGroups());
   const [essential, setEssential] = useState<boolean>(() => loadEssentialDefault());
   const [expandedAll, setExpandedAll] = useState<boolean>(false);
+  const [selectedGroup, setSelectedGroup] = useState<NavGroup>("Início");
 
   useEffect(() => {
     if (typeof window !== "undefined") window.localStorage.setItem(LS_GROUPS, JSON.stringify(openGroups));
@@ -175,6 +176,11 @@ function AppSidebar({
     const active = permitted.find((i) => isActive(i.url));
     return active?.group ?? null;
   }, [permitted, pathname]);
+
+  // Sync selected group with the current active route.
+  useEffect(() => {
+    if (activeGroup) setSelectedGroup(activeGroup);
+  }, [activeGroup]);
 
   const isGroupOpen = (g: string) => {
     if (openGroups[g] !== undefined) return openGroups[g];
