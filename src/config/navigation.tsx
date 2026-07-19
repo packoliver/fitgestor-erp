@@ -9,8 +9,8 @@ import type { ComponentType } from "react";
 export type Workspace = "admin" | "employee" | "courier";
 
 export type NavGroup =
-  | "Início" | "Vendas" | "Estoque" | "Entregas"
-  | "Gestão" | "Relatórios";
+  | "Início" | "Cadastros" | "Suprimentos" | "Vendas"
+  | "Entregas" | "Relatórios" | "Configurações";
 
 export type NavItem = {
   id: string;
@@ -57,7 +57,7 @@ export const NAV_ITEMS: NavItem[] = [
     description: "Histórico das vendas realizadas.",
     keywords: ["vendas","historico","pedidos","cupons"] },
   { id: "clientes", title: "Clientes", url: "/clientes", icon: UserSquare2,
-    group: "Vendas", workspaces: ["employee","admin"], priority: 60,
+    group: "Cadastros", workspaces: ["employee","admin"], priority: 100, essential: true,
     description: "Cadastro e histórico das clientes.",
     keywords: ["clientes","cliente","cadastro","cpf"] },
   { id: "trocas", title: "Trocas", url: "/trocas", icon: RefreshCw, perm: "exchanges.view",
@@ -80,42 +80,44 @@ export const NAV_ITEMS: NavItem[] = [
 
   // ── Estoque ───────────────────────────────────────────────
   { id: "produtos", title: "Produtos", url: "/produtos", icon: Package, perm: "product.view",
-    group: "Estoque", workspaces: ["employee","admin"], priority: 100, essential: true,
+    group: "Cadastros", workspaces: ["employee","admin"], priority: 90, essential: true,
     description: "Catálogo de produtos, cores e tamanhos.",
     keywords: ["produto","catalogo","sku","cadastro"] },
-  { id: "estoque", title: "Estoque", url: "/estoque", icon: Boxes, perm: "stock.view",
-    group: "Estoque", workspaces: ["employee","admin"], priority: 90, essential: true,
-    description: "Saldo atual por SKU e variação.",
-    keywords: ["estoque","saldo","inventario","sku"] },
-  { id: "estoque-entrada", title: "Entrada rápida", url: "/estoque/entrada", icon: ArrowDownToLine,
-    perm: "goods_receipt.create", group: "Estoque", workspaces: ["employee","admin"], priority: 80,
-    description: "Faça um ajuste simples ou adicione poucas unidades a um produto já cadastrado.",
-    keywords: ["entrada","ajuste","mercadoria","dar entrada","reposição"] },
-  { id: "recebimentos", title: "Entrada de mercadoria", url: "/estoque/recebimentos", icon: ArrowDownToLine,
-    perm: "goods_receipt.create", group: "Estoque", workspaces: ["employee","admin"], priority: 70,
-    essential: true,
-    description: "Conte, registre e dê entrada nas peças recebidas, com ou sem documento do fornecedor.",
-    keywords: ["receber","recebimento","mercadoria","nota","fornecedor","contagem","conferência","papel","bling"] },
-  { id: "inventario", title: "Inventário", url: "/estoque/inventario", icon: ClipboardList,
-    perm: "inventory.manage", group: "Estoque", workspaces: ["admin"], priority: 60,
-    description: "Contagens e ajustes de inventário.",
-    keywords: ["inventario","contagem","balanco"] },
-  { id: "etiquetas", title: "Etiquetas", url: "/etiquetas", icon: Tag, perm: "label.print",
-    group: "Estoque", workspaces: ["employee","admin"], priority: 50,
-    description: "Gere lotes de etiquetas CODE128 em PDF.",
-    keywords: ["etiqueta","codigo de barras","code128","imprimir"] },
   { id: "fornecedores", title: "Fornecedores", url: "/fornecedores", icon: Truck, perm: "supplier.manage",
-    group: "Estoque", workspaces: ["admin"], priority: 40,
+    group: "Cadastros", workspaces: ["admin"], priority: 70,
     description: "Cadastro de fornecedores.",
     keywords: ["fornecedor","supplier"] },
   { id: "categorias", title: "Categorias", url: "/categorias", icon: FolderTree, perm: "category.manage",
-    group: "Estoque", workspaces: ["admin"], priority: 30,
+    group: "Cadastros", workspaces: ["admin"], priority: 60,
     description: "Categorias de produtos.",
     keywords: ["categoria"] },
   { id: "marcas", title: "Marcas", url: "/marcas", icon: Sparkles, perm: "brand.manage",
-    group: "Estoque", workspaces: ["admin"], priority: 20,
+    group: "Cadastros", workspaces: ["admin"], priority: 50,
     description: "Marcas de produtos.",
     keywords: ["marca","brand"] },
+
+  // ── Suprimentos (entradas, estoque, etiquetas) ────────────
+  { id: "estoque", title: "Estoque", url: "/estoque", icon: Boxes, perm: "stock.view",
+    group: "Suprimentos", workspaces: ["employee","admin"], priority: 100, essential: true,
+    description: "Saldo atual por SKU e variação.",
+    keywords: ["estoque","saldo","inventario","sku"] },
+  { id: "recebimentos", title: "Entrada de mercadoria", url: "/estoque/recebimentos", icon: ArrowDownToLine,
+    perm: "goods_receipt.create", group: "Suprimentos", workspaces: ["employee","admin"], priority: 90,
+    essential: true,
+    description: "Conte, registre e dê entrada nas peças recebidas.",
+    keywords: ["receber","recebimento","mercadoria","nota","fornecedor","contagem"] },
+  { id: "estoque-entrada", title: "Entrada rápida", url: "/estoque/entrada", icon: ArrowDownToLine,
+    perm: "goods_receipt.create", group: "Suprimentos", workspaces: ["employee","admin"], priority: 80,
+    description: "Ajuste simples ou reposição rápida.",
+    keywords: ["entrada","ajuste","mercadoria"] },
+  { id: "inventario", title: "Inventário", url: "/estoque/inventario", icon: ClipboardList,
+    perm: "inventory.manage", group: "Suprimentos", workspaces: ["admin"], priority: 70,
+    description: "Contagens e ajustes de inventário.",
+    keywords: ["inventario","contagem","balanco"] },
+  { id: "etiquetas", title: "Etiquetas", url: "/etiquetas", icon: Tag, perm: "label.print",
+    group: "Suprimentos", workspaces: ["employee","admin"], priority: 60,
+    description: "Gere lotes de etiquetas em PDF.",
+    keywords: ["etiqueta","codigo de barras","code128","imprimir"] },
 
   // ── Entregas ──────────────────────────────────────────────
   { id: "expedicao", title: "Painel de entregas", url: "/expedicao", icon: LayoutDashboard,
@@ -150,33 +152,33 @@ export const NAV_ITEMS: NavItem[] = [
     description: "Suas entregas do dia.",
     keywords: ["minhas rotas","motoboy","minhas entregas"] },
 
-  // ── Gestão ────────────────────────────────────────────────
+  // ── Configurações (equipe, permissões, ajustes) ───────────
   { id: "funcionarios", title: "Funcionários", url: "/funcionarios", icon: Users, perm: "user.manage",
-    group: "Gestão", workspaces: ["admin"], priority: 100,
+    group: "Configurações", workspaces: ["admin"], priority: 100,
     description: "Cadastro e acesso dos funcionários.",
     keywords: ["funcionario","equipe","usuario","staff"] },
   { id: "cargos", title: "Cargos e permissões", url: "/cargos", icon: ShieldCheck, perm: "role.manage",
-    group: "Gestão", workspaces: ["admin"], priority: 90,
+    group: "Configurações", workspaces: ["admin"], priority: 90,
     description: "Cargos e regras de permissão.",
     keywords: ["cargo","permissao","role","acesso"] },
-  { id: "setup", title: "Configuração inicial", url: "/configuracao-inicial", icon: Rocket,
-    perm: "user.manage", group: "Gestão", workspaces: ["admin"], priority: 80,
-    description: "Assistente de configuração inicial.",
-    keywords: ["setup","configuracao","primeiros passos","onboarding"] },
-  { id: "config", title: "Configurações", url: "/configuracoes", icon: Settings,
-    group: "Gestão", workspaces: ["admin"], priority: 70,
+  { id: "config", title: "Configurações gerais", url: "/configuracoes", icon: Settings,
+    group: "Configurações", workspaces: ["admin"], priority: 80,
     description: "Configurações gerais do FitGestor.",
     keywords: ["configuracoes","preferencias","ajustes"] },
   { id: "config-tamanhos", title: "Tamanhos padrão", url: "/configuracoes/tamanhos", icon: Settings,
-    perm: "settings.manage", group: "Gestão", workspaces: ["admin"], priority: 68,
-    description: "Grade de tamanhos usada na contagem manual da entrada de mercadoria.",
-    keywords: ["tamanhos","grade","PP","P","M","G","GG","XG","preset"] },
+    perm: "settings.manage", group: "Configurações", workspaces: ["admin"], priority: 70,
+    description: "Grade de tamanhos usada na entrada de mercadoria.",
+    keywords: ["tamanhos","grade","preset"] },
   { id: "config-importar", title: "Importar dados", url: "/configuracoes/importar", icon: Upload,
-    perm: "settings.manage", group: "Gestão", workspaces: ["admin"], priority: 67,
-    description: "Traga produtos, clientes, fornecedores e estoque de outro ERP (Bling, Tiny, Olist ou CSV/XLSX).",
-    keywords: ["importar","importacao","bling","tiny","olist","csv","xlsx","excel","planilha","migrar","migracao","erp"] },
+    perm: "settings.manage", group: "Configurações", workspaces: ["admin"], priority: 60,
+    description: "Traga produtos, clientes e estoque de outro ERP.",
+    keywords: ["importar","bling","tiny","olist","csv","xlsx","planilha"] },
+  { id: "setup", title: "Configuração inicial", url: "/configuracao-inicial", icon: Rocket,
+    perm: "user.manage", group: "Configurações", workspaces: ["admin"], priority: 50,
+    description: "Assistente de configuração inicial.",
+    keywords: ["setup","onboarding"] },
   { id: "auditoria", title: "Auditoria", url: "/auditoria", icon: ScrollText, perm: "audit.view",
-    group: "Gestão", workspaces: ["admin"], priority: 60,
+    group: "Configurações", workspaces: ["admin"], priority: 40,
     description: "Registro de ações sensíveis do sistema.",
     keywords: ["auditoria","log","registro","historico"] },
 
@@ -192,8 +194,18 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 export const NAV_GROUPS: NavGroup[] = [
-  "Início","Vendas","Estoque","Entregas","Gestão","Relatórios",
+  "Início","Cadastros","Suprimentos","Vendas","Entregas","Relatórios","Configurações",
 ];
+
+export const NAV_GROUP_META: Record<NavGroup, { icon: ComponentType<{ className?: string }>; description: string }> = {
+  "Início":        { icon: Home,          description: "Visão geral e área de trabalho" },
+  "Cadastros":     { icon: UserSquare2,   description: "Clientes, produtos, fornecedores" },
+  "Suprimentos":   { icon: Boxes,         description: "Estoque, entradas e etiquetas" },
+  "Vendas":        { icon: ShoppingCart,  description: "PDV, caixa, trocas e pós-venda" },
+  "Entregas":      { icon: Truck,         description: "Expedição, rotas e motoboys" },
+  "Relatórios":    { icon: FileBarChart,  description: "Indicadores e desempenho" },
+  "Configurações": { icon: Settings,      description: "Equipe, permissões e ajustes" },
+};
 
 /** IDs shown by default when "Menu essencial" is on. */
 export const ESSENTIAL_ITEM_IDS = new Set(

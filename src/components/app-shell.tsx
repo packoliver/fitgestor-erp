@@ -4,9 +4,6 @@ import { BrandMark } from "@/components/brand-logo";
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -39,20 +36,14 @@ import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  NAV_ITEMS, itemsByGroup, filterByPermission,
+  NAV_ITEMS, itemsByGroup, filterByPermission, NAV_GROUPS, NAV_GROUP_META,
   ESSENTIAL_ITEM_IDS, type NavItem, type NavGroup,
 } from "@/config/navigation";
 
 
-const LS_GROUPS = "fg:nav:groups-open";
 const LS_ESSENTIAL = "fg:nav:essential";
 const LS_PINNED = "fg:nav:pinned";
 
-function loadOpenGroups(): Record<string, boolean> {
-  if (typeof window === "undefined") return {};
-  try { return JSON.parse(window.localStorage.getItem(LS_GROUPS) || "{}"); }
-  catch { return {}; }
-}
 function loadEssentialDefault(): boolean {
   if (typeof window === "undefined") return true;
   const v = window.localStorage.getItem(LS_ESSENTIAL);
@@ -150,13 +141,10 @@ function AppSidebar({
   const { has, hasAny, isLoading } = usePermissions();
   const badges = useNavBadges(hasAny, isLoading);
 
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => loadOpenGroups());
   const [essential, setEssential] = useState<boolean>(() => loadEssentialDefault());
   const [expandedAll, setExpandedAll] = useState<boolean>(false);
+  const [selectedGroup, setSelectedGroup] = useState<NavGroup>("Início");
 
-  useEffect(() => {
-    if (typeof window !== "undefined") window.localStorage.setItem(LS_GROUPS, JSON.stringify(openGroups));
-  }, [openGroups]);
   useEffect(() => {
     if (typeof window !== "undefined") window.localStorage.setItem(LS_ESSENTIAL, essential ? "1" : "0");
   }, [essential]);
@@ -176,14 +164,10 @@ function AppSidebar({
     return active?.group ?? null;
   }, [permitted, pathname]);
 
-  const isGroupOpen = (g: string) => {
-    if (openGroups[g] !== undefined) return openGroups[g];
-    if (g === "Início") return true;
-    if (g === activeGroup) return true;
-    return false;
-  };
-  const toggleGroup = (g: string) =>
-    setOpenGroups((prev) => ({ ...prev, [g]: !isGroupOpen(g) }));
+  // Sync selected group with the current active route.
+  useEffect(() => {
+    if (activeGroup) setSelectedGroup(activeGroup);
+  }, [activeGroup]);
 
   // If sidebar is in "hidden" mode (not pinned) on desktop, close after nav.
   const handleNav = () => {
@@ -283,74 +267,122 @@ function AppSidebar({
         </button>
       </div>
 
-      {/* Modo essencial — linha única com switch + link "Ver todos os módulos" */}
-      {!collapsed && (
-        <div className="px-2 pt-2">
-          <div className="rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 px-2.5 py-2">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5 shrink-0 text-sidebar-foreground/60" />
-              <label htmlFor="essential-switch" className="text-[12px] font-medium text-sidebar-foreground flex-1 min-w-0 truncate cursor-pointer">
-                Modo essencial
-              </label>
-              <Switch
-                id="essential-switch"
-                checked={essential}
-                onCheckedChange={(v) => { setEssential(v); setExpandedAll(false); }}
-                aria-label="Alternar modo essencial"
-                className="scale-90"
-              />
-            </div>
-            {essential && (
-              <button
-                type="button"
-                onClick={() => setExpandedAll((v) => !v)}
-                className="mt-1 w-full text-left text-[11px] text-sidebar-foreground/60 hover:text-sidebar-foreground underline underline-offset-2 decoration-sidebar-foreground/25 hover:decoration-sidebar-foreground/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
-              >
-                {expandedAll ? "Ocultar módulos avançados" : "Ver todos os módulos"}
-              </button>
-            )}
+      {/* Menu — layout Olist: rail de categorias + coluna de sub-itens */}
+      <SidebarContent className="p-0 gap-0 overflow-hidden">
+        {collapsed ? (
+          /* Modo ícone: apenas rail de grupos */
+          <div className="flex flex-col items-center gap-1 py-2">
+            {NAV_GROUPS.map((g) => {
+              const Meta = NAV_GROUP_META[g];
+              const active = g === activeGroup;
+              return (
+                <TooltipProvider key={g} delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedGroup(g); setOpen(true); }}
+                        aria-label={g}
+                        className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+                          active
+                            ? "bg-primary/15 text-primary"
+                            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                        }`}
+                      >
+                        <Meta.icon className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-xs">{g}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              );
+            })}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex h-full min-h-0 flex-1">
+            {/* Rail de grupos (coluna 1) */}
+            <nav
+              aria-label="Categorias"
+              className="flex w-[92px] shrink-0 flex-col gap-0.5 border-r border-sidebar-border/70 bg-sidebar/60 px-1.5 py-2 overflow-y-auto"
+            >
+              {NAV_GROUPS.map((g) => {
+                const Meta = NAV_GROUP_META[g];
+                const isSel = selectedGroup === g;
+                const isActive = activeGroup === g;
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setSelectedGroup(g)}
+                    aria-pressed={isSel}
+                    className={`relative flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10.5px] font-medium leading-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                      isSel
+                        ? "bg-primary/12 text-primary"
+                        : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                    }`}
+                  >
+                    {isActive && (
+                      <span aria-hidden className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r bg-primary" />
+                    )}
+                    <Meta.icon className="h-[18px] w-[18px]" />
+                    <span className="text-center break-words leading-[1.15]">{g}</span>
+                  </button>
+                );
+              })}
+            </nav>
 
+            {/* Coluna de sub-itens (coluna 2) */}
+            <div className="flex min-w-0 flex-1 flex-col">
+              <div className="px-3 pt-3 pb-2 border-b border-sidebar-border/60">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">
+                  {selectedGroup}
+                </p>
+                <p className="mt-0.5 text-[11px] text-sidebar-foreground/55 truncate">
+                  {NAV_GROUP_META[selectedGroup].description}
+                </p>
+              </div>
 
-      <SidebarContent className="px-2 py-2 gap-0.5">
-        {groups.map((g) => {
-          const open = isGroupOpen(g.label);
-          return (
-            <SidebarGroup key={g.label} className="py-0.5">
-              {!collapsed ? (
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(g.label)}
-                  aria-expanded={open}
-                  className="group flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45 hover:text-sidebar-foreground/80 transition-colors"
-                >
-                  <span className="truncate">{g.label}</span>
-                  <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-150 ${open ? "" : "-rotate-90"}`} />
-                </button>
-              ) : (
-                <SidebarGroupLabel className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/45 px-2 sr-only">
-                  {g.label}
-                </SidebarGroupLabel>
-              )}
-              {(open || collapsed) && (
-                <SidebarGroupContent>
-                  <SidebarMenu className="gap-0.5">
-                    {g.items.map(renderItem)}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              )}
-            </SidebarGroup>
-          );
-        })}
+              <div className="flex-1 overflow-y-auto px-2 py-2">
+                <SidebarMenu className="gap-0.5">
+                  {(groups.find((g) => g.label === selectedGroup)?.items ?? []).map(renderItem)}
+                  {(groups.find((g) => g.label === selectedGroup)?.items ?? []).length === 0 && (
+                    <p className="px-2 py-6 text-center text-[11.5px] text-sidebar-foreground/50">
+                      Nenhum módulo disponível nesta categoria.
+                    </p>
+                  )}
+                </SidebarMenu>
+              </div>
 
-        {!collapsed && essential && !expandedAll && (
-          <p className="px-3 pt-3 pb-1 text-[10.5px] leading-relaxed text-sidebar-foreground/45">
-            Exibindo os módulos mais usados.
-          </p>
+              {/* Modo essencial — footer da coluna de itens */}
+              <div className="border-t border-sidebar-border/60 px-2 py-2">
+                <div className="flex items-center gap-2 rounded-md px-1.5 py-1">
+                  <Sparkles className="h-3.5 w-3.5 shrink-0 text-sidebar-foreground/60" />
+                  <label htmlFor="essential-switch" className="text-[11.5px] font-medium text-sidebar-foreground flex-1 min-w-0 truncate cursor-pointer">
+                    Modo essencial
+                  </label>
+                  <Switch
+                    id="essential-switch"
+                    checked={essential}
+                    onCheckedChange={(v) => { setEssential(v); setExpandedAll(false); }}
+                    aria-label="Alternar modo essencial"
+                    className="scale-90"
+                  />
+                </div>
+                {essential && (
+                  <button
+                    type="button"
+                    onClick={() => setExpandedAll((v) => !v)}
+                    className="mt-1 w-full text-left px-1.5 text-[10.5px] text-sidebar-foreground/60 hover:text-sidebar-foreground underline underline-offset-2 decoration-sidebar-foreground/25 hover:decoration-sidebar-foreground/60 transition-colors"
+                  >
+                    {expandedAll ? "Ocultar módulos avançados" : "Ver todos os módulos"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </SidebarContent>
+
 
       {/* Footer fixo — perfil, configurações, ajuda, sair */}
       <div className="mt-auto border-t border-sidebar-border p-2">
@@ -551,7 +583,7 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
   const showFloatingReopen = !isMobile && !pinned && !sidebarOpen;
 
   return (
-    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen} style={{ ["--sidebar-width" as any]: "19rem" }}>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar
           onOpenSearch={() => setSearchOpen(true)}
