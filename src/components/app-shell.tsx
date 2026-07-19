@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { BrandMark } from "@/components/brand-logo";
 import {
   Sidebar,
   SidebarContent,
