@@ -167,7 +167,7 @@ function drawQsfLabel(
   pdf.setFont(font, "normal");
   pdf.setFontSize(4.4);
   const policyLines = pdf.splitTextToSize(policy, innerW).slice(0, 3);
-  policyLines.forEach((line, i) => {
+  policyLines.forEach((line: string, i: number) => {
     pdf.text(line, cx, policyY + 1.8 + i * 2.1, { align: "center" });
   });
 
