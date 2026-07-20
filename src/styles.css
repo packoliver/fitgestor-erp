@@ -549,3 +549,7 @@ body {
   html.print-a4 #print-root .doc-footer { position: running(footer); text-align: center; font-size: 10px; color: #555; }
   html.print-a4 #print-root .page-break { page-break-after: always; }
 }
+
+#lovable-badge {
+  display: none !important;
+}
