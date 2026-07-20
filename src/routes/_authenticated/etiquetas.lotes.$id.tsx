@@ -23,7 +23,7 @@ import { Loader2, ArrowLeft, Printer, RotateCcw, ExternalLink } from "lucide-rea
 import { toast } from "sonner";
 import { formatDateTime, SIZE_SINGLE, SIZE_SINGLE_LABEL, formatBRL } from "@/lib/erp";
 import { usePermissions } from "@/hooks/use-permissions";
-import { generateLabelPdf, MAX_LABELS_PER_ATTEMPT, type LabelPayload, type LabelTemplate } from "@/lib/label-pdf";
+import { generateLabelPdf, MAX_LABELS_PER_ATTEMPT, QSF_DEFAULT_TEMPLATE, DEFAULT_EXCHANGE_POLICY, type LabelPayload, type LabelTemplate } from "@/lib/label-pdf";
 
 export const Route = createFileRoute("/_authenticated/etiquetas/lotes/$id")({
   component: LabelBatchPage,
@@ -197,10 +197,11 @@ function LabelBatchPage() {
       completeReqRef.current = crypto.randomUUID();
       // Gera PDF
       try {
-        const t = job.data?.template as LabelTemplate | null;
-        if (!t) throw new Error("Template de etiqueta não configurado.");
+        const t = (job.data?.template as LabelTemplate | null) ?? QSF_DEFAULT_TEMPLATE;
+        // Padroniza toda impressão em lote no layout QSF (marca + barcode + política + preço).
+        const merged: LabelTemplate = { ...t, layout: "qsf-standard", policy_text: t.policy_text ?? DEFAULT_EXCHANGE_POLICY };
         const orgName = job.data?.organization?.name ?? "";
-        const blob = generateLabelPdf(ev.items, t, orgName);
+        const blob = generateLabelPdf(ev.items, merged, orgName);
         const url = URL.createObjectURL(blob);
         if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         setPdfUrl(url);
