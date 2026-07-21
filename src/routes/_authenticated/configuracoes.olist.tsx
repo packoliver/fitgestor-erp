@@ -222,8 +222,10 @@ function OlistPage() {
             const total = Number(p.products_total ?? 0);
             const done = Number(p.products_processed ?? 0);
             const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+            const pctLabel = total > 0 && done > 0 && pct === 0 ? "<1%" : `${pct}%`;
             const isRunning = detailFresh.status === "processando";
             const isPartial = Boolean(p.partial);
+            const isPartialMessage = isPartial && detailFresh.error_message?.toLowerCase?.().includes("parcial");
             return (
               <div className="space-y-4 text-sm">
                 <div className="rounded border p-3">
@@ -233,7 +235,7 @@ function OlistPage() {
                       {p.phase === "estoque" && " (ajustando estoque)"}
                     </span>
                     <span className="text-muted-foreground">
-                      {done} / {total > 0 ? total : "?"} {total > 0 && `(${pct}%)`}
+                      {done} / {total > 0 ? total : "?"} {total > 0 && `(${pctLabel})`}
                     </span>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded bg-muted">
@@ -265,9 +267,17 @@ function OlistPage() {
                 )}
 
                 {detailFresh.error_message && (
-                  <div className="rounded bg-destructive/10 p-3 text-destructive text-xs">
-                    <div className="mb-1 font-semibold">Erro geral:</div>
+                  <div className={`rounded border p-3 text-xs ${isPartialMessage ? "border-primary/25 bg-primary/10 text-foreground" : "border-destructive/20 bg-destructive/10 text-destructive"}`}>
+                    <div className="mb-1 font-semibold">{isPartialMessage ? "Rodada salva para continuar" : "Erro geral:"}</div>
                     {detailFresh.error_message}
+                    {isPartialMessage && !isRunning && (
+                      <div className="mt-3 flex justify-end">
+                        <Button size="sm" onClick={() => syncNow.mutate()} disabled={syncNow.isPending}>
+                          {syncNow.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+                          Continuar agora
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
 
