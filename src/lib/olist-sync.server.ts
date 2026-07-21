@@ -660,7 +660,10 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
   const startedAt = new Date();
   const deadline = startedAt.getTime() + MAX_RUN_MS;
 
-  // Evita execuções concorrentes na mesma organização
+  // Antes de checar concorrência, libera execuções órfãs (worker morto sem finalizar).
+  await reapStaleRuns(orgId);
+
+  // Evita execuções concorrentes reais na mesma organização
   const { data: running } = await supabaseAdmin
     .from("integration_events")
     .select("id, received_at")
@@ -668,7 +671,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
     .eq("source", "olist")
     .eq("event_type", "sync_run")
     .eq("status", "processando")
-    .gt("received_at", new Date(Date.now() - 15 * 60 * 1000).toISOString())
+    .gt("received_at", new Date(Date.now() - STALE_RUN_MS).toISOString())
     .limit(1);
   if (running && running.length > 0) {
     throw new Error("Já existe uma sincronização em andamento. Aguarde ou cancele-a antes de iniciar outra.");
