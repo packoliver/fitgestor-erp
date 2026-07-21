@@ -44,9 +44,9 @@ function OlistPage() {
         toast.error(c?.error ?? "Falha na sincronização");
         return;
       }
-      toast.success(
-        `Sincronizado: ${c.products_created + c.products_updated} produtos, ${c.stock_adjusted} ajustes de estoque, ${c.photos_synced} fotos${c.errors?.length ? `, ${c.errors.length} erros` : ""}`,
-      );
+      const summary = `Sincronizado: ${c.products_created + c.products_updated} produtos, ${c.stock_adjusted} ajustes de estoque, ${c.photos_synced} fotos${c.errors?.length ? `, ${c.errors.length} erros` : ""}`;
+      if (c.partial) toast.info(c.message ?? `${summary}. Rodada parcial salva; a próxima sincronização continua de onde parou.`);
+      else toast.success(summary);
       qc.invalidateQueries({ queryKey: ["olist-runs"] });
       qc.invalidateQueries({ queryKey: ["olist-state"] });
     },
@@ -186,7 +186,7 @@ function OlistPage() {
                       <TableCell className="text-xs whitespace-nowrap">{formatDateTime(r.received_at)}</TableCell>
                       <TableCell>
                         <Badge variant={r.status === "processado" ? "default" : r.status === "erro" ? "destructive" : "outline"}>
-                          {r.status}
+                          {p.partial ? "parcial" : r.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">{(p.products_created ?? 0) + (p.products_updated ?? 0)}</TableCell>
@@ -223,12 +223,13 @@ function OlistPage() {
             const done = Number(p.products_processed ?? 0);
             const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
             const isRunning = detailFresh.status === "processando";
+            const isPartial = Boolean(p.partial);
             return (
               <div className="space-y-4 text-sm">
                 <div className="rounded border p-3">
                   <div className="mb-2 flex items-center justify-between text-xs">
                     <span className="font-medium">
-                      {isRunning ? "Sincronizando produtos..." : "Progresso final"}
+                      {isRunning ? "Sincronizando produtos..." : isPartial ? "Rodada parcial salva" : "Progresso final"}
                       {p.phase === "estoque" && " (ajustando estoque)"}
                     </span>
                     <span className="text-muted-foreground">
@@ -237,7 +238,7 @@ function OlistPage() {
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded bg-muted">
                     <div
-                      className={`h-full transition-all ${isRunning ? "bg-primary" : detailFresh.status === "erro" ? "bg-destructive" : "bg-emerald-500"}`}
+                      className={`h-full transition-all ${isRunning || isPartial ? "bg-primary" : detailFresh.status === "erro" ? "bg-destructive" : "bg-emerald-500"}`}
                       style={{ width: `${total > 0 ? pct : isRunning ? 5 : 100}%` }}
                     />
                   </div>
