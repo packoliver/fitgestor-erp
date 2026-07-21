@@ -58,6 +58,21 @@ function asPositiveInt(value: unknown, fallback: number): number {
 }
 
 async function getLastPartialCursor(orgId: string): Promise<ResumeCursor | null> {
+  // 1) Fonte primária: olist_sync_state (atômico, sobrevive a workers mortos)
+  const { data: st } = await supabaseAdmin
+    .from("olist_sync_state")
+    .select("resume_page, resume_index, resume_processed, resume_total")
+    .eq("organization_id", orgId)
+    .maybeSingle();
+  if (st?.resume_page && st.resume_page > 0) {
+    return {
+      page: asPositiveInt(st.resume_page, 1),
+      index: Math.max(0, Number(st.resume_index ?? 0)),
+      processed: Math.max(0, Number(st.resume_processed ?? 0)),
+      total: Math.max(0, Number(st.resume_total ?? 0)),
+    };
+  }
+  // 2) Fallback: último evento parcial
   const { data } = await supabaseAdmin
     .from("integration_events")
     .select("payload")
@@ -77,6 +92,37 @@ async function getLastPartialCursor(orgId: string): Promise<ResumeCursor | null>
     processed: Math.max(0, asPositiveInt(payload.products_processed, 0)),
     total: Math.max(0, asPositiveInt(payload.products_total, 0)),
   };
+}
+
+async function saveResumeCursor(
+  orgId: string,
+  cursor: { page: number; index: number; processed: number; total: number } | null,
+) {
+  await supabaseAdmin.from("olist_sync_state").upsert({
+    organization_id: orgId,
+    resume_page: cursor?.page ?? null,
+    resume_index: cursor?.index ?? null,
+    resume_processed: cursor?.processed ?? null,
+    resume_total: cursor?.total ?? null,
+    resume_updated_at: new Date().toISOString(),
+  });
+}
+
+/** Marca como "erro" execuções que ficaram presas em "processando" sem update recente. */
+async function reapStaleRuns(orgId: string) {
+  const cutoff = new Date(Date.now() - STALE_RUN_MS).toISOString();
+  await supabaseAdmin
+    .from("integration_events")
+    .update({
+      status: "erro",
+      processed_at: new Date().toISOString(),
+      error_message: "Execução interrompida (worker encerrado antes de finalizar). Progresso preservado no cursor.",
+    })
+    .eq("organization_id", orgId)
+    .eq("source", "olist")
+    .eq("event_type", "sync_run")
+    .eq("status", "processando")
+    .lt("received_at", cutoff);
 }
 
 function fmtDate(d: Date | null): string | null {
