@@ -891,13 +891,18 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
       counters.errors.push({ scope: "stock.list", message: e?.message ?? String(e) });
     }
 
-    // Atualiza cursor
+    // Concluído — limpa cursor de retomada e atualiza data-base
     await supabaseAdmin
       .from("olist_sync_state")
       .upsert({
         organization_id: orgId,
         last_updated_produtos_at: startedAt.toISOString(),
         last_updated_estoque_at: startedAt.toISOString(),
+        resume_page: null,
+        resume_index: null,
+        resume_processed: null,
+        resume_total: null,
+        resume_updated_at: new Date().toISOString(),
       });
 
     if (eventId) {
