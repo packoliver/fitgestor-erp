@@ -2052,6 +2052,11 @@ export type Database = {
           last_updated_estoque_at: string | null
           last_updated_produtos_at: string | null
           organization_id: string
+          resume_index: number | null
+          resume_page: number | null
+          resume_processed: number | null
+          resume_total: number | null
+          resume_updated_at: string | null
           updated_at: string
         }
         Insert: {
@@ -2059,6 +2064,11 @@ export type Database = {
           last_updated_estoque_at?: string | null
           last_updated_produtos_at?: string | null
           organization_id: string
+          resume_index?: number | null
+          resume_page?: number | null
+          resume_processed?: number | null
+          resume_total?: number | null
+          resume_updated_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -2066,6 +2076,11 @@ export type Database = {
           last_updated_estoque_at?: string | null
           last_updated_produtos_at?: string | null
           organization_id?: string
+          resume_index?: number | null
+          resume_page?: number | null
+          resume_processed?: number | null
+          resume_total?: number | null
+          resume_updated_at?: string | null
           updated_at?: string
         }
         Relationships: [
