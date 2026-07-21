@@ -788,9 +788,11 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
       if (!retorno?.empty) {
         const produtos: any[] = Array.isArray(retorno?.produtos) ? retorno.produtos.map((x: any) => x.produto ?? x) : [];
         totalPages = Number(retorno?.numero_paginas ?? totalPages);
-        const registros = Number(retorno?.numero_registros ?? produtos.length) || produtos.length;
+        // Tiny/Olist v2: numero_registros é da PÁGINA. Preferimos o total global
+        // quando presente (numero_registros_totais); senão estimamos com 100/pág.
+        const totalGlobal = Number(retorno?.numero_registros_totais ?? 0);
         if (productsTotal === 0) {
-          productsTotal = registros * totalPages;
+          productsTotal = totalGlobal > 0 ? totalGlobal : Math.max(produtos.length, 100) * totalPages;
           await persistProgress();
         }
         for (let i = startIndex; i < produtos.length; i++) {
@@ -811,6 +813,14 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
           }
           productsProcessed++;
           productsProcessedThisRun++;
+          // Persiste cursor ATÔMICO em olist_sync_state a cada produto — sobrevive
+          // a worker kill/timeout. Próxima rodada continua exatamente daqui.
+          await saveResumeCursor(orgId, {
+            page: pagina,
+            index: i + 1,
+            processed: productsProcessed,
+            total: productsTotal,
+          });
           if (productsProcessed % 3 === 0) await persistProgress();
           await sleep(SLEEP_MS);
         }
