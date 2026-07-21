@@ -9,9 +9,24 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const OLIST_BASE = "https://api.tiny.com.br/api2";
 const SLEEP_MS = 2100; // Tiny/Olist: ~30 req/min → ~2s entre chamadas
-const MAX_PRODUCTS_PER_RUN = 180;
-const MAX_RUN_MS = 8 * 60 * 1000;
+const OLIST_TIMEOUT_MS = 30_000;
+const PHOTO_TIMEOUT_MS = 15_000;
+const MAX_PRODUCTS_PER_RUN = 80;
+const MAX_RUN_MS = 3 * 60 * 1000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = OLIST_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (e: any) {
+    if (e?.name === "AbortError") throw new Error(`Tempo limite excedido ao chamar a Olist (${Math.round(timeoutMs / 1000)}s)`);
+    throw e;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 type Counters = {
   products_created: number;
@@ -71,11 +86,11 @@ async function olistCall(endpoint: string, params: Record<string, string>, attem
   const token = process.env.OLIST_API_TOKEN;
   if (!token) throw new Error("OLIST_API_TOKEN não configurado");
   const body = new URLSearchParams({ token, formato: "JSON", ...params });
-  const res = await fetch(`${OLIST_BASE}/${endpoint}`, {
+  const res = await fetchWithTimeout(`${OLIST_BASE}/${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: body.toString(),
-  });
+  }, OLIST_TIMEOUT_MS);
   if (!res.ok) throw new Error(`Olist HTTP ${res.status}`);
   const json = await res.json();
   const status = json?.retorno?.status;
@@ -207,7 +222,7 @@ async function findLocalVariantByExternal(orgId: string, externalId: string) {
 }
 
 async function downloadPhoto(url: string): Promise<{ bytes: ArrayBuffer; contentType: string; ext: string }> {
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url, {}, PHOTO_TIMEOUT_MS);
   if (!res.ok) throw new Error(`Foto HTTP ${res.status}`);
   const contentType = res.headers.get("content-type") ?? "image/jpeg";
   const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
