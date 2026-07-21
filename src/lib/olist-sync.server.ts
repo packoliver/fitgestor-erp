@@ -9,10 +9,15 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const OLIST_BASE = "https://api.tiny.com.br/api2";
 const SLEEP_MS = 2100; // Tiny/Olist: ~30 req/min → ~2s entre chamadas
-const OLIST_TIMEOUT_MS = 30_000;
-const PHOTO_TIMEOUT_MS = 15_000;
-const MAX_PRODUCTS_PER_RUN = 80;
-const MAX_RUN_MS = 3 * 60 * 1000;
+const OLIST_TIMEOUT_MS = 25_000;
+const PHOTO_TIMEOUT_MS = 12_000;
+const MAX_PRODUCTS_PER_RUN = 25;
+// Cloudflare Worker mata requests longos — mantemos abaixo do wall-clock real
+// para SEMPRE gravar cursor/estado antes de retornar. Nunca aumente sem medir.
+const MAX_RUN_MS = 50_000;
+// Se um evento "processando" fica sem novo progresso por mais que isso,
+// consideramos órfão (worker morreu) e liberamos para nova rodada.
+const STALE_RUN_MS = 3 * 60 * 1000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = OLIST_TIMEOUT_MS): Promise<Response> {
