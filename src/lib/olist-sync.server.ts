@@ -12,6 +12,10 @@ const SLEEP_MS = 2100; // Tiny/Olist: ~30 req/min → ~2s entre chamadas
 const OLIST_TIMEOUT_MS = 25_000;
 const PHOTO_TIMEOUT_MS = 12_000;
 const MAX_PRODUCTS_PER_RUN = 25;
+// Limita chamadas caras (produto.obter, com sleep de 2.1s cada) por rodada.
+// Produtos já sincronizados usam fast-path sem API call — processamos
+// centenas deles por rodada até bater no deadline.
+const MAX_API_CALLS_PER_RUN = 20;
 // Cloudflare Worker mata requests longos — mantemos abaixo do wall-clock real
 // para SEMPRE gravar cursor/estado antes de retornar. Nunca aumente sem medir.
 const MAX_RUN_MS = 50_000;
