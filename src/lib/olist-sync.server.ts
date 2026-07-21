@@ -9,6 +9,8 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const OLIST_BASE = "https://api.tiny.com.br/api2";
 const SLEEP_MS = 2100; // Tiny/Olist: ~30 req/min → ~2s entre chamadas
+const MAX_PRODUCTS_PER_RUN = 180;
+const MAX_RUN_MS = 8 * 60 * 1000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type Counters = {
@@ -19,7 +21,43 @@ type Counters = {
   photos_synced: number;
   stock_adjusted: number;
   errors: Array<{ scope: string; id?: string; message: string }>;
+  partial?: boolean;
+  message?: string;
 };
+
+type ResumeCursor = {
+  page: number;
+  index: number;
+  processed: number;
+  total: number;
+};
+
+function asPositiveInt(value: unknown, fallback: number): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
+async function getLastPartialCursor(orgId: string): Promise<ResumeCursor | null> {
+  const { data } = await supabaseAdmin
+    .from("integration_events")
+    .select("payload")
+    .eq("organization_id", orgId)
+    .eq("source", "olist")
+    .eq("event_type", "sync_run")
+    .eq("status", "processado")
+    .order("received_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const payload = data?.payload as any;
+  if (!payload?.partial) return null;
+  return {
+    page: asPositiveInt(payload.next_page, 1),
+    index: Math.max(0, asPositiveInt(payload.next_index, 0)),
+    processed: Math.max(0, asPositiveInt(payload.products_processed, 0)),
+    total: Math.max(0, asPositiveInt(payload.products_total, 0)),
+  };
+}
 
 function fmtDate(d: Date | null): string | null {
   if (!d) return null;
@@ -554,6 +592,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
   };
 
   const startedAt = new Date();
+  const deadline = startedAt.getTime() + MAX_RUN_MS;
 
   // Evita execuções concorrentes na mesma organização
   const { data: running } = await supabaseAdmin
@@ -598,6 +637,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
 
   let productsTotal = 0;
   let productsProcessed = 0;
+  let productsProcessedThisRun = 0;
   let currentProduct: { id?: string; name?: string } | null = null;
   let cancelledFlag = false;
   const persistProgress = async (extra: Record<string, any> = {}) => {
@@ -643,16 +683,26 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
 
   try {
     // 1) Produtos
+    const resume = await getLastPartialCursor(orgId);
     const params: Record<string, string> = { pagina: "1" };
     const d = fmtDate(sinceProdutos);
-    if (d) params.dataAlteracao = d;
+    if (d && !resume) params.dataAlteracao = d;
 
-    let pagina = 1;
+    let pagina = resume?.page ?? 1;
     let totalPages = 1;
+    let startIndex = resume?.index ?? 0;
     let consecutiveFailures = 0;
     let cancelled = false;
+    let partialCursor: { page: number; index: number } | null = null;
+    productsProcessed = resume?.processed ?? 0;
+    productsTotal = resume?.total ?? 0;
+
     while (true) {
       if (await isCancelled()) { cancelled = true; break; }
+      if (Date.now() >= deadline || productsProcessedThisRun >= MAX_PRODUCTS_PER_RUN) {
+        partialCursor = { page: pagina, index: startIndex };
+        break;
+      }
       params.pagina = String(pagina);
       let retorno: any;
       try {
@@ -674,7 +724,12 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
           productsTotal = registros * totalPages;
           await persistProgress();
         }
-        for (const p of produtos) {
+        for (let i = startIndex; i < produtos.length; i++) {
+          if (Date.now() >= deadline || productsProcessedThisRun >= MAX_PRODUCTS_PER_RUN) {
+            partialCursor = { page: pagina, index: i };
+            break;
+          }
+          const p = produtos[i];
           if (await isCancelled()) { cancelled = true; break; }
           const externalId = p?.id ? String(p.id) : undefined;
           if (!externalId) continue;
@@ -686,10 +741,12 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
             counters.errors.push({ scope: "produto", id: externalId, message: e?.message ?? String(e) });
           }
           productsProcessed++;
+          productsProcessedThisRun++;
           if (productsProcessed % 3 === 0) await persistProgress();
           await sleep(SLEEP_MS);
         }
-        if (cancelled) break;
+        startIndex = 0;
+        if (partialCursor || cancelled) break;
       }
       if (pagina >= totalPages) break;
       pagina++;
@@ -711,6 +768,34 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
               products_processed: productsProcessed,
               current_product: currentProduct,
               cancelled: true,
+            },
+          })
+          .eq("id", eventId);
+      }
+      return counters;
+    }
+
+    if (partialCursor) {
+      counters.partial = true;
+      counters.message = "Sincronização parcial salva. Clique em sincronizar novamente ou aguarde o próximo cron para continuar.";
+      if (eventId) {
+        await supabaseAdmin
+          .from("integration_events")
+          .update({
+            status: "processado",
+            processed_at: new Date().toISOString(),
+            error_message: counters.message,
+            payload: {
+              ...counters,
+              started_at: startedAt.toISOString(),
+              finished_at: new Date().toISOString(),
+              products_total: productsTotal || productsProcessed,
+              products_processed: productsProcessed,
+              current_product: currentProduct,
+              partial: true,
+              next_page: partialCursor.page,
+              next_index: partialCursor.index,
+              chunk_limit: MAX_PRODUCTS_PER_RUN,
             },
           })
           .eq("id", eventId);
