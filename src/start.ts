@@ -21,4 +21,8 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
 export const startInstance = createStart(() => ({
   functionMiddleware: [attachSupabaseAuth],
   requestMiddleware: [errorMiddleware],
+  defaultSsrOptions: {
+    // CSRF é validado via bearer token JWT do Supabase (attachSupabaseAuth).
+    disableCsrfMiddlewareWarning: true,
+  },
 }));

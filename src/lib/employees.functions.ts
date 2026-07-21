@@ -17,7 +17,7 @@ const InviteInput = z.object({
  */
 export const inviteEmployee = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: z.infer<typeof InviteInput>) => InviteInput.parse(data))
+  .validator((data: z.infer<typeof InviteInput>) => InviteInput.parse(data))
   .handler(async ({ data, context }) => {
     // Authorization guard against the caller's own client (RLS).
     const { data: canManage, error: permErr } = await context.supabase.rpc(
@@ -87,7 +87,7 @@ export const inviteEmployee = createServerFn({ method: "POST" })
 /** Resend invite e-mail for an already-added employee (no local DB changes). */
 export const resendInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { email: string }) => z.object({ email: z.string().email() }).parse(data))
+  .validator((data: { email: string }) => z.object({ email: z.string().email() }).parse(data))
   .handler(async ({ data, context }) => {
     const { data: canManage } = await context.supabase.rpc("has_permission", {
       _code: "user.manage",
