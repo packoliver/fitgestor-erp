@@ -50,7 +50,7 @@ export const getOlistSyncState = createServerFn({ method: "GET" })
 
 export const cancelOlistRun = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string }) => data)
+  .validator((data: { id: string }) => data)
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _role_name: "Administrador" });
     if (!isAdmin) return { ok: false, error: "Apenas administradores." };

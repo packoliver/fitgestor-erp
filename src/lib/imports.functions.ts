@@ -307,7 +307,7 @@ async function importStock(ctx: Ctx, orgId: string, rows: any[], locationId: str
 
 export const runImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: z.infer<typeof ImportInput>) => ImportInput.parse(data))
+  .validator((data: z.infer<typeof ImportInput>) => ImportInput.parse(data))
   .handler(async ({ data, context }) => {
     const ctx = { supabase: context.supabase, userId: context.userId };
     const orgId = await getOrgId(ctx);
