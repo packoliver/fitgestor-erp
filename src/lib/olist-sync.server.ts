@@ -9,10 +9,15 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const OLIST_BASE = "https://api.tiny.com.br/api2";
 const SLEEP_MS = 2100; // Tiny/Olist: ~30 req/min → ~2s entre chamadas
-const OLIST_TIMEOUT_MS = 30_000;
-const PHOTO_TIMEOUT_MS = 15_000;
-const MAX_PRODUCTS_PER_RUN = 80;
-const MAX_RUN_MS = 3 * 60 * 1000;
+const OLIST_TIMEOUT_MS = 25_000;
+const PHOTO_TIMEOUT_MS = 12_000;
+const MAX_PRODUCTS_PER_RUN = 25;
+// Cloudflare Worker mata requests longos — mantemos abaixo do wall-clock real
+// para SEMPRE gravar cursor/estado antes de retornar. Nunca aumente sem medir.
+const MAX_RUN_MS = 50_000;
+// Se um evento "processando" fica sem novo progresso por mais que isso,
+// consideramos órfão (worker morreu) e liberamos para nova rodada.
+const STALE_RUN_MS = 3 * 60 * 1000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = OLIST_TIMEOUT_MS): Promise<Response> {
@@ -53,6 +58,21 @@ function asPositiveInt(value: unknown, fallback: number): number {
 }
 
 async function getLastPartialCursor(orgId: string): Promise<ResumeCursor | null> {
+  // 1) Fonte primária: olist_sync_state (atômico, sobrevive a workers mortos)
+  const { data: st } = await supabaseAdmin
+    .from("olist_sync_state")
+    .select("resume_page, resume_index, resume_processed, resume_total")
+    .eq("organization_id", orgId)
+    .maybeSingle();
+  if (st?.resume_page && st.resume_page > 0) {
+    return {
+      page: asPositiveInt(st.resume_page, 1),
+      index: Math.max(0, Number(st.resume_index ?? 0)),
+      processed: Math.max(0, Number(st.resume_processed ?? 0)),
+      total: Math.max(0, Number(st.resume_total ?? 0)),
+    };
+  }
+  // 2) Fallback: último evento parcial
   const { data } = await supabaseAdmin
     .from("integration_events")
     .select("payload")
@@ -72,6 +92,37 @@ async function getLastPartialCursor(orgId: string): Promise<ResumeCursor | null>
     processed: Math.max(0, asPositiveInt(payload.products_processed, 0)),
     total: Math.max(0, asPositiveInt(payload.products_total, 0)),
   };
+}
+
+async function saveResumeCursor(
+  orgId: string,
+  cursor: { page: number; index: number; processed: number; total: number } | null,
+) {
+  await supabaseAdmin.from("olist_sync_state").upsert({
+    organization_id: orgId,
+    resume_page: cursor?.page ?? null,
+    resume_index: cursor?.index ?? null,
+    resume_processed: cursor?.processed ?? null,
+    resume_total: cursor?.total ?? null,
+    resume_updated_at: new Date().toISOString(),
+  });
+}
+
+/** Marca como "erro" execuções que ficaram presas em "processando" sem update recente. */
+async function reapStaleRuns(orgId: string) {
+  const cutoff = new Date(Date.now() - STALE_RUN_MS).toISOString();
+  await supabaseAdmin
+    .from("integration_events")
+    .update({
+      status: "erro",
+      processed_at: new Date().toISOString(),
+      error_message: "Execução interrompida (worker encerrado antes de finalizar). Progresso preservado no cursor.",
+    })
+    .eq("organization_id", orgId)
+    .eq("source", "olist")
+    .eq("event_type", "sync_run")
+    .eq("status", "processando")
+    .lt("received_at", cutoff);
 }
 
 function fmtDate(d: Date | null): string | null {
@@ -609,7 +660,10 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
   const startedAt = new Date();
   const deadline = startedAt.getTime() + MAX_RUN_MS;
 
-  // Evita execuções concorrentes na mesma organização
+  // Antes de checar concorrência, libera execuções órfãs (worker morto sem finalizar).
+  await reapStaleRuns(orgId);
+
+  // Evita execuções concorrentes reais na mesma organização
   const { data: running } = await supabaseAdmin
     .from("integration_events")
     .select("id, received_at")
@@ -617,7 +671,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
     .eq("source", "olist")
     .eq("event_type", "sync_run")
     .eq("status", "processando")
-    .gt("received_at", new Date(Date.now() - 15 * 60 * 1000).toISOString())
+    .gt("received_at", new Date(Date.now() - STALE_RUN_MS).toISOString())
     .limit(1);
   if (running && running.length > 0) {
     throw new Error("Já existe uma sincronização em andamento. Aguarde ou cancele-a antes de iniciar outra.");
@@ -734,9 +788,11 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
       if (!retorno?.empty) {
         const produtos: any[] = Array.isArray(retorno?.produtos) ? retorno.produtos.map((x: any) => x.produto ?? x) : [];
         totalPages = Number(retorno?.numero_paginas ?? totalPages);
-        const registros = Number(retorno?.numero_registros ?? produtos.length) || produtos.length;
+        // Tiny/Olist v2: numero_registros é da PÁGINA. Preferimos o total global
+        // quando presente (numero_registros_totais); senão estimamos com 100/pág.
+        const totalGlobal = Number(retorno?.numero_registros_totais ?? 0);
         if (productsTotal === 0) {
-          productsTotal = registros * totalPages;
+          productsTotal = totalGlobal > 0 ? totalGlobal : Math.max(produtos.length, 100) * totalPages;
           await persistProgress();
         }
         for (let i = startIndex; i < produtos.length; i++) {
@@ -757,6 +813,14 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
           }
           productsProcessed++;
           productsProcessedThisRun++;
+          // Persiste cursor ATÔMICO em olist_sync_state a cada produto — sobrevive
+          // a worker kill/timeout. Próxima rodada continua exatamente daqui.
+          await saveResumeCursor(orgId, {
+            page: pagina,
+            index: i + 1,
+            processed: productsProcessed,
+            total: productsTotal,
+          });
           if (productsProcessed % 3 === 0) await persistProgress();
           await sleep(SLEEP_MS);
         }
@@ -827,13 +891,18 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
       counters.errors.push({ scope: "stock.list", message: e?.message ?? String(e) });
     }
 
-    // Atualiza cursor
+    // Concluído — limpa cursor de retomada e atualiza data-base
     await supabaseAdmin
       .from("olist_sync_state")
       .upsert({
         organization_id: orgId,
         last_updated_produtos_at: startedAt.toISOString(),
         last_updated_estoque_at: startedAt.toISOString(),
+        resume_page: null,
+        resume_index: null,
+        resume_processed: null,
+        resume_total: null,
+        resume_updated_at: new Date().toISOString(),
       });
 
     if (eventId) {
