@@ -12,6 +12,10 @@ const SLEEP_MS = 2100; // Tiny/Olist: ~30 req/min → ~2s entre chamadas
 const OLIST_TIMEOUT_MS = 25_000;
 const PHOTO_TIMEOUT_MS = 12_000;
 const MAX_PRODUCTS_PER_RUN = 25;
+// Limita chamadas caras (produto.obter, com sleep de 2.1s cada) por rodada.
+// Produtos já sincronizados usam fast-path sem API call — processamos
+// centenas deles por rodada até bater no deadline.
+const MAX_API_CALLS_PER_RUN = 20;
 // Cloudflare Worker mata requests longos — mantemos abaixo do wall-clock real
 // para SEMPRE gravar cursor/estado antes de retornar. Nunca aumente sem medir.
 const MAX_RUN_MS = 50_000;
@@ -766,9 +770,10 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
     productsProcessed = resume?.processed ?? 0;
     productsTotal = resume?.total ?? 0;
 
+    let apiCallsThisRun = 0;
     while (true) {
       if (await isCancelled()) { cancelled = true; break; }
-      if (Date.now() >= deadline || productsProcessedThisRun >= MAX_PRODUCTS_PER_RUN) {
+      if (Date.now() >= deadline || apiCallsThisRun >= MAX_API_CALLS_PER_RUN) {
         partialCursor = { page: pagina, index: startIndex };
         break;
       }
@@ -776,6 +781,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
       let retorno: any;
       try {
         retorno = await olistCall("produtos.pesquisa.php", params);
+        apiCallsThisRun++;
         consecutiveFailures = 0;
       } catch (e: any) {
         counters.errors.push({ scope: "produtos.pesquisa", id: `pag ${pagina}`, message: e?.message ?? String(e) });
@@ -796,7 +802,7 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
           await persistProgress();
         }
         for (let i = startIndex; i < produtos.length; i++) {
-          if (Date.now() >= deadline || productsProcessedThisRun >= MAX_PRODUCTS_PER_RUN) {
+          if (Date.now() >= deadline || apiCallsThisRun >= MAX_API_CALLS_PER_RUN) {
             partialCursor = { page: pagina, index: i };
             break;
           }
@@ -805,9 +811,36 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
           const externalId = p?.id ? String(p.id) : undefined;
           if (!externalId) continue;
           currentProduct = { id: externalId, name: p?.nome ?? p?.descricao ?? undefined };
-          await persistProgress();
+          let usedApi = false;
           try {
-            await syncOneProduct(orgId, externalId, counters);
+            // Fast-path: produto já sincronizado (existe local + tem variantes).
+            // Evita produto.obter (1 chamada + 2.1s de sleep) e faz update leve
+            // apenas dos campos disponíveis em produtos.pesquisa.
+            const localId = await findLocalProductByExternal(orgId, externalId);
+            let hasVariant = false;
+            if (localId) {
+              const { count } = await supabaseAdmin
+                .from("product_variants")
+                .select("id", { count: "exact", head: true })
+                .eq("product_id", localId);
+              hasVariant = (count ?? 0) > 0;
+            }
+            if (localId && hasVariant) {
+              await supabaseAdmin
+                .from("products")
+                .update({
+                  name: p?.nome ?? undefined,
+                  sale_price: Number(p?.preco ?? 0) || undefined,
+                  status: (p?.situacao === "I" ? "inativo" : "ativo"),
+                })
+                .eq("id", localId);
+              counters.products_updated++;
+            } else {
+              await persistProgress();
+              await syncOneProduct(orgId, externalId, counters);
+              usedApi = true;
+              apiCallsThisRun++;
+            }
           } catch (e: any) {
             counters.errors.push({ scope: "produto", id: externalId, message: e?.message ?? String(e) });
           }
@@ -821,8 +854,8 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
             processed: productsProcessed,
             total: productsTotal,
           });
-          if (productsProcessed % 3 === 0) await persistProgress();
-          await sleep(SLEEP_MS);
+          if (productsProcessed % 10 === 0) await persistProgress();
+          if (usedApi) await sleep(SLEEP_MS);
         }
         startIndex = 0;
         if (partialCursor || cancelled) break;
