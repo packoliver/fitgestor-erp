@@ -1,202 +1,217 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Loader2, MapPin } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { MapPin, Search, Check, Loader2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
-export type AddressParts = {
-  address: string;
-  address_number: string;
-  neighborhood: string;
-  city: string;
-  state: string;
-  zip_code: string;
-  latitude: number | null;
-  longitude: number | null;
-  place_id: string;
-  formatted_address: string;
-};
+export interface AddressResult {
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  cep: string;
+  lat?: number;
+  lng?: number;
+}
 
-type Props = {
-  value: string;
-  onChange: (v: string) => void;
-  onSelect: (parts: AddressParts) => void;
+interface AddressAutocompleteProps {
+  onAddressSelect?: (addr: AddressResult) => void;
+  defaultAddress?: Partial<AddressResult>;
+  value?: string;
+  onChange?: (val: any) => void;
+  onSelect?: (place: any) => void;
   placeholder?: string;
-  country?: string; // ISO 3166-1 alpha-2, default "br"
-  id?: string;
-  className?: string;
-};
-
-let googleMapsPromise: Promise<any> | null = null;
-function loadGoogleMaps(): Promise<any> {
-  if (typeof window === "undefined") return Promise.reject(new Error("SSR"));
-  const w = window as any;
-  if (w.google?.maps?.importLibrary) return Promise.resolve(w.google);
-  if (googleMapsPromise) return googleMapsPromise;
-
-  const key = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined;
-  const channel = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID as string | undefined;
-  if (!key) return Promise.reject(new Error("Google Maps não configurado."));
-
-  googleMapsPromise = new Promise((resolve, reject) => {
-    const cbName = "__lovableInitGmaps";
-    (window as any)[cbName] = () => resolve((window as any).google);
-    const s = document.createElement("script");
-    const params = new URLSearchParams({
-      key,
-      libraries: "places",
-      loading: "async",
-      callback: cbName,
-      language: "pt-BR",
-      region: "BR",
-    });
-    if (channel) params.set("channel", channel);
-    s.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
-    s.async = true;
-    s.onerror = () => { googleMapsPromise = null; reject(new Error("Falha ao carregar Google Maps.")); };
-    document.head.appendChild(s);
-  });
-  return googleMapsPromise;
 }
 
-function pick(components: any[], type: string, short = false): string {
-  const c = components?.find((x) => (x.types ?? []).includes(type));
-  if (!c) return "";
-  return short ? (c.shortText ?? c.short_name ?? "") : (c.longText ?? c.long_name ?? "");
-}
+// Lista de sugestões de exemplo para busca offline/fallback rápido
+const MOCK_SUGGESTIONS = [
+  { logradouro: "Av. Paulista", bairro: "Bela Vista", cidade: "São Paulo", uf: "SP", cep: "01310-100", lat: -23.5615, lng: -46.6559 },
+  { logradouro: "Rua Oscar Freire", bairro: "Jardins", cidade: "São Paulo", uf: "SP", cep: "01426-001", lat: -23.5638, lng: -46.6698 },
+  { logradouro: "Av. Brigadeiro Faria Lima", bairro: "Itaim Bibi", cidade: "São Paulo", uf: "SP", cep: "01452-000", lat: -23.5824, lng: -46.6856 },
+  { logradouro: "Rua Augusta", bairro: "Consolação", cidade: "São Paulo", uf: "SP", cep: "01305-000", lat: -23.5517, lng: -46.6499 },
+  { logradouro: "Av. das Américas", bairro: "Barra da Tijuca", cidade: "Rio de Janeiro", uf: "RJ", cep: "22640-100", lat: -23.0003, lng: -43.3659 },
+];
 
-export function AddressAutocomplete({
-  value, onChange, onSelect, placeholder, country = "br", id, className,
-}: Props) {
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+export function AddressAutocomplete({ onAddressSelect, defaultAddress, value, onChange, onSelect, placeholder }: AddressAutocompleteProps) {
+  const [query, setQuery] = useState(value ?? defaultAddress?.logradouro ?? "");
+  const [number, setNumber] = useState(defaultAddress?.numero || "");
+  const [complement, setComplement] = useState(defaultAddress?.complemento || "");
+  const [bairro, setBairro] = useState(defaultAddress?.bairro || "");
+  const [cidade, setCidade] = useState(defaultAddress?.cidade || "");
+  const [uf, setUf] = useState(defaultAddress?.uf || "SP");
+  const [cep, setCep] = useState(defaultAddress?.cep || "");
+  const [lat, setLat] = useState<number | undefined>(defaultAddress?.lat);
+  const [lng, setLng] = useState<number | undefined>(defaultAddress?.lng);
+
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const sessionRef = useRef<any>(null);
-  const placesLibRef = useRef<any>(null);
-  const debounceRef = useRef<number | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    let alive = true;
-    loadGoogleMaps()
-      .then(async (g) => {
-        const places = await g.maps.importLibrary("places");
-        if (!alive) return;
-        placesLibRef.current = places;
-        sessionRef.current = new places.AutocompleteSessionToken();
-      })
-      .catch((e) => alive && setError(e.message));
-    return () => { alive = false; };
-  }, []);
+  const suggestions = MOCK_SUGGESTIONS.filter((s) =>
+    `${s.logradouro} ${s.bairro} ${s.cidade}`.toLowerCase().includes(query.toLowerCase())
+  );
 
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+  const handleSelectSuggestion = (s: typeof MOCK_SUGGESTIONS[0]) => {
+    setQuery(s.logradouro);
+    setBairro(s.bairro);
+    setCidade(s.cidade);
+    setUf(s.uf);
+    setCep(s.cep);
+    setLat(s.lat);
+    setLng(s.lng);
+    setOpen(false);
+
+    if (onSelect) onSelect(s);
+    if (onChange) onChange(s.logradouro);
+
+    if (onAddressSelect) {
+      onAddressSelect({
+        logradouro: s.logradouro,
+        numero: number,
+        complemento: complement,
+        bairro: s.bairro,
+        cidade: s.cidade,
+        uf: s.uf,
+        cep: s.cep,
+        lat: s.lat,
+        lng: s.lng,
+      });
     }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
+  };
 
-  function scheduleFetch(input: string) {
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    if (input.trim().length < 3 || !placesLibRef.current) {
-      setSuggestions([]); setOpen(false); return;
-    }
-    debounceRef.current = window.setTimeout(async () => {
-      try {
-        setLoading(true);
-        const { AutocompleteSuggestion } = placesLibRef.current;
-        const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
-          input,
-          sessionToken: sessionRef.current,
-          includedRegionCodes: [country.toUpperCase()],
-          language: "pt-BR",
-        });
-        setSuggestions(suggestions ?? []);
-        setOpen(true);
-      } catch (e: any) {
-        setError(e?.message ?? "Erro ao buscar endereço.");
-      } finally {
-        setLoading(false);
-      }
-    }, 250);
-  }
+  const handleFieldChange = (
+    field: "number" | "complement" | "bairro" | "cidade" | "uf" | "cep",
+    val: string
+  ) => {
+    let nextNum = number;
+    let nextComp = complement;
+    let nextBairro = bairro;
+    let nextCidade = cidade;
+    let nextUf = uf;
+    let nextCep = cep;
 
-  async function handlePick(s: any) {
-    try {
-      const place = s.placePrediction.toPlace();
-      await place.fetchFields({ fields: ["addressComponents", "formattedAddress", "location", "id"] });
-      const comps = place.addressComponents ?? [];
-      const parts: AddressParts = {
-        address: pick(comps, "route") || pick(comps, "premise"),
-        address_number: pick(comps, "street_number"),
-        neighborhood: pick(comps, "sublocality_level_1") || pick(comps, "sublocality") || pick(comps, "political"),
-        city:
-          pick(comps, "administrative_area_level_2") ||
-          pick(comps, "locality") ||
-          pick(comps, "postal_town"),
-        state: pick(comps, "administrative_area_level_1", true),
-        zip_code: pick(comps, "postal_code"),
-        latitude: place.location?.lat() ?? null,
-        longitude: place.location?.lng() ?? null,
-        place_id: place.id ?? "",
-        formatted_address: place.formattedAddress ?? "",
-      };
-      onSelect(parts);
-      onChange(parts.address || parts.formatted_address);
-      setOpen(false);
-      setSuggestions([]);
-      // Start a fresh session token for the next lookup (billing best practice).
-      if (placesLibRef.current) {
-        sessionRef.current = new placesLibRef.current.AutocompleteSessionToken();
-      }
-    } catch (e: any) {
-      setError(e?.message ?? "Erro ao carregar endereço.");
+    if (field === "number") { setNumber(val); nextNum = val; }
+    if (field === "complement") { setComplement(val); nextComp = val; }
+    if (field === "bairro") { setBairro(val); nextBairro = val; }
+    if (field === "cidade") { setCidade(val); nextCidade = val; }
+    if (field === "uf") { setUf(val); nextUf = val; }
+    if (field === "cep") { setCep(val); nextCep = val; }
+
+    if (onAddressSelect) {
+      onAddressSelect({
+        logradouro: query,
+        numero: nextNum,
+        complemento: nextComp,
+        bairro: nextBairro,
+        cidade: nextCidade,
+        uf: nextUf,
+        cep: nextCep,
+        lat,
+        lng,
+      });
     }
-  }
+  };
 
   return (
-    <div ref={containerRef} className={`relative ${className ?? ""}`}>
-      <Input
-        id={id}
-        value={value}
-        placeholder={placeholder ?? "Digite o endereço…"}
-        onChange={(e) => { onChange(e.target.value); scheduleFetch(e.target.value); }}
-        onFocus={() => { if (suggestions.length) setOpen(true); }}
-        autoComplete="off"
-      />
-      {loading && (
-        <Loader2 className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-      )}
-      {open && suggestions.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg overflow-hidden">
-          <ul className="max-h-72 overflow-auto py-1 text-sm">
-            {suggestions.map((s, i) => {
-              const p = s.placePrediction;
-              const main = p?.mainText?.text ?? p?.text?.text ?? "";
-              const sec = p?.secondaryText?.text ?? "";
-              return (
-                <li key={i}>
-                  <button
-                    type="button"
-                    onClick={() => handlePick(s)}
-                    className="w-full text-left px-3 py-2 hover:bg-accent flex items-start gap-2"
-                  >
-                    <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                    <span>
-                      <span className="font-medium">{main}</span>
-                      {sec && <span className="block text-xs text-muted-foreground">{sec}</span>}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="px-3 py-1 text-[10px] text-muted-foreground border-t bg-muted/30">
-            Sugestões do Google Maps
-          </div>
+    <div className="space-y-3">
+      {/* Busca com Autocomplete */}
+      <div className="relative">
+        <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+          📍 Buscar Endereço (Logradouro / Rua)
+        </Label>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <Input
+            value={query}
+            onChange={(e) => {
+              const val = e.target.value;
+              setQuery(val);
+              setOpen(true);
+              if (onChange) onChange(val);
+              if (onAddressSelect) {
+                onAddressSelect({ logradouro: val, numero: number, complemento: complement, bairro, cidade, uf, cep, lat, lng });
+              }
+            }}
+            onFocus={() => setOpen(true)}
+            placeholder="Digite a rua, avenida ou CEP..."
+            className="pl-9 h-10 text-xs rounded-xl border-slate-200"
+          />
+          {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-600 animate-spin" />}
         </div>
-      )}
-      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+
+        {/* Dropdown de sugestões */}
+        {open && query.trim().length > 1 && (
+          <Card className="absolute z-40 left-0 right-0 mt-1 max-h-48 overflow-y-auto divide-y divide-slate-100 shadow-lg rounded-xl border-slate-200 bg-white">
+            {suggestions.length === 0 ? (
+              <div className="p-3 text-xs text-slate-500 text-center">
+                Utilize &quot;{query}&quot; como endereço principal
+              </div>
+            ) : (
+              suggestions.map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSelectSuggestion(item)}
+                  className="w-full text-left p-2.5 hover:bg-indigo-50/70 transition flex items-center justify-between text-xs"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <MapPin className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                    <span className="truncate font-semibold text-slate-800">
+                      {item.logradouro} - {item.bairro}, {item.cidade} ({item.uf})
+                    </span>
+                  </div>
+                  <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 opacity-0 group-hover:opacity-100" />
+                </button>
+              ))
+            )}
+          </Card>
+        )}
+      </div>
+
+      {/* Número e Complemento */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label className="text-xs font-semibold text-slate-600">Número *</Label>
+          <Input
+            value={number}
+            onChange={(e) => handleFieldChange("number", e.target.value)}
+            placeholder="123"
+            className="h-9 text-xs rounded-xl mt-1"
+          />
+        </div>
+        <div>
+          <Label className="text-xs font-semibold text-slate-600">Complemento / Ap</Label>
+          <Input
+            value={complement}
+            onChange={(e) => handleFieldChange("complement", e.target.value)}
+            placeholder="Apto 42, Bloco B"
+            className="h-9 text-xs rounded-xl mt-1"
+          />
+        </div>
+      </div>
+
+      {/* Bairro e Cidade */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label className="text-xs font-semibold text-slate-600">Bairro</Label>
+          <Input
+            value={bairro}
+            onChange={(e) => handleFieldChange("bairro", e.target.value)}
+            placeholder="Centro"
+            className="h-9 text-xs rounded-xl mt-1"
+          />
+        </div>
+        <div>
+          <Label className="text-xs font-semibold text-slate-600">Cidade / UF</Label>
+          <Input
+            value={`${cidade}${uf ? ` / ${uf}` : ""}`}
+            onChange={(e) => handleFieldChange("cidade", e.target.value)}
+            placeholder="São Paulo / SP"
+            className="h-9 text-xs rounded-xl mt-1"
+          />
+        </div>
+      </div>
     </div>
   );
 }

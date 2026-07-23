@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sidebar";
 import {
   LogOut, Search, Bell, Settings, ChevronDown, Sparkles,
-  Pin, PinOff, PanelLeftOpen, HelpCircle, User,
+  Pin, PinOff, PanelLeftOpen, HelpCircle, User, ShoppingCart, Wallet, Lock,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -53,6 +53,10 @@ function loadPinnedDefault(): boolean {
   if (typeof window === "undefined") return true;
   const v = window.localStorage.getItem(LS_PINNED);
   return v === null ? true : v === "1";
+}
+
+function money(v: number): string {
+  return (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 /* Hide "Minhas rotas" from admins/employees — it belongs to the courier
@@ -149,13 +153,18 @@ function AppSidebar({
     if (typeof window !== "undefined") window.localStorage.setItem(LS_ESSENTIAL, essential ? "1" : "0");
   }, [essential]);
 
-  const permitted = isLoading
-    ? NAV_ITEMS
-    : applyCourierFilter(filterByPermission(NAV_ITEMS, has, hasAny), has);
+  const permitted = useMemo(() => {
+    if (isLoading || !has || !hasAny) return NAV_ITEMS;
+    try {
+      return applyCourierFilter(filterByPermission(NAV_ITEMS, has, hasAny), has);
+    } catch {
+      return NAV_ITEMS;
+    }
+  }, [isLoading, has, hasAny]);
 
   const visible = essential && !expandedAll
-    ? permitted.filter((i) => ESSENTIAL_ITEM_IDS.has(i.id) || i.courierOnly)
-    : permitted;
+    ? (permitted || []).filter((i) => i && (ESSENTIAL_ITEM_IDS.has(i.id) || i.courierOnly))
+    : (permitted || []);
 
   const groups = itemsByGroup(visible);
 
@@ -186,15 +195,21 @@ function AppSidebar({
           asChild
           isActive={active}
           tooltip={item.description ? `${item.title} — ${item.description}` : item.title}
-          className="h-9 rounded-lg text-[13.5px] font-medium text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent data-[active=true]:font-semibold transition-colors"
+          className={`h-10 rounded-xl text-xs transition-colors px-3 ${
+            active
+              ? "bg-indigo-600 text-white font-semibold shadow-sm"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium"
+          }`}
         >
           <Link to={item.url} onClick={handleNav} className="flex items-center gap-2.5">
-            <item.icon className="h-4 w-4 shrink-0" />
+            <item.icon className={`h-4 w-4 shrink-0 ${active ? "text-white" : "text-slate-400"}`} />
             <span className="truncate flex-1">{item.title}</span>
             {!collapsed && badge > 0 && (
               <span
                 aria-label={`${badge} pendente${badge === 1 ? "" : "s"}`}
-                className="ml-auto shrink-0 rounded-full bg-primary/15 text-primary px-1.5 py-0 text-[10.5px] font-semibold leading-[16px] min-w-[18px] text-center"
+                className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold min-w-[18px] text-center ${
+                  active ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-700"
+                }`}
               >
                 {badge > 99 ? "99+" : badge}
               </span>
@@ -202,7 +217,7 @@ function AppSidebar({
             {collapsed && badge > 0 && (
               <span
                 aria-hidden
-                className="absolute right-1.5 top-1 h-1.5 w-1.5 rounded-full bg-primary"
+                className={`absolute right-1.5 top-1 h-2 w-2 rounded-full ${active ? "bg-white" : "bg-indigo-600"}`}
               />
             )}
           </Link>
@@ -214,14 +229,14 @@ function AppSidebar({
   return (
     <Sidebar
       collapsible={isMobile || pinned ? "icon" : "offcanvas"}
-      className="border-r border-sidebar-border"
+      className="border-r border-slate-200 bg-white text-slate-800 font-sans shadow-sm"
     >
-      <SidebarHeader className="border-b border-sidebar-border h-16 justify-center">
-        <div className="flex items-center gap-2 px-2">
-          <BrandMark size={36} />
+      <SidebarHeader className="border-b border-slate-200/80 h-16 justify-center bg-white px-3">
+        <div className="flex items-center gap-2 overflow-hidden w-full">
+          <BrandMark size={28} className="h-7 w-auto shrink-0 object-contain" />
           {!collapsed && (
             <>
-              <span className="flex-1 truncate text-[15px] font-semibold tracking-[-0.02em] text-sidebar-foreground">
+              <span className="flex-1 truncate text-base font-extrabold tracking-tight text-slate-900 leading-none">
                 FitGestor
               </span>
               {!isMobile && (
@@ -233,7 +248,7 @@ function AppSidebar({
                         onClick={onTogglePin}
                         aria-label={pinned ? "Ocultar barra automaticamente" : "Manter barra fixa"}
                         aria-pressed={pinned}
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
                       >
                         {pinned ? <Pin className="h-3.5 w-3.5" /> : <PinOff className="h-3.5 w-3.5" />}
                       </button>
@@ -250,28 +265,28 @@ function AppSidebar({
       </SidebarHeader>
 
       {/* Search launcher */}
-      <div className="px-2 pt-3">
+      <div className="px-3 pt-3 pb-1 bg-white">
         <button
           type="button"
           onClick={onOpenSearch}
           aria-label="Buscar no FitGestor"
-          className={`flex w-full items-center gap-2 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-2.5 text-[12.5px] text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors ${collapsed ? "h-9 justify-center" : "h-9"}`}
+          className={`flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors ${collapsed ? "h-9 justify-center" : "h-9.5"}`}
         >
-          <Search className="h-4 w-4 shrink-0" />
+          <Search className="h-4 w-4 shrink-0 text-slate-400" />
           {!collapsed && (
             <>
               <span className="flex-1 text-left truncate">Buscar no FitGestor</span>
-              <kbd className="hidden md:inline-flex h-5 items-center rounded-md border border-sidebar-border bg-sidebar px-1.5 text-[10px] font-medium text-sidebar-foreground/60">⌘K</kbd>
+              <kbd className="hidden md:inline-flex h-5 items-center rounded-md border border-slate-200 bg-white px-1.5 text-[10px] font-mono font-bold text-slate-500">⌘K</kbd>
             </>
           )}
         </button>
       </div>
 
       {/* Menu — layout Olist: rail de categorias + coluna de sub-itens */}
-      <SidebarContent className="p-0 gap-0 overflow-hidden">
+      <SidebarContent className="p-0 gap-0 overflow-hidden bg-white">
         {collapsed ? (
           /* Modo ícone: apenas rail de grupos */
-          <div className="flex flex-col items-center gap-1 py-2">
+          <div className="flex flex-col items-center gap-1.5 py-3 bg-white">
             {NAV_GROUPS.map((g) => {
               const Meta = NAV_GROUP_META[g];
               const active = g === activeGroup;
@@ -283,10 +298,10 @@ function AppSidebar({
                         type="button"
                         onClick={() => { setSelectedGroup(g); setOpen(true); }}
                         aria-label={g}
-                        className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+                        className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
                           active
-                            ? "bg-primary/15 text-primary"
-                            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                            ? "bg-indigo-600 text-white font-bold shadow-sm"
+                            : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                         }`}
                       >
                         <Meta.icon className="h-4 w-4" />
@@ -299,11 +314,11 @@ function AppSidebar({
             })}
           </div>
         ) : (
-          <div className="flex h-full min-h-0 flex-1">
+          <div className="flex h-full min-h-0 flex-1 bg-white">
             {/* Rail de grupos (coluna 1) */}
             <nav
               aria-label="Categorias"
-              className="flex w-[92px] shrink-0 flex-col gap-0.5 border-r border-sidebar-border/70 bg-sidebar/60 px-1.5 py-2 overflow-y-auto"
+              className="flex w-[96px] shrink-0 flex-col gap-1 border-r border-slate-200/80 bg-slate-50/60 px-2 py-3 overflow-y-auto"
             >
               {NAV_GROUPS.map((g) => {
                 const Meta = NAV_GROUP_META[g];
@@ -315,16 +330,16 @@ function AppSidebar({
                     type="button"
                     onClick={() => setSelectedGroup(g)}
                     aria-pressed={isSel}
-                    className={`relative flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10.5px] font-medium leading-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    className={`relative flex flex-col items-center gap-1.5 rounded-xl px-1.5 py-2.5 text-[11px] font-semibold leading-tight transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                       isSel
-                        ? "bg-primary/12 text-primary"
-                        : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                        ? "bg-indigo-50 text-indigo-700 border border-indigo-200/80 font-bold shadow-2xs"
+                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-200/50"
                     }`}
                   >
                     {isActive && (
-                      <span aria-hidden className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r bg-primary" />
+                      <span aria-hidden className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-indigo-600" />
                     )}
-                    <Meta.icon className="h-[18px] w-[18px]" />
+                    <Meta.icon className={`h-[18px] w-[18px] ${isSel ? "text-indigo-600" : "text-slate-400"}`} />
                     <span className="text-center break-words leading-[1.15]">{g}</span>
                   </button>
                 );
@@ -332,21 +347,21 @@ function AppSidebar({
             </nav>
 
             {/* Coluna de sub-itens (coluna 2) */}
-            <div className="flex min-w-0 flex-1 flex-col">
-              <div className="px-3 pt-3 pb-2 border-b border-sidebar-border/60">
-                <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">
+            <div className="flex min-w-0 flex-1 flex-col bg-white">
+              <div className="px-3 pt-3.5 pb-2.5 border-b border-slate-100">
+                <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                   {selectedGroup}
                 </p>
-                <p className="mt-0.5 text-[11px] text-sidebar-foreground/55 truncate">
+                <p className="mt-0.5 text-[11px] text-slate-500 font-medium truncate">
                   {NAV_GROUP_META[selectedGroup].description}
                 </p>
               </div>
 
               <div className="flex-1 overflow-y-auto px-2 py-2">
-                <SidebarMenu className="gap-0.5">
+                <SidebarMenu className="gap-1">
                   {(groups.find((g) => g.label === selectedGroup)?.items ?? []).map(renderItem)}
                   {(groups.find((g) => g.label === selectedGroup)?.items ?? []).length === 0 && (
-                    <p className="px-2 py-6 text-center text-[11.5px] text-sidebar-foreground/50">
+                    <p className="px-2 py-6 text-center text-xs text-slate-400 font-medium">
                       Nenhum módulo disponível nesta categoria.
                     </p>
                   )}
@@ -354,10 +369,10 @@ function AppSidebar({
               </div>
 
               {/* Modo essencial — footer da coluna de itens */}
-              <div className="border-t border-sidebar-border/60 px-2 py-2">
-                <div className="flex items-center gap-2 rounded-md px-1.5 py-1">
-                  <Sparkles className="h-3.5 w-3.5 shrink-0 text-sidebar-foreground/60" />
-                  <label htmlFor="essential-switch" className="text-[11.5px] font-medium text-sidebar-foreground flex-1 min-w-0 truncate cursor-pointer">
+              <div className="border-t border-slate-100 px-3 py-2 bg-slate-50/40">
+                <div className="flex items-center gap-2 rounded-lg px-1.5 py-1">
+                  <Sparkles className="h-3.5 w-3.5 shrink-0 text-indigo-600" />
+                  <label htmlFor="essential-switch" className="text-xs font-bold text-slate-700 flex-1 min-w-0 truncate cursor-pointer">
                     Modo essencial
                   </label>
                   <Switch
@@ -365,14 +380,14 @@ function AppSidebar({
                     checked={essential}
                     onCheckedChange={(v) => { setEssential(v); setExpandedAll(false); }}
                     aria-label="Alternar modo essencial"
-                    className="scale-90"
+                    className="scale-85"
                   />
                 </div>
                 {essential && (
                   <button
                     type="button"
                     onClick={() => setExpandedAll((v) => !v)}
-                    className="mt-1 w-full text-left px-1.5 text-[10.5px] text-sidebar-foreground/60 hover:text-sidebar-foreground underline underline-offset-2 decoration-sidebar-foreground/25 hover:decoration-sidebar-foreground/60 transition-colors"
+                    className="mt-1 w-full text-left px-1.5 text-[10.5px] font-semibold text-slate-500 hover:text-slate-800 underline underline-offset-2 decoration-slate-300 hover:decoration-slate-600 transition-colors"
                   >
                     {expandedAll ? "Ocultar módulos avançados" : "Ver todos os módulos"}
                   </button>
@@ -383,52 +398,51 @@ function AppSidebar({
         )}
       </SidebarContent>
 
-
       {/* Footer fixo — perfil, configurações, ajuda, sair */}
-      <div className="mt-auto border-t border-sidebar-border p-2">
+      <div className="mt-auto border-t border-slate-200 p-2.5 bg-white">
         {!collapsed ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sidebar-foreground hover:bg-sidebar-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-slate-700 hover:bg-slate-50 border border-slate-200/80 shadow-2xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
               >
-                <Avatar className="h-7 w-7 shrink-0">
-                  <AvatarFallback className="bg-primary/15 text-primary text-[11px] font-semibold">{initials}</AvatarFallback>
+                <Avatar className="h-7.5 w-7.5 shrink-0">
+                  <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-extrabold">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-medium truncate leading-tight">{userEmail || "Usuário"}</p>
-                  <p className="text-[10.5px] text-sidebar-foreground/55 truncate leading-tight">FitGestor</p>
+                  <p className="text-xs font-semibold text-slate-800 truncate leading-tight">{userEmail || "Operador"}</p>
+                  <p className="text-xs text-slate-400 font-normal truncate leading-tight">FitGestor ERP</p>
                 </div>
-                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-sidebar-foreground/45" />
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent side="top" align="start" className="w-56 rounded-xl">
+            <DropdownMenuContent side="top" align="start" className="w-56 rounded-xl border border-slate-200 shadow-md bg-white">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs text-muted-foreground">Conectado como</span>
-                  <span className="text-sm font-medium truncate">{userEmail}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Operador Conectado</span>
+                  <span className="text-xs font-bold text-slate-900 truncate">{userEmail}</span>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               {has("profile.view") || true ? (
                 <DropdownMenuItem asChild>
-                  <Link to="/configuracoes"><User className="mr-2 h-4 w-4" />Meu perfil</Link>
+                  <Link to="/configuracoes"><User className="mr-2 h-4 w-4 text-slate-500" />Meu perfil</Link>
                 </DropdownMenuItem>
               ) : null}
               {has("settings.view") && (
                 <DropdownMenuItem asChild>
-                  <Link to="/configuracoes"><Settings className="mr-2 h-4 w-4" />Configurações</Link>
+                  <Link to="/configuracoes"><Settings className="mr-2 h-4 w-4 text-slate-500" />Configurações</Link>
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem asChild>
                 <a href="https://queroserfit.com.br/ajuda" target="_blank" rel="noreferrer">
-                  <HelpCircle className="mr-2 h-4 w-4" />Ajuda
+                  <HelpCircle className="mr-2 h-4 w-4 text-slate-500" />Ajuda
                 </a>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onSignOut} className="text-destructive focus:text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />Sair
+              <DropdownMenuItem onClick={onSignOut} className="text-rose-600 font-bold focus:text-rose-700 focus:bg-rose-50">
+                <LogOut className="mr-2 h-4 w-4" />Sair da Sessão
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -438,29 +452,29 @@ function AppSidebar({
               <button
                 type="button"
                 aria-label="Menu do usuário"
-                className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl text-slate-700 hover:bg-slate-50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
               >
                 <Avatar className="h-7 w-7">
-                  <AvatarFallback className="bg-primary/15 text-primary text-[11px] font-semibold">{initials}</AvatarFallback>
+                  <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-extrabold">{initials}</AvatarFallback>
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="end" className="w-56 rounded-xl">
+            <DropdownMenuContent side="right" align="end" className="w-56 rounded-xl border border-slate-200 shadow-md bg-white">
               <DropdownMenuLabel className="font-normal">
-                <span className="text-sm font-medium truncate block">{userEmail}</span>
+                <span className="text-xs font-bold text-slate-900 truncate block">{userEmail}</span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/configuracoes"><Settings className="mr-2 h-4 w-4" />Configurações</Link>
+                <Link to="/configuracoes"><Settings className="mr-2 h-4 w-4 text-slate-500" />Configurações</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <a href="https://queroserfit.com.br/ajuda" target="_blank" rel="noreferrer">
-                  <HelpCircle className="mr-2 h-4 w-4" />Ajuda
+                  <HelpCircle className="mr-2 h-4 w-4 text-slate-500" />Ajuda
                 </a>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onSignOut} className="text-destructive focus:text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />Sair
+              <DropdownMenuItem onClick={onSignOut} className="text-rose-600 font-bold focus:text-rose-700 focus:bg-rose-50">
+                <LogOut className="mr-2 h-4 w-4" />Sair da Sessão
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -579,12 +593,35 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
     navigate({ to: "/auth", replace: true });
   }
 
-  const initials = userEmail ? userEmail.slice(0, 2).toUpperCase() : "FG";
+  const initials = userEmail && typeof userEmail === "string" ? userEmail.slice(0, 2).toUpperCase() : "FG";
   const showFloatingReopen = !isMobile && !pinned && !sidebarOpen;
+
+  // State for cash shift status (sync from localStorage) with fallback safety
+  const [cashShiftStatus, setCashShiftStatus] = useState<"open" | "closed">("open");
+  const [cashShiftInitial, setCashShiftInitial] = useState<number>(100);
+
+  useEffect(() => {
+    const updateCashShift = () => {
+      try {
+        if (typeof window !== "undefined") {
+          const saved = localStorage.getItem("pdv_current_shift");
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            setCashShiftStatus(parsed?.status === "closed" ? "closed" : "open");
+            setCashShiftInitial(typeof parsed?.initialValue === "number" ? parsed.initialValue : 100);
+          }
+        }
+      } catch {}
+    };
+
+    updateCashShift();
+    const interval = setInterval(updateCashShift, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen} style={{ ["--sidebar-width" as any]: "19rem" }}>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-slate-100 text-slate-800 font-sans">
         <AppSidebar
           onOpenSearch={() => setSearchOpen(true)}
           pinned={pinned}
@@ -593,54 +630,82 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
           userEmail={userEmail}
         />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-16 flex items-center gap-3 px-4 sm:px-6 sticky top-0 z-20 bg-[#0D0D10] text-white border-b border-white/10">
-            <SidebarTrigger className="h-9 w-9 rounded-lg text-white/80 hover:bg-white/10 hover:text-white" />
+          <header className="h-16 flex items-center gap-3 px-4 sm:px-6 sticky top-0 z-20 bg-white/95 dark:bg-zinc-900/95 backdrop-blur border-b border-slate-200/80 dark:border-zinc-800 shadow-xs">
+            <SidebarTrigger className="h-9 w-9 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800" />
+
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="hidden md:flex relative flex-1 max-w-md h-10 items-center rounded-xl border border-white/10 bg-white/5 pl-9 pr-14 text-left text-sm text-white/60 hover:bg-white/10 hover:text-white/80 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all"
+              className="hidden md:flex relative flex-1 max-w-md h-10 items-center rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/50 pl-9 pr-14 text-left text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all shadow-2xs"
               aria-label="Buscar no FitGestor"
             >
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
-              <span>Buscar no FitGestor</span>
-              <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 hidden lg:inline-flex h-6 items-center rounded-md border border-white/10 bg-white/5 px-1.5 text-[10.5px] font-medium text-white/60">⌘K</kbd>
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <span>Buscar no FitGestor (módulos, clientes, produtos)…</span>
+              <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 hidden lg:inline-flex h-6 items-center rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-1.5 text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300">Ctrl+K</kbd>
             </button>
+
             <div className="flex-1 md:hidden" />
-            <Button variant="ghost" size="icon" aria-label="Buscar" onClick={() => setSearchOpen(true)} className="md:hidden text-white/80 hover:bg-white/10 hover:text-white">
+
+            {/* Quick Cash Status Badge */}
+            <button
+              type="button"
+              onClick={() => navigate({ to: "/vendas/pdv" })}
+              title="Ir para a Frente de Caixa (PDV)"
+              className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition shadow-2xs ${
+                cashShiftStatus === "open"
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300"
+                  : "bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300"
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${cashShiftStatus === "open" ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+              <span>{cashShiftStatus === "open" ? "Caixa Aberto" : "Caixa Fechado"}</span>
+              {cashShiftStatus === "open" && (
+                <span className="font-mono text-[11px] opacity-75 font-semibold">({money(cashShiftInitial)})</span>
+              )}
+            </button>
+
+            {/* Direct PDV Action Button */}
+            <Button
+              onClick={() => navigate({ to: "/vendas/pdv" })}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs gap-1.5"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <span className="hidden sm:inline">PDV Balcão</span>
+            </Button>
+
+            <Button variant="ghost" size="icon" aria-label="Buscar" onClick={() => setSearchOpen(true)} className="md:hidden text-slate-600">
               <Search className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" aria-label="Notificações" className="relative text-white/80 hover:bg-white/10 hover:text-white">
+
+            <Button variant="ghost" size="icon" aria-label="Notificações" className="relative text-slate-600 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl">
               <Bell className="h-4 w-4" />
-              <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-primary-glow" />
+              <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-indigo-600" />
             </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-10 gap-2 pl-1.5 pr-3 rounded-xl text-white/80 hover:bg-white/10 hover:text-white">
-                  <Avatar className="h-7 w-7"><AvatarFallback className="bg-primary/20 text-primary-glow text-xs font-semibold">{initials}</AvatarFallback></Avatar>
-                  <span className="hidden sm:inline text-sm font-medium max-w-[160px] truncate">{userEmail}</span>
+                <Button variant="ghost" className="h-10 gap-2 pl-1.5 pr-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800">
+                  <Avatar className="h-7 w-7"><AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-bold">{initials}</AvatarFallback></Avatar>
+                  <span className="hidden sm:inline text-xs font-bold max-w-[140px] truncate">{userEmail}</span>
                 </Button>
-
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-xl">
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs text-muted-foreground">Conectado como</span>
-                    <span className="text-sm font-medium truncate">{userEmail}</span>
+                    <span className="text-[11px] text-muted-foreground font-medium">Operador Conectado</span>
+                    <span className="text-xs font-bold truncate">{userEmail}</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/configuracoes"><Settings className="mr-2 h-4 w-4" />Configurações</Link>
+                  <Link to="/configuracoes"><Settings className="mr-2 h-4 w-4" />Configurações do ERP</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <a href="https://queroserfit.com.br/ajuda" target="_blank" rel="noreferrer">
-                    <HelpCircle className="mr-2 h-4 w-4" />Ajuda
-                  </a>
+                  <Link to="/vendas/pdv"><ShoppingCart className="mr-2 h-4 w-4 text-emerald-600" />Ir para Frente de Caixa</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />Sair
+                  <LogOut className="mr-2 h-4 w-4" />Sair da Sessão
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
