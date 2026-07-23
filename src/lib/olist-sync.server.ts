@@ -61,6 +61,73 @@ function asPositiveInt(value: unknown, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
 }
 
+export type LoyaltySettings = {
+  cashback_percent: number;
+  points_per_currency: number;
+  enabled: boolean;
+};
+
+/**
+ * Busca dinamicamente no banco de dados as regras de pontuação e cashback
+ * configuradas pelo lojista para a sua organização.
+ */
+export async function getOrganizationLoyaltySettings(orgId: string): Promise<LoyaltySettings> {
+  const { data } = await supabaseAdmin
+    .from("integration_mappings")
+    .select("metadata")
+    .eq("organization_id", orgId)
+    .eq("source", "olist")
+    .eq("entity_type", "loyalty_settings")
+    .maybeSingle();
+
+  const meta = (data?.metadata as any) ?? {};
+
+  const cashbackPercent = typeof meta.cashback_percent === "number"
+    ? meta.cashback_percent
+    : Number(process.env.LOYALTY_CASHBACK_PERCENT ?? 5);
+
+  const pointsPerCurrency = typeof meta.points_per_currency === "number"
+    ? meta.points_per_currency
+    : Number(process.env.LOYALTY_POINTS_PER_BRL ?? 1);
+
+  const enabled = meta.enabled !== false;
+
+  return {
+    cashback_percent: Math.max(0, cashbackPercent),
+    points_per_currency: Math.max(0, pointsPerCurrency),
+    enabled,
+  };
+}
+
+/**
+ * Salva as configurações de cashback e pontos do lojista na tabela integration_mappings.
+ */
+export async function saveOrganizationLoyaltySettings(
+  orgId: string,
+  settings: Partial<LoyaltySettings>,
+): Promise<LoyaltySettings> {
+  const current = await getOrganizationLoyaltySettings(orgId);
+  const updated: LoyaltySettings = {
+    cashback_percent: typeof settings.cashback_percent === "number" ? Math.max(0, settings.cashback_percent) : current.cashback_percent,
+    points_per_currency: typeof settings.points_per_currency === "number" ? Math.max(0, settings.points_per_currency) : current.points_per_currency,
+    enabled: typeof settings.enabled === "boolean" ? settings.enabled : current.enabled,
+  };
+
+  await supabaseAdmin.from("integration_mappings").upsert(
+    {
+      organization_id: orgId,
+      source: "olist",
+      entity_type: "loyalty_settings",
+      external_id: "global",
+      internal_id: orgId,
+      metadata: updated,
+    },
+    { onConflict: "organization_id,source,entity_type,external_id" },
+  );
+
+  return updated;
+}
+
 async function getLastPartialCursor(orgId: string): Promise<ResumeCursor | null> {
   // 1) Fonte primária: olist_sync_state (atômico, sobrevive a workers mortos)
   const { data: st } = await supabaseAdmin
@@ -1011,4 +1078,419 @@ export async function syncOlistStockByExternalId(
   await adjustStockForVariant(org, variantId, locationId, Number(saldo) || 0, counters);
   return counters;
 }
+
+/**
+ * Sincroniza UM pedido da Olist/Tiny por ID externa (`pedido.obter.php`).
+ * Executa as Regras de Negócio do PontuaMax:
+ * 1. Upsert do Cliente em `clients` (usando estritamente `supabaseAdmin` para evitar JWT kid <nil> erro)
+ * 2. Registro da Venda em `sales` e `sale_items`
+ * 3. Baixa automática no Estoque (`inventory_balances` / `stock_movements`)
+ * 4. Geração de PONTOS DE FIDELIDADE (1 ponto por R$ 1,00)
+ * 5. Crédito de CASHBACK em R$ (5% do total do pedido em `store_credit_accounts` & `store_credit_transactions`)
+ */
+export async function syncOlistOrderById(externalOrderId: string, orgId?: string): Promise<{
+  ok: boolean;
+  sale_id?: string;
+  client_id?: string;
+  order_number?: string;
+  points?: number;
+  cashback?: number;
+  error?: string;
+}> {
+  const org = orgId ?? (await firstOrgId());
+
+  // 1. Consulta o pedido na API da Olist/Tiny
+  const retorno = await olistCall("pedido.obter.php", { id: String(externalOrderId) });
+  const p = retorno?.pedido;
+  if (!p) {
+    throw new Error(`Pedido ${externalOrderId} não encontrado na Olist.`);
+  }
+
+  const orderNumber = String(p.numero ?? externalOrderId);
+
+  // 2. Extrai dados do Cliente e faz Upsert estritamente via supabaseAdmin (Sem JWT)
+  const clienteData = p.cliente ?? {};
+  const fullName: string = String(clienteData.nome ?? clienteData.razao_social ?? "Cliente Olist").trim();
+  const rawCpf = clienteData.cpf_cnpj ?? clienteData.cpf ?? clienteData.cnpj;
+  const cpf = rawCpf ? String(rawCpf).replace(/\D+/g, "") : null;
+  const phone = clienteData.fone ?? clienteData.celular ?? clienteData.telefone ?? null;
+  const email = clienteData.email ?? null;
+
+  let clientId: string | undefined;
+
+  // Procura cliente por CPF ou Telefone/Email existente na organização
+  if (cpf) {
+    const { data: cByCpf } = await supabaseAdmin
+      .from("clients")
+      .select("id")
+      .eq("organization_id", org)
+      .eq("cpf", cpf)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (cByCpf?.id) clientId = cByCpf.id;
+  }
+
+  if (!clientId && phone) {
+    const { data: cByPhone } = await supabaseAdmin
+      .from("clients")
+      .select("id")
+      .eq("organization_id", org)
+      .eq("phone", phone)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (cByPhone?.id) clientId = cByPhone.id;
+  }
+
+  if (!clientId && email) {
+    const { data: cByEmail } = await supabaseAdmin
+      .from("clients")
+      .select("id")
+      .eq("organization_id", org)
+      .eq("email", email)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (cByEmail?.id) clientId = cByEmail.id;
+  }
+
+  const clientPayload = {
+    organization_id: org,
+    full_name: fullName,
+    cpf,
+    phone,
+    email,
+    zip_code: clienteData.cep ?? null,
+    address: clienteData.endereco ?? null,
+    address_number: clienteData.numero ?? null,
+    address_complement: clienteData.complemento ?? null,
+    neighborhood: clienteData.bairro ?? null,
+    city: clienteData.cidade ?? null,
+    state: clienteData.uf ?? null,
+    notes: `Cadastrado/Atualizado via integração Olist - Pedido #${orderNumber}`,
+  };
+
+  if (!clientId) {
+    const { data: newClient, error: cErr } = await supabaseAdmin
+      .from("clients")
+      .insert(clientPayload)
+      .select("id")
+      .single();
+    if (cErr) throw new Error(`Falha criando cliente: ${cErr.message}`);
+    clientId = newClient.id;
+  } else {
+    await supabaseAdmin
+      .from("clients")
+      .update({
+        full_name: fullName,
+        ...(phone ? { phone } : {}),
+        ...(email ? { email } : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", clientId);
+  }
+
+  // 3. Checa se a venda já existe em `integration_mappings`
+  const { data: existingMap } = await supabaseAdmin
+    .from("integration_mappings")
+    .select("internal_id")
+    .eq("organization_id", org)
+    .eq("source", "olist")
+    .eq("entity_type", "order")
+    .eq("external_id", String(externalOrderId))
+    .maybeSingle();
+
+  if (existingMap?.internal_id) {
+    return {
+      ok: true,
+      sale_id: existingMap.internal_id,
+      client_id: clientId,
+      order_number: orderNumber,
+    };
+  }
+
+  // 4. Cria a Venda em `sales`
+  const total = Number(p.valor_total ?? p.total_pedido ?? p.valor ?? 0) || 0;
+  const subtotal = Number(p.valor_produtos ?? total) || total;
+  const discount = Number(p.valor_desconto ?? 0) || 0;
+  const shipping = Number(p.valor_frete ?? 0) || 0;
+
+  const locationId = await defaultLocationId(org);
+
+  // Calcula número da venda
+  const { data: maxSale } = await supabaseAdmin
+    .from("sales")
+    .select("sale_number")
+    .eq("organization_id", org)
+    .order("sale_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const saleNumber = (maxSale?.sale_number ?? 0) + 1;
+
+  const { data: createdSale, error: saleErr } = await supabaseAdmin
+    .from("sales")
+    .insert({
+      organization_id: org,
+      sale_number: saleNumber,
+      location_id: locationId,
+      client_id: clientId,
+      subtotal,
+      order_discount_total: discount,
+      surcharge_total: shipping,
+      total,
+      status: "completed",
+      channel: "olist",
+      notes: `Pedido e-commerce Olist #${orderNumber}`,
+    })
+    .select("id")
+    .single();
+
+  if (saleErr) throw new Error(`Falha registrando venda: ${saleErr.message}`);
+  const saleId = createdSale.id;
+
+  // 5. Processa os itens do pedido e atualiza o estoque
+  const rawItems = p.itens ?? [];
+  const items: any[] = Array.isArray(rawItems) ? rawItems.map((x: any) => x.item ?? x) : [];
+
+  for (const item of items) {
+    const sku = item.codigo ?? null;
+    const barcode = normalizeBarcode(item.gtin);
+    const itemQty = Number(item.quantidade ?? 1) || 1;
+    const itemPrice = Number(item.valor_unitario ?? item.preco ?? 0) || 0;
+    const itemTotal = itemQty * itemPrice;
+
+    let variantId = await findVariantBySku(org, sku);
+    if (!variantId) variantId = await findVariantByBarcode(org, barcode);
+
+    if (variantId) {
+      const { data: vInfo } = await supabaseAdmin
+        .from("product_variants")
+        .select("product_id, size, sku, barcode, cost_price, products(name)")
+        .eq("id", variantId)
+        .maybeSingle();
+
+      const prodName = (vInfo as any)?.products?.name ?? item.nome ?? "Produto Olist";
+
+      await supabaseAdmin.from("sale_items").insert({
+        organization_id: org,
+        sale_id: saleId,
+        variant_id: variantId,
+        product_id: vInfo?.product_id ?? null,
+        product_name_snapshot: prodName,
+        size_snapshot: vInfo?.size ?? null,
+        sku_snapshot: vInfo?.sku ?? item.codigo ?? null,
+        barcode_snapshot: vInfo?.barcode ?? item.gtin ?? null,
+        quantity: itemQty,
+        original_unit_price: itemPrice,
+        unit_price: itemPrice,
+        total: itemTotal,
+        unit_cost_snapshot: Number(vInfo?.cost_price ?? 0) || null,
+      });
+
+      // Dar baixa no estoque via RPC atômica
+      try {
+        await supabaseAdmin.rpc("apply_stock_movement_system", {
+          _organization_id: org,
+          _variant_id: variantId,
+          _location_id: locationId,
+          _movement_type: "venda",
+          _quantity: -itemQty,
+          _reason: `Venda Olist #${orderNumber}`,
+          _notes: `Baixa de estoque por pedido #${orderNumber}`,
+          _reference_type: "sale",
+          _reference_id: saleId,
+          _source: "olist_sync",
+          _user_id: undefined,
+        });
+      } catch (stkErr) {
+        console.warn(`[Olist Sync Stock Warning] Não foi possível dar baixa no item ${variantId}:`, stkErr);
+      }
+    }
+  }
+
+  // 6. REGRA DE NEGÓCIO PONTUAMAX: CÁLCULO DINÂMICO DE PONTOS DE FIDELIDADE & CASHBACK
+  // Busca dinamicamente as configurações vigentes cadastradas no banco de dados para a loja
+  const loyaltySettings = await getOrganizationLoyaltySettings(org);
+
+  let loyaltyPoints = 0;
+  let cashbackAmount = 0;
+
+  if (loyaltySettings.enabled) {
+    // Conversão dinâmica de pontos por R$ gasto (ex: 1 pt/R$, 2 pt/R$, etc)
+    loyaltyPoints = Math.floor(total * loyaltySettings.points_per_currency);
+
+    // Porcentagem dinâmica de cashback (ex: 5%, 10%, 3%, etc)
+    const cashbackRate = loyaltySettings.cashback_percent / 100;
+    cashbackAmount = Math.round(total * cashbackRate * 100) / 100;
+  }
+
+  if (cashbackAmount > 0 && clientId) {
+    let { data: sca } = await supabaseAdmin
+      .from("store_credit_accounts")
+      .select("id, balance")
+      .eq("organization_id", org)
+      .eq("client_id", clientId)
+      .maybeSingle();
+
+    if (!sca) {
+      const { data: newSca } = await supabaseAdmin
+        .from("store_credit_accounts")
+        .insert({
+          organization_id: org,
+          client_id: clientId,
+          balance: 0,
+          status: "active",
+        })
+        .select("id, balance")
+        .single();
+      sca = newSca;
+    }
+
+    if (sca) {
+      const prevBalance = Number(sca.balance ?? 0);
+      const nextBalance = Math.round((prevBalance + cashbackAmount) * 100) / 100;
+
+      await supabaseAdmin
+        .from("store_credit_accounts")
+        .update({
+          balance: nextBalance,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", sca.id);
+
+      await supabaseAdmin.from("store_credit_transactions").insert({
+        organization_id: org,
+        account_id: sca.id,
+        client_id: clientId,
+        type: "credit",
+        amount: cashbackAmount,
+        balance_before: prevBalance,
+        balance_after: nextBalance,
+        reference_type: "sale",
+        reference_id: saleId,
+        reason: `PontuaMax: Cashback (${loyaltySettings.cashback_percent}%) Venda Olist #${orderNumber} (+${loyaltyPoints} Pontos)`,
+      });
+    }
+  }
+
+  // Mapeia o pedido no integration_mappings com os metadados das taxas aplicadas
+  await supabaseAdmin.from("integration_mappings").upsert(
+    {
+      organization_id: org,
+      source: "olist",
+      entity_type: "order",
+      external_id: String(externalOrderId),
+      internal_id: saleId,
+      metadata: {
+        order_number: orderNumber,
+        points: loyaltyPoints,
+        cashback: cashbackAmount,
+        cashback_percent: loyaltySettings.cashback_percent,
+        points_per_currency: loyaltySettings.points_per_currency,
+      },
+    },
+    { onConflict: "organization_id,source,entity_type,external_id" },
+  );
+
+  return {
+    ok: true,
+    sale_id: saleId,
+    client_id: clientId,
+    order_number: orderNumber,
+    points: loyaltyPoints,
+    cashback: cashbackAmount,
+  };
+}
+
+/**
+ * Executor da Fila de Eventos de Webhook Pendentes (`integration_events`).
+ * Consome os eventos com `status = 'pendente'`, executa a sincronização adequada
+ * (Pedido/Pontos/Cashback, Estoque ou Produto) e atualiza o status para `processado` ou `erro`.
+ */
+export async function processPendingOlistEventsQueue(limit = 10): Promise<{
+  processed: number;
+  success: number;
+  errors: number;
+}> {
+  const org = await firstOrgId();
+
+  const { data: pendingEvents } = await supabaseAdmin
+    .from("integration_events")
+    .select("id, payload, attempts")
+    .eq("organization_id", org)
+    .eq("source", "olist")
+    .eq("status", "pendente")
+    .order("received_at", { ascending: true })
+    .limit(limit);
+
+  if (!pendingEvents || pendingEvents.length === 0) {
+    return { processed: 0, success: 0, errors: 0 };
+  }
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const evt of pendingEvents) {
+    const evtId = evt.id;
+    const payload = evt.payload as any;
+    const tipo = String(payload?.tipo ?? "").toLowerCase();
+    const externalId = String(payload?.external_id ?? payload?.dados?.id ?? "");
+
+    // Marcar como processando
+    await supabaseAdmin
+      .from("integration_events")
+      .update({ status: "processando", attempts: (evt.attempts ?? 0) + 1 })
+      .eq("id", evtId);
+
+    try {
+      let result: any = null;
+
+      if (tipo.includes("pedido") || tipo.includes("inclusao_pedido") || tipo.includes("alteracao_pedido")) {
+        if (externalId) {
+          result = await syncOlistOrderById(externalId, org);
+        } else {
+          result = { ignored: true, reason: "ID de pedido ausente no payload" };
+        }
+      } else if (tipo.includes("estoque")) {
+        const saldo = Number(payload?.dados?.saldo ?? payload?.dados?.produto?.saldo ?? 0);
+        if (externalId) {
+          result = await syncOlistStockByExternalId(externalId, saldo, org);
+        }
+      } else if (tipo.includes("produto")) {
+        if (externalId) {
+          result = await syncOlistProductById(externalId, org);
+        }
+      } else {
+        result = { ignored: true, tipo };
+      }
+
+      await supabaseAdmin
+        .from("integration_events")
+        .update({
+          status: "processado",
+          processed_at: new Date().toISOString(),
+          payload: { ...payload, result },
+        })
+        .eq("id", evtId);
+
+      successCount++;
+    } catch (e: any) {
+      errorCount++;
+      const errorMessage = e?.message ?? String(e);
+      await supabaseAdmin
+        .from("integration_events")
+        .update({
+          status: "erro",
+          processed_at: new Date().toISOString(),
+          error_message: errorMessage,
+        })
+        .eq("id", evtId);
+    }
+  }
+
+  return {
+    processed: pendingEvents.length,
+    success: successCount,
+    errors: errorCount,
+  };
+}
+
 

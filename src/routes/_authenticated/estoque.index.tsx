@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Zap } from "lucide-react";
 import { StockLaunchDialog } from "@/components/stock-launch-dialog";
 
 export const Route = createFileRoute("/_authenticated/estoque/")({
@@ -34,9 +34,14 @@ function EstoquePage() {
     <div>
       <PageHeader
         title="Estoque"
-        description="Saldos por variação e local."
+        description="Saldos por variação e local de estoque."
         actions={
           <>
+            <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md">
+              <Link to="/estoque/recebimento-rapido">
+                <Zap className="mr-2 h-4 w-4 fill-amber-300 text-amber-300" />Recebimento Rápido ⚡
+              </Link>
+            </Button>
             <Button asChild variant="outline"><Link to="/estoque/movimentacoes"><ArrowRight className="mr-2 h-4 w-4" />Movimentações</Link></Button>
             <Button asChild variant="outline"><Link to="/estoque/entrada">Entrada em lote</Link></Button>
             <Button asChild variant="outline"><Link to="/estoque/inventario">Inventário</Link></Button>
