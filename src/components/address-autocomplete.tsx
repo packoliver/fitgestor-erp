@@ -306,6 +306,14 @@ export function AddressAutocomplete({
           CEP detectado: <span className="font-semibold text-slate-700">{cep}</span>
         </div>
       )}
+
+      {lat != null && lng != null && (
+        <AddressMapPreview
+          lat={lat}
+          lng={lng}
+          label={[query, number].filter(Boolean).join(", ")}
+        />
+      )}
     </div>
   );
 }
