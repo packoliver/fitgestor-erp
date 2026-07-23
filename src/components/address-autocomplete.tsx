@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { MapPin, Search, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { loadGoogleMaps, parseAddressComponents } from "@/lib/google-maps-loader";
+import { AddressMapPreview } from "@/components/address-map-preview";
 
 export interface AddressResult {
   logradouro: string;
@@ -304,6 +305,14 @@ export function AddressAutocomplete({
         <div className="text-[11px] text-slate-500">
           CEP detectado: <span className="font-semibold text-slate-700">{cep}</span>
         </div>
+      )}
+
+      {lat != null && lng != null && (
+        <AddressMapPreview
+          lat={lat}
+          lng={lng}
+          label={[query, number].filter(Boolean).join(", ")}
+        />
       )}
     </div>
   );
