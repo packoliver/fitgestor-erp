@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { MapPin, Search, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { loadGoogleMaps, parseAddressComponents } from "@/lib/google-maps-loader";
+import { AddressMapPreview } from "@/components/address-map-preview";
 
 export interface AddressResult {
   logradouro: string;
