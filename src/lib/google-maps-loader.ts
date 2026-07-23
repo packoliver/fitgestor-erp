@@ -1,9 +1,9 @@
 // Loads the Google Maps JS API once (async) with the places library.
 // Uses the Lovable-managed browser key. Safe to call multiple times.
 
-let loadPromise: Promise<typeof google> | null = null;
+let loadPromise: Promise<any> | null = null;
 
-export function loadGoogleMaps(): Promise<typeof google> {
+export function loadGoogleMaps(): Promise<any> {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("google maps only available in browser"));
   }
@@ -53,7 +53,7 @@ export interface ParsedAddress {
 }
 
 export function parseAddressComponents(
-  components: google.maps.places.AddressComponent[] | undefined,
+  components: any[] | undefined,
   location?: { lat: number; lng: number },
 ): ParsedAddress {
   const get = (type: string) =>
