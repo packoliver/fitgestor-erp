@@ -15,7 +15,7 @@ import {
   BarChart3, Calendar, Layers,
 } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/relatorios")({
+export const Route = createFileRoute("/_authenticated/relatorios/")({
   component: RelatoriosPage,
 });
 

@@ -17,7 +17,7 @@ import { shopifyService } from "@/services/shopify-service";
 import { currentOrgId, formatBRL } from "@/lib/erp";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/estoque/entrada-xml" as any)({
+export const Route = createFileRoute("/_authenticated/estoque/entrada-xml")({
   component: EntradaNFeXMLPage,
 });
 
