@@ -53,7 +53,7 @@ export interface ParsedAddress {
 }
 
 export function parseAddressComponents(
-  components: google.maps.places.AddressComponent[] | undefined,
+  components: any[] | undefined,
   location?: { lat: number; lng: number },
 ): ParsedAddress {
   const get = (type: string) =>
