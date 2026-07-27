@@ -2411,6 +2411,7 @@ function VendasPdvPage() {
             <Link to="/caixa"><FileText className="h-4 w-4 mr-1" />Caixa</Link>
           </Button>
         </div>
+        </TooltipProvider>
       </header>
 
       {/* ── Body: Left (60% Area) + Right (40% Area) ─────────────────────────────── */}
