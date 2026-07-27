@@ -2291,72 +2291,111 @@ function VendasPdvPage() {
         </div>
 
         {/* Sangria, Suprimento, Fechamento de Caixa & Vendedora */}
+        <TooltipProvider delayDuration={250}>
         <div className="flex items-center gap-2">
           {currentShift.status === "open" ? (
             <>
-              <button
-                onClick={() => { setMovementType("sangria"); setMovementDialogOpen(true); }}
-                title="Registrar Sangria (Retirada)"
-                className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 text-xs font-semibold transition shadow-2xs"
-              >
-                <ArrowUpRight className="h-4 w-4 text-rose-600" />
-                <span className="hidden sm:inline">Sangria</span>
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => { setMovementType("sangria"); setMovementDialogOpen(true); }}
+                    className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 text-xs font-semibold transition shadow-2xs"
+                  >
+                    <ArrowUpRight className="h-4 w-4 text-rose-600" />
+                    <span className="hidden sm:inline">Retirar do Caixa</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[240px] text-xs">
+                  <b>Sangria</b> — retirar dinheiro do caixa (ex.: enviar ao cofre, pagar despesa). Registra a saída para conferência no fechamento.
+                </TooltipContent>
+              </Tooltip>
 
-              <button
-                onClick={() => { setMovementType("suprimento"); setMovementDialogOpen(true); }}
-                title="Registrar Suprimento (Reforço)"
-                className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 text-xs font-semibold transition shadow-2xs"
-              >
-                <ArrowDownRight className="h-4 w-4 text-emerald-600" />
-                <span className="hidden sm:inline">Suprimento</span>
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => { setMovementType("suprimento"); setMovementDialogOpen(true); }}
+                    className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 text-xs font-semibold transition shadow-2xs"
+                  >
+                    <ArrowDownRight className="h-4 w-4 text-emerald-600" />
+                    <span className="hidden sm:inline">Adicionar Troco</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[240px] text-xs">
+                  <b>Suprimento</b> — colocar dinheiro no caixa (ex.: reforço de troco em moedas/notas menores).
+                </TooltipContent>
+              </Tooltip>
 
-              <button
-                onClick={() => setBlindCloseDialogOpen(true)}
-                title="Fechar Turno / Fechar Caixa"
-                className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800 px-3 py-2 text-xs font-bold transition shadow-2xs"
-              >
-                <Vault className="h-4 w-4 text-slate-700" />
-                <span className="hidden sm:inline">Fechar Caixa</span>
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setBlindCloseDialogOpen(true)}
+                    className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800 px-3 py-2 text-xs font-bold transition shadow-2xs"
+                  >
+                    <Vault className="h-4 w-4 text-slate-700" />
+                    <span className="hidden sm:inline">Encerrar Turno</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[240px] text-xs">
+                  <b>Fechar caixa</b> — encerra o turno, faz a contagem cega do dinheiro e gera o resumo de vendas e diferenças.
+                </TooltipContent>
+              </Tooltip>
             </>
           ) : (
-            <Button
-              onClick={() => setOpenShiftDialogOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs"
-            >
-              🔓 Abrir Caixa
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => setOpenShiftDialogOpen(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs"
+                >
+                  🔓 Abrir Caixa
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[240px] text-xs">
+                Iniciar o turno informando o valor inicial em dinheiro (fundo de troco).
+              </TooltipContent>
+            </Tooltip>
           )}
 
-          <button
-            onClick={() => setShiftOpen(true)}
-            title="Resumo do Turno e Comissões"
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 transition shadow-sm"
-          >
-            <BarChart3 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-            <span className="hidden sm:inline">Turno</span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setShiftOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 transition shadow-sm"
+              >
+                <BarChart3 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                <span className="hidden sm:inline">Resumo do Turno</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[240px] text-xs">
+              Ver vendas do turno, formas de pagamento, comissões por vendedora e movimentações do caixa.
+            </TooltipContent>
+          </Tooltip>
 
-          <button
-            onClick={() => setPinDialogOpen(true)}
-            className="flex items-center gap-2.5 rounded-xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100/80 dark:bg-indigo-950/40 dark:border-indigo-900 dark:hover:bg-indigo-900/60 px-3.5 py-2 text-xs transition shadow-sm group"
-          >
-            <div className={`w-6 h-6 rounded-lg text-white flex items-center justify-center font-bold text-xs shadow-xs ${
-              sellerRole === "gerente" ? "bg-amber-600" : "bg-indigo-600"
-            }`}>
-              {sellerRole === "gerente" ? <ShieldCheck className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-            </div>
-            <div className="text-left flex items-center gap-1.5">
-              <span className="text-[10px] uppercase tracking-wider text-indigo-600/80 font-bold hidden md:inline">
-                {sellerRole === "gerente" ? "👑 Gerente:" : "👤 Operador:"}
-              </span>
-              <span className="font-bold text-indigo-950 dark:text-indigo-200 text-xs">{sellerName || "Selecionar"}</span>
-            </div>
-            <ChevronDown className="h-3.5 w-3.5 text-indigo-600 opacity-70 group-hover:opacity-100" />
-            <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-white dark:bg-zinc-900 border border-indigo-200 dark:border-indigo-800 rounded text-indigo-700 dark:text-indigo-300 shrink-0 shadow-2xs">PIN F9</span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setPinDialogOpen(true)}
+                className="flex items-center gap-2.5 rounded-xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100/80 dark:bg-indigo-950/40 dark:border-indigo-900 dark:hover:bg-indigo-900/60 px-3.5 py-2 text-xs transition shadow-sm group"
+              >
+                <div className={`w-6 h-6 rounded-lg text-white flex items-center justify-center font-bold text-xs shadow-xs ${
+                  sellerRole === "gerente" ? "bg-amber-600" : "bg-indigo-600"
+                }`}>
+                  {sellerRole === "gerente" ? <ShieldCheck className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                </div>
+                <div className="text-left flex items-center gap-1.5">
+                  <span className="text-[10px] uppercase tracking-wider text-indigo-600/80 font-bold hidden md:inline">
+                    {sellerRole === "gerente" ? "👑 Gerente:" : "👤 Vendedora:"}
+                  </span>
+                  <span className="font-bold text-indigo-950 dark:text-indigo-200 text-xs">{sellerName || "Selecionar"}</span>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-indigo-600 opacity-70 group-hover:opacity-100" />
+                <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-white dark:bg-zinc-900 border border-indigo-200 dark:border-indigo-800 rounded text-indigo-700 dark:text-indigo-300 shrink-0 shadow-2xs">PIN F9</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[240px] text-xs">
+              Trocar a vendedora responsável pela venda (informe o PIN). A comissão vai para quem está logado aqui.
+            </TooltipContent>
+          </Tooltip>
 
           {isAdmin && (
             <button
