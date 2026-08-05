@@ -197,7 +197,7 @@ function AppSidebar({
           tooltip={item.description ? `${item.title} — ${item.description}` : item.title}
           className={`h-10 rounded-xl text-xs transition-colors px-3 ${
             active
-              ? "bg-indigo-600 text-white font-semibold shadow-sm"
+              ? "bg-blue-600 text-white font-semibold shadow-sm"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium"
           }`}
         >
@@ -208,7 +208,7 @@ function AppSidebar({
               <span
                 aria-label={`${badge} pendente${badge === 1 ? "" : "s"}`}
                 className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold min-w-[18px] text-center ${
-                  active ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-700"
+                  active ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
                 }`}
               >
                 {badge > 99 ? "99+" : badge}
@@ -217,7 +217,7 @@ function AppSidebar({
             {collapsed && badge > 0 && (
               <span
                 aria-hidden
-                className={`absolute right-1.5 top-1 h-2 w-2 rounded-full ${active ? "bg-white" : "bg-indigo-600"}`}
+                className={`absolute right-1.5 top-1 h-2 w-2 rounded-full ${active ? "bg-white" : "bg-blue-600"}`}
               />
             )}
           </Link>
@@ -248,7 +248,7 @@ function AppSidebar({
                         onClick={onTogglePin}
                         aria-label={pinned ? "Ocultar barra automaticamente" : "Manter barra fixa"}
                         aria-pressed={pinned}
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                       >
                         {pinned ? <Pin className="h-3.5 w-3.5" /> : <PinOff className="h-3.5 w-3.5" />}
                       </button>
@@ -300,7 +300,7 @@ function AppSidebar({
                         aria-label={g}
                         className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
                           active
-                            ? "bg-indigo-600 text-white font-bold shadow-sm"
+                            ? "bg-blue-600 text-white font-bold shadow-sm"
                             : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                         }`}
                       >
@@ -330,16 +330,16 @@ function AppSidebar({
                     type="button"
                     onClick={() => setSelectedGroup(g)}
                     aria-pressed={isSel}
-                    className={`relative flex flex-col items-center gap-1.5 rounded-xl px-1.5 py-2.5 text-[11px] font-semibold leading-tight transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                    className={`relative flex flex-col items-center gap-1.5 rounded-xl px-1.5 py-2.5 text-[11px] font-semibold leading-tight transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
                       isSel
-                        ? "bg-indigo-50 text-indigo-700 border border-indigo-200/80 font-bold shadow-2xs"
+                        ? "bg-blue-50 text-blue-700 border border-blue-200/80 font-bold shadow-2xs"
                         : "text-slate-500 hover:text-slate-900 hover:bg-slate-200/50"
                     }`}
                   >
                     {isActive && (
-                      <span aria-hidden className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-indigo-600" />
+                      <span aria-hidden className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-blue-600" />
                     )}
-                    <Meta.icon className={`h-[18px] w-[18px] ${isSel ? "text-indigo-600" : "text-slate-400"}`} />
+                    <Meta.icon className={`h-[18px] w-[18px] ${isSel ? "text-blue-600" : "text-slate-400"}`} />
                     <span className="text-center break-words leading-[1.15]">{g}</span>
                   </button>
                 );
@@ -371,7 +371,7 @@ function AppSidebar({
               {/* Modo essencial — footer da coluna de itens */}
               <div className="border-t border-slate-100 px-3 py-2 bg-slate-50/40">
                 <div className="flex items-center gap-2 rounded-lg px-1.5 py-1">
-                  <Sparkles className="h-3.5 w-3.5 shrink-0 text-indigo-600" />
+                  <Sparkles className="h-3.5 w-3.5 shrink-0 text-blue-600" />
                   <label htmlFor="essential-switch" className="text-xs font-bold text-slate-700 flex-1 min-w-0 truncate cursor-pointer">
                     Modo essencial
                   </label>
@@ -405,10 +405,10 @@ function AppSidebar({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-slate-700 hover:bg-slate-50 border border-slate-200/80 shadow-2xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-slate-700 hover:bg-slate-50 border border-slate-200/80 shadow-2xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               >
                 <Avatar className="h-7.5 w-7.5 shrink-0">
-                  <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-extrabold">{initials}</AvatarFallback>
+                  <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-extrabold">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-slate-800 truncate leading-tight">{userEmail || "Operador"}</p>
@@ -452,10 +452,10 @@ function AppSidebar({
               <button
                 type="button"
                 aria-label="Menu do usuário"
-                className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl text-slate-700 hover:bg-slate-50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl text-slate-700 hover:bg-slate-50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               >
                 <Avatar className="h-7 w-7">
-                  <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-extrabold">{initials}</AvatarFallback>
+                  <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-extrabold">{initials}</AvatarFallback>
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
@@ -679,13 +679,13 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
 
             <Button variant="ghost" size="icon" aria-label="Notificações" className="relative text-slate-600 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl">
               <Bell className="h-4 w-4" />
-              <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-indigo-600" />
+              <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-blue-600" />
             </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-10 gap-2 pl-1.5 pr-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800">
-                  <Avatar className="h-7 w-7"><AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-bold">{initials}</AvatarFallback></Avatar>
+                  <Avatar className="h-7 w-7"><AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-bold">{initials}</AvatarFallback></Avatar>
                   <span className="hidden sm:inline text-xs font-bold max-w-[140px] truncate">{userEmail}</span>
                 </Button>
               </DropdownMenuTrigger>

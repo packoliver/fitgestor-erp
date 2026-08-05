@@ -102,7 +102,7 @@ export const PrintLabelsDialog: React.FC<PrintLabelsDialogProps> = ({
           {/* Topo do Modal */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+              <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
                 <Printer className="w-5 h-5" />
               </div>
               <div>
@@ -135,11 +135,11 @@ export const PrintLabelsDialog: React.FC<PrintLabelsDialogProps> = ({
                     onClick={() => setFormat('thermal-50x30')}
                     className={`p-3 rounded-xl border text-left flex flex-col gap-1 text-xs transition-all ${
                       format === 'thermal-50x30'
-                        ? 'border-indigo-600 bg-indigo-50/50 text-indigo-900 font-semibold ring-2 ring-indigo-600/20'
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-900 font-semibold ring-2 ring-blue-600/20'
                         : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
                     }`}
                   >
-                    <ScrollText className="w-4 h-4 text-indigo-600" />
+                    <ScrollText className="w-4 h-4 text-blue-600" />
                     <span>Rolo 50x30mm</span>
                     <span className="text-[10px] text-slate-400">Térmica Padrão</span>
                   </button>
@@ -149,11 +149,11 @@ export const PrintLabelsDialog: React.FC<PrintLabelsDialogProps> = ({
                     onClick={() => setFormat('thermal-40x25')}
                     className={`p-3 rounded-xl border text-left flex flex-col gap-1 text-xs transition-all ${
                       format === 'thermal-40x25'
-                        ? 'border-indigo-600 bg-indigo-50/50 text-indigo-900 font-semibold ring-2 ring-indigo-600/20'
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-900 font-semibold ring-2 ring-blue-600/20'
                         : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
                     }`}
                   >
-                    <ScrollText className="w-4 h-4 text-indigo-600" />
+                    <ScrollText className="w-4 h-4 text-blue-600" />
                     <span>Rolo 40x25mm</span>
                     <span className="text-[10px] text-slate-400">Térmica Compacta</span>
                   </button>
@@ -163,11 +163,11 @@ export const PrintLabelsDialog: React.FC<PrintLabelsDialogProps> = ({
                     onClick={() => setFormat('a4-pimaco')}
                     className={`p-3 rounded-xl border text-left flex flex-col gap-1 text-xs transition-all ${
                       format === 'a4-pimaco'
-                        ? 'border-indigo-600 bg-indigo-50/50 text-indigo-900 font-semibold ring-2 ring-indigo-600/20'
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-900 font-semibold ring-2 ring-blue-600/20'
                         : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
                     }`}
                   >
-                    <LayoutGrid className="w-4 h-4 text-indigo-600" />
+                    <LayoutGrid className="w-4 h-4 text-blue-600" />
                     <span>Folha A4 Pimaco</span>
                     <span className="text-[10px] text-slate-400">3 Colunas (Adesiva)</span>
                   </button>
@@ -181,7 +181,7 @@ export const PrintLabelsDialog: React.FC<PrintLabelsDialogProps> = ({
                     type="checkbox"
                     checked={showStoreName}
                     onChange={(e) => setShowStoreName(e.target.checked)}
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span>Exibir Nome da Loja</span>
                 </label>
@@ -191,7 +191,7 @@ export const PrintLabelsDialog: React.FC<PrintLabelsDialogProps> = ({
                     type="checkbox"
                     checked={showPrice}
                     onChange={(e) => setShowPrice(e.target.checked)}
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span>Exibir Preço de Venda</span>
                 </label>
@@ -250,7 +250,7 @@ export const PrintLabelsDialog: React.FC<PrintLabelsDialogProps> = ({
             <div className="md:col-span-6 p-6 flex flex-col bg-slate-100/70 overflow-hidden">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5 text-indigo-600" /> Pré-Visualização das Etiquetas ({expandedLabels.length})
+                  <Tag className="w-3.5 h-3.5 text-blue-600" /> Pré-Visualização das Etiquetas ({expandedLabels.length})
                 </span>
                 <span className="text-[11px] font-medium text-slate-500">Formato: {format}</span>
               </div>
@@ -283,7 +283,7 @@ export const PrintLabelsDialog: React.FC<PrintLabelsDialogProps> = ({
                     {/* Cor/Tamanho + Preço */}
                     <div className="flex items-center justify-between w-full px-1 text-[9px] font-bold text-slate-800">
                       <span>{lbl.color ? `${lbl.color} ${lbl.size || ''}` : lbl.size || ''}</span>
-                      {showPrice && <span className="text-indigo-900 font-extrabold">{formatCurrency(lbl.price)}</span>}
+                      {showPrice && <span className="text-blue-900 font-extrabold">{formatCurrency(lbl.price)}</span>}
                     </div>
 
                     {/* Código de Barras */}
@@ -307,7 +307,7 @@ export const PrintLabelsDialog: React.FC<PrintLabelsDialogProps> = ({
           {/* Rodapé do Modal com Botões */}
           <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
             <span className="text-xs font-semibold text-slate-600">
-              Total de Etiquetas: <strong className="text-indigo-600">{expandedLabels.length} cópias</strong>
+              Total de Etiquetas: <strong className="text-blue-600">{expandedLabels.length} cópias</strong>
             </span>
 
             <div className="flex items-center gap-3">
@@ -323,7 +323,7 @@ export const PrintLabelsDialog: React.FC<PrintLabelsDialogProps> = ({
                 type="button"
                 onClick={handlePrint}
                 disabled={expandedLabels.length === 0}
-                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/30 transition-all disabled:opacity-50"
               >
                 <Printer className="w-4 h-4" />
                 <span>Imprimir Etiquetas</span>

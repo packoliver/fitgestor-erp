@@ -219,7 +219,7 @@ function ProdutosList() {
         actions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleOpenPrintAll}>
-              <Tag className="mr-2 h-4 w-4 text-indigo-600" />
+              <Tag className="mr-2 h-4 w-4 text-blue-600" />
               Imprimir Etiquetas
             </Button>
             <Button asChild>
@@ -316,7 +316,7 @@ function ProdutosList() {
                           title="Imprimir Etiquetas"
                           onClick={() => handleOpenPrintForProduct(p)}
                         >
-                          <Tag className="h-3.5 w-3.5 text-indigo-600" />
+                          <Tag className="h-3.5 w-3.5 text-blue-600" />
                         </Button>
                         <Button
                           size="sm"
@@ -355,7 +355,7 @@ function ProdutosList() {
                       variant="outline"
                       onClick={() => handleOpenPrintForProduct(selected)}
                     >
-                      <Tag className="mr-1 h-3.5 w-3.5 text-indigo-600" />
+                      <Tag className="mr-1 h-3.5 w-3.5 text-blue-600" />
                       Etiquetas
                     </Button>
                     <Button

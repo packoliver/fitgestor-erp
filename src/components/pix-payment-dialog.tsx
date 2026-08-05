@@ -133,7 +133,7 @@ export const PixPaymentDialog: React.FC<PixPaymentDialogProps> = ({
 
         {isLoading ? (
           <div className="py-12 flex flex-col items-center justify-center space-y-3">
-            <Loader2 className="h-8 w-8 text-indigo-600 animate-spin" />
+            <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
             <p className="text-xs text-slate-500 font-medium">Gerando QR Code do PIX...</p>
           </div>
         ) : status === "approved" ? (
@@ -184,14 +184,14 @@ export const PixPaymentDialog: React.FC<PixPaymentDialogProps> = ({
                   </>
                 ) : (
                   <>
-                    <Copy className="mr-2 h-4 w-4 text-indigo-600" />
+                    <Copy className="mr-2 h-4 w-4 text-blue-600" />
                     Copiar Chave PIX (Copia e Cola)
                   </>
                 )}
               </Button>
 
               <div className="flex items-center justify-center gap-2 pt-1 text-xs text-slate-500">
-                <Loader2 className="h-3.5 w-3.5 text-indigo-600 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 text-blue-600 animate-spin" />
                 <span>⌛ Aguardando confirmação do banco...</span>
               </div>
             </div>

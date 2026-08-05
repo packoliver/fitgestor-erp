@@ -908,7 +908,7 @@ function QuickPinDialog({ open, onClose, onSelectUser }: QuickPinDialogProps) {
       <DialogContent className="sm:max-w-xs p-6 text-center">
         <DialogHeader>
           <DialogTitle className="text-center flex items-center justify-center gap-2">
-            <KeyRound className="h-5 w-5 text-indigo-600" />
+            <KeyRound className="h-5 w-5 text-blue-600" />
             Troca de Operador (PIN)
           </DialogTitle>
           <DialogDescription className="text-center text-xs">
@@ -923,7 +923,7 @@ function QuickPinDialog({ open, onClose, onSelectUser }: QuickPinDialogProps) {
                 key={idx}
                 className={`w-4 h-4 rounded-full border-2 transition-all ${
                   pin.length > idx
-                    ? "bg-indigo-600 border-indigo-600 scale-110 shadow-sm"
+                    ? "bg-blue-600 border-blue-600 scale-110 shadow-sm"
                     : "border-slate-300 dark:border-zinc-700 bg-slate-50"
                 }`}
               />
@@ -943,7 +943,7 @@ function QuickPinDialog({ open, onClose, onSelectUser }: QuickPinDialogProps) {
               key={num}
               type="button"
               onClick={() => handleDigit(num)}
-              className="h-12 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-lg font-bold text-slate-800 dark:text-slate-100 hover:bg-indigo-50 hover:border-indigo-300 active:scale-95 transition shadow-2xs"
+              className="h-12 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-lg font-bold text-slate-800 dark:text-slate-100 hover:bg-blue-50 hover:border-blue-300 active:scale-95 transition shadow-2xs"
             >
               {num}
             </button>
@@ -958,7 +958,7 @@ function QuickPinDialog({ open, onClose, onSelectUser }: QuickPinDialogProps) {
           <button
             type="button"
             onClick={() => handleDigit("0")}
-            className="h-12 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-lg font-bold text-slate-800 dark:text-slate-100 hover:bg-indigo-50 hover:border-indigo-300 active:scale-95 transition shadow-2xs"
+            className="h-12 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-lg font-bold text-slate-800 dark:text-slate-100 hover:bg-blue-50 hover:border-blue-300 active:scale-95 transition shadow-2xs"
           >
             0
           </button>
@@ -1258,7 +1258,7 @@ function OpenShiftDialog({ open, operatorName, onClose, onConfirm }: OpenShiftDi
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-indigo-700">
+          <DialogTitle className="flex items-center gap-2 text-blue-700">
             <Wallet className="h-5 w-5" />
             Abertura de Caixa
           </DialogTitle>
@@ -1474,7 +1474,7 @@ function BlindCloseShiftDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-slate-900">
-            <Vault className="h-5 w-5 text-indigo-600" />
+            <Vault className="h-5 w-5 text-blue-600" />
             Fechamento Cego de Caixa
           </DialogTitle>
           <DialogDescription>
@@ -1486,9 +1486,9 @@ function BlindCloseShiftDialog({
 
         {step === "count" ? (
           <div className="space-y-4 py-2">
-            <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs space-y-1">
-              <p className="text-indigo-700 font-bold uppercase tracking-wider">Modo Fechamento Cego</p>
-              <p className="text-indigo-900">
+            <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-xs space-y-1">
+              <p className="text-blue-700 font-bold uppercase tracking-wider">Modo Fechamento Cego</p>
+              <p className="text-blue-900">
                 Os valores esperados estão oculta para garantir contagem imparcial e auditável.
               </p>
             </div>
@@ -1524,7 +1524,7 @@ function BlindCloseShiftDialog({
 
             <DialogFooter className="gap-2 sm:gap-0 pt-3">
               <Button variant="outline" onClick={onClose}>Cancelar</Button>
-              <Button onClick={handleProcessBlindAudit} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
+              <Button onClick={handleProcessBlindAudit} className="bg-blue-600 hover:bg-blue-700 text-white font-bold">
                 Conferir Valores
               </Button>
             </DialogFooter>
@@ -2203,11 +2203,11 @@ function VendasPdvPage() {
             </Button>
             <Button
               variant="outline" size="lg"
-              className="h-16 flex-col gap-1 rounded-xl border-indigo-200 bg-indigo-50/60 hover:bg-indigo-100 text-indigo-950 font-bold"
+              className="h-16 flex-col gap-1 rounded-xl border-blue-200 bg-blue-50/60 hover:bg-blue-100 text-blue-950 font-bold"
               onClick={() => setDispatchDialogOpen(true)}
             >
-              <Truck className="h-5 w-5 text-indigo-600" />
-              <span className="text-xs font-bold text-indigo-900">Despachar Motoboy</span>
+              <Truck className="h-5 w-5 text-blue-600" />
+              <span className="text-xs font-bold text-blue-900">Despachar Motoboy</span>
             </Button>
           </div>
         </div>
@@ -2215,7 +2215,7 @@ function VendasPdvPage() {
         <div className="border-t border-slate-200 bg-white dark:bg-zinc-900 sticky bottom-0">
           <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-600">Pronto para a próxima venda?</p>
-            <Button size="lg" onClick={startNewSale} className="px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md">
+            <Button size="lg" onClick={startNewSale} className="px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md">
               <Zap className="mr-2 h-4 w-4" />
               Nova Venda
               <span className="ml-2 text-xs font-mono opacity-80 bg-white/20 px-1.5 py-0.5 rounded">CTRL+ENTER</span>
@@ -2277,7 +2277,7 @@ function VendasPdvPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="border-b border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur shrink-0 z-10 px-6 py-3 flex items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+          <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
             <ShoppingBag className="h-5 w-5" />
           </div>
           <div>
@@ -2375,7 +2375,7 @@ function VendasPdvPage() {
                 onClick={() => setShiftOpen(true)}
                 className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 transition shadow-sm"
               >
-                <BarChart3 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 <span className="hidden sm:inline">Resumo do Turno</span>
               </button>
             </TooltipTrigger>
@@ -2388,21 +2388,21 @@ function VendasPdvPage() {
             <TooltipTrigger asChild>
               <button
                 onClick={() => setPinDialogOpen(true)}
-                className="flex items-center gap-2.5 rounded-xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100/80 dark:bg-indigo-950/40 dark:border-indigo-900 dark:hover:bg-indigo-900/60 px-3.5 py-2 text-xs transition shadow-sm group"
+                className="flex items-center gap-2.5 rounded-xl border border-blue-200 bg-blue-50/80 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:border-blue-900 dark:hover:bg-blue-900/60 px-3.5 py-2 text-xs transition shadow-sm group"
               >
                 <div className={`w-6 h-6 rounded-lg text-white flex items-center justify-center font-bold text-xs shadow-xs ${
-                  sellerRole === "gerente" ? "bg-amber-600" : "bg-indigo-600"
+                  sellerRole === "gerente" ? "bg-amber-600" : "bg-blue-600"
                 }`}>
                   {sellerRole === "gerente" ? <ShieldCheck className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
                 </div>
                 <div className="text-left flex items-center gap-1.5">
-                  <span className="text-[10px] uppercase tracking-wider text-indigo-600/80 font-bold hidden md:inline">
+                  <span className="text-[10px] uppercase tracking-wider text-blue-600/80 font-bold hidden md:inline">
                     {sellerRole === "gerente" ? "👑 Gerente:" : "👤 Vendedora:"}
                   </span>
-                  <span className="font-bold text-indigo-950 dark:text-indigo-200 text-xs">{sellerName || "Selecionar"}</span>
+                  <span className="font-bold text-blue-950 dark:text-blue-200 text-xs">{sellerName || "Selecionar"}</span>
                 </div>
-                <ChevronDown className="h-3.5 w-3.5 text-indigo-600 opacity-70 group-hover:opacity-100" />
-                <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-white dark:bg-zinc-900 border border-indigo-200 dark:border-indigo-800 rounded text-indigo-700 dark:text-indigo-300 shrink-0 shadow-2xs">PIN F9</span>
+                <ChevronDown className="h-3.5 w-3.5 text-blue-600 opacity-70 group-hover:opacity-100" />
+                <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-800 rounded text-blue-700 dark:text-blue-300 shrink-0 shadow-2xs">PIN F9</span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="max-w-[240px] text-xs">
@@ -2437,7 +2437,7 @@ function VendasPdvPage() {
           <Card className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border-slate-200/80 dark:border-zinc-800 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Search className="h-4 w-4 text-indigo-600" />
+                <Search className="h-4 w-4 text-blue-600" />
                 <Label className="text-sm font-bold text-slate-800 dark:text-slate-200 block">
                   Localizar Produto / Bipador
                 </Label>
@@ -2453,7 +2453,7 @@ function VendasPdvPage() {
                 onChange={(e) => handleTermChange(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
                 placeholder="Bipar código de barras/SKU ou digitar nome da peça..."
-                className="pl-11 pr-10 h-13 text-base rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-xs font-medium"
+                className="pl-11 pr-10 h-13 text-base rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs font-medium"
                 autoComplete="off"
               />
               {term && (
@@ -2483,7 +2483,7 @@ function VendasPdvPage() {
                       key={v.id}
                       onClick={() => pickVariant(v)}
                       disabled={outOfStock}
-                      className={`w-full text-left p-3.5 transition flex items-center gap-3.5 ${outOfStock ? "opacity-40 cursor-not-allowed bg-slate-50" : "hover:bg-indigo-50/50 dark:hover:bg-zinc-800/60"}`}
+                      className={`w-full text-left p-3.5 transition flex items-center gap-3.5 ${outOfStock ? "opacity-40 cursor-not-allowed bg-slate-50" : "hover:bg-blue-50/50 dark:hover:bg-zinc-800/60"}`}
                     >
                       <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold text-slate-700 dark:text-slate-300">
                         {v.size ?? "—"}
@@ -2504,17 +2504,17 @@ function VendasPdvPage() {
 
             {/* Picked variant details */}
             {pickedVariant && (
-              <Card className="p-4 rounded-xl border-indigo-200 bg-indigo-50/40 dark:bg-indigo-950/30 space-y-3 animate-in fade-in duration-150 border">
+              <Card className="p-4 rounded-xl border-blue-200 bg-blue-50/40 dark:bg-blue-950/30 space-y-3 animate-in fade-in duration-150 border">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="font-bold text-base text-indigo-950 dark:text-indigo-100">{pickedVariant.product?.name}</p>
-                    {pickedVariant.product?.color && <p className="text-xs text-indigo-700 dark:text-indigo-300 font-medium">{pickedVariant.product.color}</p>}
+                    <p className="font-bold text-base text-blue-950 dark:text-blue-100">{pickedVariant.product?.name}</p>
+                    {pickedVariant.product?.color && <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">{pickedVariant.product.color}</p>}
                   </div>
                   <button onClick={() => { setPickedVariant(null); setPickedPrice(""); }} className="text-slate-400 hover:text-slate-700 p-1">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
-                <div className="grid grid-cols-3 gap-3 text-xs bg-white dark:bg-zinc-900 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900">
+                <div className="grid grid-cols-3 gap-3 text-xs bg-white dark:bg-zinc-900 p-3 rounded-lg border border-blue-100 dark:border-blue-900">
                   <div><span className="text-slate-500">Tamanho</span><br /><strong className="text-slate-800 text-sm">{pickedVariant.size ?? "Único"}</strong></div>
                   <div><span className="text-slate-500">SKU</span><br /><span className="font-mono font-semibold text-slate-800">{pickedVariant.sku ?? "—"}</span></div>
                   <div>
@@ -2522,7 +2522,7 @@ function VendasPdvPage() {
                     <Input
                       value={pickedPrice}
                       onChange={(e) => setPickedPrice(e.target.value)}
-                      className="h-7 text-xs font-bold px-2 mt-0.5 border-indigo-200"
+                      className="h-7 text-xs font-bold px-2 mt-0.5 border-blue-200"
                     />
                   </div>
                 </div>
@@ -2531,7 +2531,7 @@ function VendasPdvPage() {
                     <Label className="text-xs text-slate-600 font-medium">Quantidade de Peças</Label>
                     <Input value={qty} onChange={(e) => setQty(e.target.value)} className="h-10 text-center text-lg font-bold bg-white" inputMode="numeric" />
                   </div>
-                  <Button onClick={commitAdd} size="lg" className="mt-5 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs">
+                  <Button onClick={commitAdd} size="lg" className="mt-5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs">
                     <Plus className="mr-1.5 h-4 w-4" />
                     Adicionar
                     <span className="ml-2 text-xs opacity-70 font-mono">ENTER</span>
@@ -2553,11 +2553,11 @@ function VendasPdvPage() {
                   onClick={() => { setSaleType("store"); setShipping("0"); }}
                   className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-bold transition-all ${
                     saleType === "store"
-                      ? "border-indigo-600 bg-indigo-50/80 text-indigo-900 shadow-xs ring-1 ring-indigo-600/30"
+                      ? "border-blue-600 bg-blue-50/80 text-blue-900 shadow-xs ring-1 ring-blue-600/30"
                       : "border-slate-200 hover:bg-slate-50 text-slate-600"
                   }`}
                 >
-                  <ShoppingBag className="h-4 w-4 text-indigo-600" />
+                  <ShoppingBag className="h-4 w-4 text-blue-600" />
                   Venda Balcão / Retirada
                 </button>
                 <button
@@ -2565,11 +2565,11 @@ function VendasPdvPage() {
                   onClick={() => setSaleType("delivery")}
                   className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-bold transition-all ${
                     saleType === "delivery"
-                      ? "border-indigo-600 bg-indigo-50/80 text-indigo-900 shadow-xs ring-1 ring-indigo-600/30"
+                      ? "border-blue-600 bg-blue-50/80 text-blue-900 shadow-xs ring-1 ring-blue-600/30"
                       : "border-slate-200 hover:bg-slate-50 text-slate-600"
                   }`}
                 >
-                  <Truck className="h-4 w-4 text-indigo-600" />
+                  <Truck className="h-4 w-4 text-blue-600" />
                   Entrega / Delivery
                 </button>
               </div>
@@ -2619,18 +2619,18 @@ function VendasPdvPage() {
         <div className="hidden lg:flex lg:flex-col h-full bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-sm overflow-hidden">
           
           {/* Top: Seller Commission Info */}
-          <div className="p-3.5 border-b border-slate-100 dark:border-zinc-800 bg-indigo-50/60 dark:bg-indigo-950/40 flex items-center justify-between gap-2 shrink-0">
+          <div className="p-3.5 border-b border-slate-100 dark:border-zinc-800 bg-blue-50/60 dark:bg-blue-950/40 flex items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-2 text-xs truncate">
-              <Badge variant="outline" className="bg-indigo-100 text-indigo-900 border-indigo-300 shrink-0 font-bold gap-1 px-2 py-0.5">
-                <UserCheck className="h-3 w-3 text-indigo-600" /> Comissão
+              <Badge variant="outline" className="bg-blue-100 text-blue-900 border-blue-300 shrink-0 font-bold gap-1 px-2 py-0.5">
+                <UserCheck className="h-3 w-3 text-blue-600" /> Comissão
               </Badge>
               <span className="font-bold truncate text-slate-800 dark:text-slate-200 text-xs">{sellerName || "Sem vendedora"}</span>
             </div>
             <button
               onClick={() => setPinDialogOpen(true)}
-              className="text-xs text-indigo-700 hover:underline font-bold shrink-0 flex items-center gap-1"
+              className="text-xs text-blue-700 hover:underline font-bold shrink-0 flex items-center gap-1"
             >
-              Trocar <span className="font-mono text-[10px] bg-white border border-indigo-200 px-1 rounded">PIN F9</span>
+              Trocar <span className="font-mono text-[10px] bg-white border border-blue-200 px-1 rounded">PIN F9</span>
             </button>
           </div>
 
@@ -2684,7 +2684,7 @@ function VendasPdvPage() {
               {/* Discount Row */}
               <div className="flex items-center justify-between pt-1 border-t border-dashed border-slate-200 dark:border-zinc-800">
                 <Label className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                  <Tag className="h-3.5 w-3.5 text-indigo-600" />
+                  <Tag className="h-3.5 w-3.5 text-blue-600" />
                   <span>Desconto</span>
                   {effectiveDiscountPercent > 0 && (
                     <span className="text-[11px] font-bold text-emerald-600">
@@ -2699,7 +2699,7 @@ function VendasPdvPage() {
                       type="button"
                       onClick={() => setDiscountType("value")}
                       className={`px-1.5 py-0.5 rounded font-bold transition ${
-                        discountType === "value" ? "bg-indigo-600 text-white shadow-2xs" : "text-slate-500"
+                        discountType === "value" ? "bg-blue-600 text-white shadow-2xs" : "text-slate-500"
                       }`}
                     >
                       R$
@@ -2708,7 +2708,7 @@ function VendasPdvPage() {
                       type="button"
                       onClick={() => setDiscountType("percent")}
                       className={`px-1.5 py-0.5 rounded font-bold transition ${
-                        discountType === "percent" ? "bg-indigo-600 text-white shadow-2xs" : "text-slate-500"
+                        discountType === "percent" ? "bg-blue-600 text-white shadow-2xs" : "text-slate-500"
                       }`}
                     >
                       %

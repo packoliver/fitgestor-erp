@@ -195,11 +195,11 @@ function RelatoriosPage() {
             2. Turnos de Caixa
           </TabsTrigger>
           <TabsTrigger value="entregas" className="rounded-xl py-2.5 text-xs font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-xs">
-            <Truck className="h-4 w-4 text-indigo-600" />
+            <Truck className="h-4 w-4 text-blue-600" />
             3. Entregas & Logística
           </TabsTrigger>
           <TabsTrigger value="estoque" className="rounded-xl py-2.5 text-xs font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-xs">
-            <Package className="h-4 w-4 text-purple-600" />
+            <Package className="h-4 w-4 text-blue-600" />
             4. Estoque & Curva ABC
           </TabsTrigger>
         </TabsList>
@@ -219,7 +219,7 @@ function RelatoriosPage() {
             <Card className="p-5 rounded-2xl bg-white border-slate-200 shadow-sm space-y-2">
               <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
                 <span>Ticket Médio</span>
-                <TrendingUp className="h-4 w-4 text-indigo-600" />
+                <TrendingUp className="h-4 w-4 text-blue-600" />
               </div>
               <p className="text-2xl font-extrabold text-slate-900">{money(ticketMedio)}</p>
               <p className="text-[11px] text-slate-500 font-medium">Média por pedido</p>
@@ -246,7 +246,7 @@ function RelatoriosPage() {
 
           <Card className="p-6 rounded-2xl bg-white border-slate-200 shadow-sm space-y-4">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-indigo-600" />
+              <Layers className="h-4 w-4 text-blue-600" />
               Detalhamento por Meios de Pagamento
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -342,7 +342,7 @@ function RelatoriosPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="p-5 rounded-2xl bg-white border-slate-200 shadow-sm space-y-2">
               <span className="text-xs font-semibold text-slate-500">Volume de Entregas (Delivery)</span>
-              <p className="text-2xl font-extrabold text-indigo-600">{deliveryPercent.toFixed(1)}%</p>
+              <p className="text-2xl font-extrabold text-blue-600">{deliveryPercent.toFixed(1)}%</p>
               <p className="text-[11px] text-slate-500 font-medium">{deliverySales.length} entregas de {sales.length} vendas</p>
             </Card>
 
@@ -361,7 +361,7 @@ function RelatoriosPage() {
 
           <Card className="p-6 rounded-2xl bg-white border-slate-200 shadow-sm space-y-4">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Truck className="h-4 w-4 text-indigo-600" />
+              <Truck className="h-4 w-4 text-blue-600" />
               Histórico de Entregas do Período
             </h3>
             <div className="overflow-x-auto rounded-xl border border-slate-200">
@@ -389,7 +389,7 @@ function RelatoriosPage() {
                           <div className="text-[10px] text-slate-400 font-normal">{formatDateTime(s.created_at)}</div>
                         </TableCell>
                         <TableCell>
-                          <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100 font-bold text-[10px]">
+                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 font-bold text-[10px]">
                             {s.delivery_method === "motoboy" ? "🛵 Motoboy" : "📦 Correios/Transportadora"}
                           </Badge>
                         </TableCell>
@@ -419,7 +419,7 @@ function RelatoriosPage() {
 
             <Card className="p-5 rounded-2xl bg-white border-slate-200 shadow-sm space-y-2">
               <span className="text-xs font-semibold text-slate-500">Valor de Venda Potencial</span>
-              <p className="text-2xl font-extrabold text-indigo-600">{money(totalStockPotential)}</p>
+              <p className="text-2xl font-extrabold text-blue-600">{money(totalStockPotential)}</p>
               <p className="text-[11px] text-slate-500 font-medium">Projeção de faturamento bruto</p>
             </Card>
 

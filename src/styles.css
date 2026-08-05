@@ -22,7 +22,7 @@
   --shadow-md: 0 6px 20px rgba(15, 15, 20, 0.06);
   --shadow-lg: 0 12px 32px rgba(15, 15, 20, 0.08);
   --shadow-xl: 0 20px 48px rgba(15, 15, 20, 0.12);
-  --shadow-glow: 0 0 0 1px rgba(139, 92, 246, 0.16), 0 8px 32px -12px rgba(139, 92, 246, 0.35);
+  --shadow-glow: 0 0 0 1px rgba(10, 78, 228, 0.16), 0 8px 32px -12px rgba(10, 78, 228, 0.35);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -77,19 +77,19 @@
   --popover: #FFFFFF;
   --popover-foreground: #0D0D10;
 
-  --primary: #8B5CF6;
-  --primary-hover: #7C3AED;
+  --primary: #0A4EE4;
+  --primary-hover: #0839B8;
   --primary-foreground: #FFFFFF;
-  --primary-glow: #A78BFA;
+  --primary-glow: #4D7BFF;
 
   --secondary: #F2F2F5;
   --secondary-foreground: #0D0D10;
 
   --muted: #F2F2F5;
-  --muted-foreground: #64646E;
+  --muted-foreground: #4D5C7E;
 
-  --accent: #F4EEFF;
-  --accent-foreground: #5B21B6;
+  --accent: #EAF0FE;
+  --accent-foreground: #0A4EE4;
 
   --destructive: #E5484D;
   --destructive-foreground: #FFFFFF;
@@ -102,17 +102,17 @@
 
   --border: #E8E8EC;
   --input: #E8E8EC;
-  --ring: #8B5CF6;
+  --ring: #0A4EE4;
 
-  /* Sidebar sempre escura, com a mesma identidade violeta */
-  --sidebar: #0D0D10;
-  --sidebar-foreground: #E6E6EA;
-  --sidebar-primary: #8B5CF6;
+  /* Sidebar sempre escura, identidade azul-marinho (Olist Tiny) */
+  --sidebar: #001647;
+  --sidebar-foreground: #E6ECFB;
+  --sidebar-primary: #0A4EE4;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(139, 92, 246, 0.14);
+  --sidebar-accent: rgba(10, 78, 228, 0.22);
   --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-ring: #8B5CF6;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #0A4EE4;
 }
 
 /* ============ DARK — Landing e Login ============ */
@@ -129,10 +129,10 @@
   --popover: #17171B;
   --popover-foreground: #FFFFFF;
 
-  --primary: #8B5CF6;
-  --primary-hover: #7C3AED;
+  --primary: #4D7BFF;
+  --primary-hover: #2F5FEA;
   --primary-foreground: #FFFFFF;
-  --primary-glow: #A78BFA;
+  --primary-glow: #6B93FF;
 
   --secondary: #17171B;
   --secondary-foreground: #FFFFFF;
@@ -140,7 +140,7 @@
   --muted: #17171B;
   --muted-foreground: #A5A5B2;
 
-  --accent: #1E1E24;
+  --accent: #10204A;
   --accent-foreground: #FFFFFF;
 
   --destructive: #F87171;
@@ -154,16 +154,16 @@
 
   --border: rgba(255, 255, 255, 0.08);
   --input: rgba(255, 255, 255, 0.08);
-  --ring: #8B5CF6;
+  --ring: #4D7BFF;
 
-  --sidebar: #0D0D10;
-  --sidebar-foreground: #E6E6EA;
-  --sidebar-primary: #8B5CF6;
+  --sidebar: #001647;
+  --sidebar-foreground: #E6ECFB;
+  --sidebar-primary: #4D7BFF;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(139, 92, 246, 0.14);
+  --sidebar-accent: rgba(77, 123, 255, 0.22);
   --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-ring: #8B5CF6;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #4D7BFF;
 }
 
 @layer base {
@@ -211,9 +211,9 @@
   --fit-glass-highlight: rgba(255, 255, 255, 0.92);
   --fit-glass-reflection: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.08) 42%, rgba(255,255,255,0) 60%);
   --fit-text: #0D0D10;
-  --fit-text-muted: #64646E;
-  --fit-primary: #8B5CF6;
-  --fit-primary-hover: #7C3AED;
+  --fit-text-muted: #4D5C7E;
+  --fit-primary: #0A4EE4;
+  --fit-primary-hover: #0839B8;
   --fit-danger: #E5484D;
   --fit-warning: #F5A524;
   --fit-success: #10B981;
@@ -256,16 +256,16 @@
 body {
   background-color: var(--fit-background);
   background-image:
-    radial-gradient(1100px 700px at 12% -8%, rgba(139, 92, 246, 0.10), transparent 55%),
-    radial-gradient(900px 600px at 105% 8%, rgba(96, 165, 250, 0.09), transparent 55%),
-    radial-gradient(700px 600px at 50% 115%, rgba(167, 139, 250, 0.08), transparent 60%);
+    radial-gradient(1100px 700px at 12% -8%, rgba(10, 78, 228, 0.10), transparent 55%),
+    radial-gradient(900px 600px at 105% 8%, rgba(77, 123, 255, 0.09), transparent 55%),
+    radial-gradient(700px 600px at 50% 115%, rgba(0, 22, 71, 0.06), transparent 60%);
   background-attachment: fixed;
 }
 .dark body {
   background-image:
-    radial-gradient(1200px 800px at 10% -10%, rgba(139, 92, 246, 0.26), transparent 55%),
-    radial-gradient(900px 700px at 110% 5%, rgba(59, 130, 246, 0.18), transparent 55%),
-    radial-gradient(800px 700px at 50% 120%, rgba(167, 139, 250, 0.20), transparent 60%);
+    radial-gradient(1200px 800px at 10% -10%, rgba(10, 78, 228, 0.26), transparent 55%),
+    radial-gradient(900px 700px at 110% 5%, rgba(77, 123, 255, 0.18), transparent 55%),
+    radial-gradient(800px 700px at 50% 120%, rgba(0, 22, 71, 0.30), transparent 60%);
 }
 
 /* ===== Níveis Glass reutilizáveis ===== */
@@ -302,7 +302,7 @@ body {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.95),
     inset 0 0 0 1px rgba(255,255,255,0.15),
-    inset 0 -12px 24px -12px rgba(139,92,246,0.14),
+    inset 0 -12px 24px -12px rgba(10,78,228,0.14),
     0 24px 60px -18px rgba(30,20,60,0.28),
     0 8px 20px -8px rgba(30,20,60,0.15);
   isolation: isolate;
@@ -318,7 +318,7 @@ body {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.95),
     inset 0 0 0 1px rgba(255,255,255,0.12),
-    inset 0 -10px 22px -14px rgba(139,92,246,0.16),
+    inset 0 -10px 22px -14px rgba(10,78,228,0.16),
     0 18px 44px -16px rgba(30,20,60,0.22),
     0 6px 16px -6px rgba(30,20,60,0.10);
   isolation: isolate;
@@ -334,7 +334,7 @@ body {
   border-radius: 999px;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,1),
-    inset 0 -1px 0 rgba(139,92,246,0.15),
+    inset 0 -1px 0 rgba(10,78,228,0.15),
     0 8px 20px -6px rgba(35,30,60,0.18);
   transition: transform 180ms, box-shadow 180ms, background 180ms;
 }
@@ -343,7 +343,7 @@ body {
   background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.55));
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,1),
-    inset 0 -1px 0 rgba(139,92,246,0.22),
+    inset 0 -1px 0 rgba(10,78,228,0.22),
     0 14px 28px -8px rgba(35,30,60,0.24);
 }
 .dark .liquid-surface {
@@ -352,7 +352,7 @@ body {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.10),
     inset 0 0 0 1px rgba(255,255,255,0.04),
-    inset 0 -12px 24px -12px rgba(139,92,246,0.18),
+    inset 0 -12px 24px -12px rgba(10,78,228,0.18),
     0 32px 72px -20px rgba(0,0,0,0.6),
     0 10px 24px -10px rgba(0,0,0,0.4);
 }
@@ -362,7 +362,7 @@ body {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.10),
     inset 0 0 0 1px rgba(255,255,255,0.04),
-    inset 0 -10px 22px -14px rgba(139,92,246,0.20),
+    inset 0 -10px 22px -14px rgba(10,78,228,0.20),
     0 24px 56px -18px rgba(0,0,0,0.55),
     0 8px 18px -8px rgba(0,0,0,0.35);
 }
@@ -399,10 +399,10 @@ body {
   padding: 1px;
   background: linear-gradient(135deg,
     rgba(255,255,255,0.9) 0%,
-    rgba(196,181,253,0.5) 25%,
+    rgba(147,181,255,0.5) 25%,
     rgba(147,197,253,0.4) 50%,
     rgba(255,255,255,0.85) 75%,
-    rgba(196,181,253,0.35) 100%);
+    rgba(147,181,255,0.35) 100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -414,10 +414,10 @@ body {
 .dark .liquid-surface::after {
   background: linear-gradient(135deg,
     rgba(255,255,255,0.35) 0%,
-    rgba(196,181,253,0.35) 25%,
+    rgba(147,181,255,0.35) 25%,
     rgba(147,197,253,0.28) 50%,
     rgba(255,255,255,0.30) 75%,
-    rgba(196,181,253,0.25) 100%);
+    rgba(147,181,255,0.25) 100%);
   opacity: 0.55;
 }
 .liquid-card:hover {
@@ -425,7 +425,7 @@ body {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,1),
     inset 0 0 0 1px rgba(255,255,255,0.18),
-    inset 0 -10px 22px -14px rgba(139,92,246,0.22),
+    inset 0 -10px 22px -14px rgba(10,78,228,0.22),
     0 28px 60px -18px rgba(30,20,60,0.30),
     0 10px 24px -8px rgba(30,20,60,0.14);
 }
@@ -448,8 +448,8 @@ body {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(500px 320px at 50% -10%, rgba(139,92,246,0.28), transparent 60%),
-    radial-gradient(400px 260px at 30% 110%, rgba(96,165,250,0.14), transparent 60%),
+    radial-gradient(500px 320px at 50% -10%, rgba(10,78,228,0.28), transparent 60%),
+    radial-gradient(400px 260px at 30% 110%, rgba(77,123,255,0.14), transparent 60%),
     linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 30%);
 }
 [data-sidebar="sidebar"] > * { position: relative; z-index: 1; }
@@ -464,13 +464,13 @@ body {
 }
 [data-sidebar="menu-button"][data-active="true"] {
   background:
-    linear-gradient(135deg, rgba(167,139,250,0.42), rgba(124,58,237,0.22) 60%, rgba(96,165,250,0.20)) !important;
-  border: 1px solid rgba(196,181,253,0.35) !important;
+    linear-gradient(135deg, rgba(77,123,255,0.42), rgba(10,78,228,0.22) 60%, rgba(77,123,255,0.20)) !important;
+  border: 1px solid rgba(147,181,255,0.35) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.30),
-    inset 0 -1px 0 rgba(124,58,237,0.30),
-    inset 0 0 20px rgba(167,139,250,0.20),
-    0 8px 24px -6px rgba(124,58,237,0.35) !important;
+    inset 0 -1px 0 rgba(10,78,228,0.30),
+    inset 0 0 20px rgba(77,123,255,0.20),
+    0 8px 24px -6px rgba(10,78,228,0.35) !important;
   color: #fff !important;
   backdrop-filter: blur(10px) saturate(180%);
   -webkit-backdrop-filter: blur(10px) saturate(180%);
@@ -479,9 +479,9 @@ body {
 /* Aurora / iluminação difusa para landing e login */
 @utility fit-aurora {
   background:
-    radial-gradient(1200px 800px at 15% -10%, rgba(139, 92, 246, 0.32), transparent 60%),
-    radial-gradient(900px 700px at 110% 10%, rgba(59, 130, 246, 0.22), transparent 55%),
-    radial-gradient(700px 600px at 50% 120%, rgba(167, 139, 250, 0.26), transparent 60%),
+    radial-gradient(1200px 800px at 15% -10%, rgba(10, 78, 228, 0.32), transparent 60%),
+    radial-gradient(900px 700px at 110% 10%, rgba(77, 123, 255, 0.22), transparent 55%),
+    radial-gradient(700px 600px at 50% 120%, rgba(0, 22, 71, 0.40), transparent 60%),
     #08080D;
 }
 @utility fit-aurora-grid {
@@ -496,7 +496,7 @@ body {
   .liquid-surface, .liquid-card, .liquid-btn {
     background: var(--fit-surface-solid) !important;
   }
-  [data-sidebar="sidebar"] { background: #0D0D10 !important; }
+  [data-sidebar="sidebar"] { background: #001647 !important; }
 }
 
 @keyframes float {

@@ -246,7 +246,7 @@ function EntradaNFeXMLPage() {
       {!parsedNFe ? (
         <Card className="border-dashed border-2 border-slate-300 bg-slate-50/50 hover:bg-slate-100/50 transition-colors">
           <CardContent className="flex flex-col items-center justify-center p-12 text-center space-y-4">
-            <div className="h-16 w-16 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center">
+            <div className="h-16 w-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
               <UploadCloud className="h-8 w-8" />
             </div>
             <div>
@@ -262,7 +262,7 @@ function EntradaNFeXMLPage() {
                 onChange={handleFileUpload}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
-              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold">
                 <FileCode className="mr-2 h-4 w-4" />
                 Buscar Arquivo XML
               </Button>
@@ -277,7 +277,7 @@ function EntradaNFeXMLPage() {
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <FileCode className="h-5 w-5 text-indigo-600" />
+                    <FileCode className="h-5 w-5 text-blue-600" />
                     NF-e nº {parsedNFe.header.nNF} (Série {parsedNFe.header.serie})
                   </CardTitle>
                   <CardDescription className="text-xs text-slate-500 mt-0.5">
@@ -345,7 +345,7 @@ function EntradaNFeXMLPage() {
                                 value={item.matchedVariantId || ""}
                                 onValueChange={(val) => updateItemAction(index, "link", val)}
                               >
-                                <SelectTrigger className="h-8 text-xs bg-indigo-50/50 border-indigo-200">
+                                <SelectTrigger className="h-8 text-xs bg-blue-50/50 border-blue-200">
                                   <SelectValue placeholder="Selecione a variação..." />
                                 </SelectTrigger>
                                 <SelectContent>
