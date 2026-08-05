@@ -1285,20 +1285,25 @@ export async function syncOlistOrderById(externalOrderId: string, orgId?: string
         unit_cost_snapshot: Number(vInfo?.cost_price ?? 0) || null,
       });
 
-      // Dar baixa no estoque via RPC atômica
+      // Dar baixa no estoque via RPC atômica.
+      // IMPORTANTE: apply_stock_movement_system tem 2 overloads no banco. Passar
+      // _notes/_source/_user_id resolve para a versão cujo movement_type NÃO aceita
+      // 'venda' (só 'entrada','saida','ajuste_positivo','ajuste_negativo','inventario',
+      // 'transferencia') — ou seja, essa chamada sempre lançava exceção (capturada
+      // abaixo e só logada como warning), e o estoque nunca era de fato baixado para
+      // pedidos vindos da Olist. A versão sem esses 3 parâmetros aceita 'venda' e
+      // espera _quantity positiva (ela mesma subtrai internamente).
       try {
         await supabaseAdmin.rpc("apply_stock_movement_system", {
           _organization_id: org,
           _variant_id: variantId,
           _location_id: locationId,
           _movement_type: "venda",
-          _quantity: -itemQty,
+          _quantity: itemQty,
           _reason: `Venda Olist #${orderNumber}`,
-          _notes: `Baixa de estoque por pedido #${orderNumber}`,
           _reference_type: "sale",
           _reference_id: saleId,
-          _source: "olist_sync",
-          _user_id: undefined,
+          _metadata: { source: "olist_sync", notes: `Baixa de estoque por pedido #${orderNumber}` },
         });
       } catch (stkErr) {
         console.warn(`[Olist Sync Stock Warning] Não foi possível dar baixa no item ${variantId}:`, stkErr);
