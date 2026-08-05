@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -144,6 +144,16 @@ function Funcionarios() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const [pinDialogFor, setPinDialogFor] = useState<{ id: string; name: string } | null>(null);
+  const setPosPin = useMutation({
+    mutationFn: async ({ user_id, pin }: { user_id: string; pin: string }) => {
+      const { error } = await supabase.rpc("pos_set_operator_pin" as any, { _pin: pin, _user_id: user_id });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("PIN do PDV definido"); setPinDialogFor(null); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const filtered = (employees.data ?? []).filter((p) => {
     if (statusFilter !== "all" && p.status !== statusFilter) return false;
     if (roleFilter !== "all" && !p.roles.some((r) => r.id === roleFilter)) return false;
@@ -248,6 +258,9 @@ function Funcionarios() {
                             <DropdownMenuItem onClick={() => setStatus.mutate({ id: p.id, status: "bloqueado" })}>Bloquear</DropdownMenuItem>
                           )}
                           <DropdownMenuItem disabled={!p.email} onClick={() => { if (p.email) doResend.mutate(p.email); }}>Reenviar convite</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setPinDialogFor({ id: p.id, name: p.full_name ?? "funcionário" })}>
+                            Definir PIN do PDV
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive"
@@ -269,8 +282,66 @@ function Funcionarios() {
         </Card>
 
         <InviteDialog open={inviteOpen} onOpenChange={setInviteOpen} roles={roles.data ?? []} onSubmit={(v) => doInvite.mutate(v)} loading={doInvite.isPending} />
+        <SetPinDialog
+          target={pinDialogFor}
+          onOpenChange={(open) => { if (!open) setPinDialogFor(null); }}
+          onSubmit={(pin) => { if (pinDialogFor) setPosPin.mutate({ user_id: pinDialogFor.id, pin }); }}
+          loading={setPosPin.isPending}
+        />
       </div>
     </RequirePermission>
+  );
+}
+
+function SetPinDialog({
+  target, onOpenChange, onSubmit, loading,
+}: {
+  target: { id: string; name: string } | null;
+  onOpenChange: (v: boolean) => void;
+  onSubmit: (pin: string) => void;
+  loading: boolean;
+}) {
+  const [pin, setPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+
+  useEffect(() => { if (target) { setPin(""); setConfirmPin(""); } }, [target]);
+
+  const valid = /^[0-9]{4}$/.test(pin) && pin === confirmPin;
+
+  return (
+    <Dialog open={!!target} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>PIN do PDV — {target?.name}</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Esse PIN de 4 dígitos é usado para troca rápida de operador (F9) e autorização de gerente no PDV. Nunca é exibido na tela depois de definido.
+          </p>
+          <div>
+            <Label>Novo PIN (4 dígitos)</Label>
+            <Input
+              inputMode="numeric" maxLength={4} value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              placeholder="0000"
+            />
+          </div>
+          <div>
+            <Label>Confirmar PIN</Label>
+            <Input
+              inputMode="numeric" maxLength={4} value={confirmPin}
+              onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              placeholder="0000"
+            />
+          </div>
+          {pin && confirmPin && pin !== confirmPin && (
+            <p className="text-xs text-destructive">Os PINs não coincidem.</p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={() => onSubmit(pin)} disabled={!valid || loading}>{loading ? "Salvando…" : "Salvar PIN"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

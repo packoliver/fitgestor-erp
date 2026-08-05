@@ -125,7 +125,7 @@ function SignInForm({ onDone }: { onDone: () => void }) {
             type="button"
             onClick={forgot}
             disabled={resetting}
-            className="text-[12px] text-violet-300 hover:text-violet-200 underline-offset-2 hover:underline disabled:opacity-50"
+            className="text-[12px] text-blue-300 hover:text-blue-200 underline-offset-2 hover:underline disabled:opacity-50"
           >
             {resetting ? "Enviando..." : "Esqueci minha senha"}
           </button>
@@ -142,7 +142,7 @@ function SignInForm({ onDone }: { onDone: () => void }) {
       </div>
       <Button
         type="submit"
-        className="w-full bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-400 hover:to-blue-400 text-white shadow-lg shadow-violet-500/20"
+        className="w-full bg-gradient-to-r from-blue-800 to-blue-500 hover:from-blue-700 hover:to-blue-400 text-white shadow-lg shadow-blue-800/20"
         disabled={loading}
       >
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -219,7 +219,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       </div>
       <Button
         type="submit"
-        className="w-full bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-400 hover:to-blue-400 text-white shadow-lg shadow-violet-500/20"
+        className="w-full bg-gradient-to-r from-blue-800 to-blue-500 hover:from-blue-700 hover:to-blue-400 text-white shadow-lg shadow-blue-800/20"
         disabled={loading}
       >
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

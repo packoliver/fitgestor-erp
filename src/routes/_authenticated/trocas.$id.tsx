@@ -73,9 +73,10 @@ function TrocaDetalhe() {
     onError: (err: any) => toast.error(err.message ?? "Erro ao estornar"),
   });
 
+  const { has } = usePermissions();
+
   if (!ex) return <div>Carregando…</div>;
 
-  const { has } = usePermissions();
   const canReverse = ex.status === "completed" && has("exchanges.reverse");
   const canPrintReceipt = has("exchanges.print_receipt");
   const canPrintVoucher = has("exchanges.print_voucher");

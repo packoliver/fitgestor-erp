@@ -49,8 +49,8 @@ export function DispatchDeliveryDialog({ open, onClose, deliveryData }: Dispatch
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="w-[95vw] sm:max-w-md p-6 rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-indigo-700 text-lg font-extrabold">
-            <Truck className="h-5 w-5 text-indigo-600" />
+          <DialogTitle className="flex items-center gap-2 text-blue-700 text-lg font-extrabold">
+            <Truck className="h-5 w-5 text-blue-600" />
             Despachar Entrega para Motoboy
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-600">
@@ -93,7 +93,7 @@ export function DispatchDeliveryDialog({ open, onClose, deliveryData }: Dispatch
               onClick={() => window.open(googleUrl, "_blank")}
               className="h-10 text-xs font-bold border-slate-200 text-slate-700 gap-1.5 rounded-xl"
             >
-              <Navigation className="h-4 w-4 text-indigo-600" />
+              <Navigation className="h-4 w-4 text-blue-600" />
               Google Maps
               <ExternalLink className="h-3 w-3 text-slate-400" />
             </Button>
@@ -127,7 +127,7 @@ export function DispatchDeliveryDialog({ open, onClose, deliveryData }: Dispatch
               className={`w-full h-11 font-bold text-xs rounded-xl gap-2 transition-all ${
                 copiedFull
                   ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                  : "border-indigo-200 bg-indigo-50/50 text-indigo-900 hover:bg-indigo-100"
+                  : "border-blue-200 bg-blue-50/50 text-blue-900 hover:bg-blue-100"
               }`}
             >
               {copiedFull ? (
@@ -137,7 +137,7 @@ export function DispatchDeliveryDialog({ open, onClose, deliveryData }: Dispatch
                 </>
               ) : (
                 <>
-                  <Copy className="h-4 w-4 text-indigo-600" />
+                  <Copy className="h-4 w-4 text-blue-600" />
                   <span>Copiar Ficha do Pedido</span>
                 </>
               )}

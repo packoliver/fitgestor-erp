@@ -226,7 +226,7 @@ export function AddressAutocomplete({
             className="pl-9 h-10 text-xs rounded-xl border-slate-200"
             autoComplete="off"
           />
-          {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-600 animate-spin" />}
+          {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-600 animate-spin" />}
         </div>
 
         {open && query.trim().length >= 3 && (
@@ -243,9 +243,9 @@ export function AddressAutocomplete({
                   key={item.placeId}
                   type="button"
                   onClick={() => handleSelectSuggestion(item)}
-                  className="w-full text-left p-2.5 hover:bg-indigo-50/70 transition flex items-start gap-2 text-xs"
+                  className="w-full text-left p-2.5 hover:bg-blue-50/70 transition flex items-start gap-2 text-xs"
                 >
-                  <MapPin className="h-3.5 w-3.5 text-indigo-600 shrink-0 mt-0.5" />
+                  <MapPin className="h-3.5 w-3.5 text-blue-600 shrink-0 mt-0.5" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold text-slate-800">{item.primary}</div>
                     {item.secondary && (

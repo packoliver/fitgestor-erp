@@ -30,7 +30,7 @@ function SetupChecklistPage() {
         orgOk: !!org.data?.name,
         stockOk: (stock.count ?? 0) > 0,
         cashOk: (cash.count ?? 0) > 0,
-        holidaysOk: (holidays.count ?? 0) >= 0,
+        holidaysOk: (holidays.count ?? 0) > 0,
         shipOk: !!shipset.data?.cutoff_time,
         couriersOk: (couriers.count ?? 0) > 0,
         employeesOk: (employees.count ?? 0) > 1,

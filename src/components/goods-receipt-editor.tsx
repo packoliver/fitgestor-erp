@@ -1391,7 +1391,7 @@ type OrgTone = "emerald" | "sky" | "violet" | "amber";
 const toneClasses: Record<OrgTone, { border: string; bg: string; text: string; badge: string }> = {
   emerald: { border: "border-emerald-300", bg: "bg-emerald-50/60", text: "text-emerald-900", badge: "bg-emerald-100 text-emerald-800 border-emerald-300" },
   sky: { border: "border-sky-300", bg: "bg-sky-50/60", text: "text-sky-900", badge: "bg-sky-100 text-sky-800 border-sky-300" },
-  violet: { border: "border-violet-300", bg: "bg-violet-50/60", text: "text-violet-900", badge: "bg-violet-100 text-violet-800 border-violet-300" },
+  violet: { border: "border-blue-300", bg: "bg-blue-50/60", text: "text-blue-900", badge: "bg-blue-100 text-blue-800 border-blue-300" },
   amber: { border: "border-amber-300", bg: "bg-amber-50/60", text: "text-amber-900", badge: "bg-amber-100 text-amber-800 border-amber-300" },
 };
 

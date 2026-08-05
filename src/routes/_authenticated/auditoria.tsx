@@ -14,7 +14,24 @@ export const Route = createFileRoute("/_authenticated/auditoria")({
 function Aud() {
   const { data, isLoading } = useQuery({
     queryKey: ["audit-logs"],
-    queryFn: async () => (await supabase.from("audit_logs").select("*, profiles(full_name, email)").order("created_at", { ascending: false }).limit(300)).data ?? [],
+    queryFn: async () => {
+      // audit_logs.user_id referencia auth.users, sem FK direta pra profiles —
+      // o PostgREST não consegue montar esse embed (a query sempre falhava e o
+      // erro era descartado, então a tela sempre parecia "sem registros").
+      const { data: logs, error } = await supabase
+        .from("audit_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(300);
+      if (error) throw error;
+      const rows = logs ?? [];
+      const userIds = [...new Set(rows.map((l) => l.user_id).filter((v): v is string => !!v))];
+      const { data: profs } = userIds.length
+        ? await supabase.from("profiles").select("id, full_name, email").in("id", userIds)
+        : { data: [] as { id: string; full_name: string | null; email: string | null }[] };
+      const byId = new Map((profs ?? []).map((p) => [p.id, p]));
+      return rows.map((l) => ({ ...l, profiles: l.user_id ? byId.get(l.user_id) ?? null : null }));
+    },
   });
 
   return (

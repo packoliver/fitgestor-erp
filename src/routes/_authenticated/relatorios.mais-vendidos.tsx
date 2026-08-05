@@ -57,7 +57,7 @@ function MaisVendidosPage() {
         `)
         .not("sale.completed_at", "is", null)
         .gte("sale.completed_at", since)
-        .neq("sale.status", "cancelada")
+        .neq("sale.status", "cancelled")
         .limit(5000);
       if (error) throw error;
       return data ?? [];

@@ -28,11 +28,14 @@ function RelatoriosPage() {
     queryFn: async () => {
       let q = (supabase.from("sales") as any)
         .select(`
-          id, sale_number, total, subtotal, discount, freight_amount,
-          created_at, delivery_method, seller_id, client_id,
+          id, sale_number, total, subtotal, order_discount_total, surcharge_total,
+          created_at, delivery_method, seller_id, client_id, status,
           sale_payments(payment_method, amount),
           sale_items(quantity, unit_price, original_unit_price, variant:product_variants(id, size, sku, product:products(name, cost_price)))
         `)
+        // "draft"/"pending" nunca viraram venda de fato, e "cancelled" foi estornada —
+        // nenhum dos dois deve contar como faturamento.
+        .not("status", "in", "(draft,pending,cancelled)")
         .order("created_at", { ascending: false });
 
       const now = new Date();
@@ -47,7 +50,9 @@ function RelatoriosPage() {
         q = q.gte("created_at", start);
       }
 
-      return (await q).data ?? [];
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
@@ -59,7 +64,15 @@ function RelatoriosPage() {
         .select("*")
         .order("opened_at", { ascending: false })
         .limit(30);
-      return data ?? [];
+      const rows = data ?? [];
+      // cash_sessions.opened_by referencia auth.users, sem FK direta pra profiles
+      // (não dá pra usar embed do PostgREST) — busca os nomes à parte.
+      const userIds = [...new Set(rows.map((r: any) => r.opened_by).filter(Boolean))];
+      const { data: profs } = userIds.length
+        ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
+        : { data: [] as { id: string; full_name: string | null }[] };
+      const nameById = new Map((profs ?? []).map((p) => [p.id, p.full_name]));
+      return rows.map((r: any) => ({ ...r, opened_by_name: nameById.get(r.opened_by) ?? null }));
     },
   });
 
@@ -70,7 +83,7 @@ function RelatoriosPage() {
         .select(`
           id, size, sku, barcode, sale_price,
           product:products(id, name, color, cost_price, minimum_stock_alert),
-          balances:inventory_balances(physical_quantity, reserved_quantity)
+          balances:inventory_balances(physical_quantity, reserved_quantity, location:stock_locations(type))
         `);
       return data ?? [];
     },
@@ -78,8 +91,8 @@ function RelatoriosPage() {
 
   // ── Cálculos Financeiros & DRE ───────────────────────────────────────────
   const totalRevenue = sales.reduce((acc: number, s: any) => acc + Number(s.total || 0), 0);
-  const totalDiscounts = sales.reduce((acc: number, s: any) => acc + Number(s.discount || 0), 0);
-  const totalFreight = sales.reduce((acc: number, s: any) => acc + Number(s.freight_amount || 0), 0);
+  const totalDiscounts = sales.reduce((acc: number, s: any) => acc + Number(s.order_discount_total || 0), 0);
+  const totalFreight = sales.reduce((acc: number, s: any) => acc + Number(s.surcharge_total || 0), 0);
   const ticketMedio = sales.length > 0 ? totalRevenue / sales.length : 0;
 
   // Lucro bruto estimado
@@ -119,9 +132,21 @@ function RelatoriosPage() {
   const criticalItems: any[] = [];
   const productSalesMap: Record<string, { name: string; sku: string; qty: number; revenue: number }> = {};
 
+  // Tipos de local que não representam estoque vendável (quarentena/perda) ficam
+  // de fora da soma — senão peça avariada "conta" como disponível pra venda.
+  const NON_SELLABLE_LOCATION_TYPES = new Set(["quarentena_avariado", "quarentena_defeituoso", "perda"]);
+
   products.forEach((v: any) => {
-    const bal = (v.balances ?? [])[0];
-    const qty = bal ? Number(bal.physical_quantity || 0) - Number(bal.reserved_quantity || 0) : 0;
+    // Soma o saldo de TODOS os locais vendáveis (antes só pegava balances[0],
+    // ou seja, um local arbitrário — subestimava o estoque real em qualquer
+    // organização com mais de um local, que é o caso de toda org por padrão).
+    const sellableBalances = (v.balances ?? []).filter(
+      (b: any) => !NON_SELLABLE_LOCATION_TYPES.has(b.location?.type),
+    );
+    const qty = sellableBalances.reduce(
+      (s: number, b: any) => s + (Number(b.physical_quantity || 0) - Number(b.reserved_quantity || 0)),
+      0,
+    );
     const cost = Number(v.product?.cost_price || 0);
     const price = Number(v.sale_price || 0);
 
@@ -195,11 +220,11 @@ function RelatoriosPage() {
             2. Turnos de Caixa
           </TabsTrigger>
           <TabsTrigger value="entregas" className="rounded-xl py-2.5 text-xs font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-xs">
-            <Truck className="h-4 w-4 text-indigo-600" />
+            <Truck className="h-4 w-4 text-blue-600" />
             3. Entregas & Logística
           </TabsTrigger>
           <TabsTrigger value="estoque" className="rounded-xl py-2.5 text-xs font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-xs">
-            <Package className="h-4 w-4 text-purple-600" />
+            <Package className="h-4 w-4 text-blue-600" />
             4. Estoque & Curva ABC
           </TabsTrigger>
         </TabsList>
@@ -219,7 +244,7 @@ function RelatoriosPage() {
             <Card className="p-5 rounded-2xl bg-white border-slate-200 shadow-sm space-y-2">
               <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
                 <span>Ticket Médio</span>
-                <TrendingUp className="h-4 w-4 text-indigo-600" />
+                <TrendingUp className="h-4 w-4 text-blue-600" />
               </div>
               <p className="text-2xl font-extrabold text-slate-900">{money(ticketMedio)}</p>
               <p className="text-[11px] text-slate-500 font-medium">Média por pedido</p>
@@ -246,7 +271,7 @@ function RelatoriosPage() {
 
           <Card className="p-6 rounded-2xl bg-white border-slate-200 shadow-sm space-y-4">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-indigo-600" />
+              <Layers className="h-4 w-4 text-blue-600" />
               Detalhamento por Meios de Pagamento
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -316,9 +341,9 @@ function RelatoriosPage() {
                           </Badge>
                           <div className="text-[11px] text-slate-500 mt-1 font-mono">{formatDateTime(s.opened_at)}</div>
                         </TableCell>
-                        <TableCell className="font-bold text-xs">{money(Number(s.opening_balance || 0))}</TableCell>
+                        <TableCell className="font-bold text-xs">{money(Number(s.opening_amount || 0))}</TableCell>
                         <TableCell className="text-xs">
-                          <span className="font-semibold text-slate-800">{s.opened_by || "Operador"}</span>
+                          <span className="font-semibold text-slate-800">{s.opened_by_name || "Operador"}</span>
                         </TableCell>
                         <TableCell className="text-xs text-slate-600">
                           {s.closed_at ? formatDateTime(s.closed_at) : "Em andamento"}
@@ -342,7 +367,7 @@ function RelatoriosPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="p-5 rounded-2xl bg-white border-slate-200 shadow-sm space-y-2">
               <span className="text-xs font-semibold text-slate-500">Volume de Entregas (Delivery)</span>
-              <p className="text-2xl font-extrabold text-indigo-600">{deliveryPercent.toFixed(1)}%</p>
+              <p className="text-2xl font-extrabold text-blue-600">{deliveryPercent.toFixed(1)}%</p>
               <p className="text-[11px] text-slate-500 font-medium">{deliverySales.length} entregas de {sales.length} vendas</p>
             </Card>
 
@@ -361,7 +386,7 @@ function RelatoriosPage() {
 
           <Card className="p-6 rounded-2xl bg-white border-slate-200 shadow-sm space-y-4">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Truck className="h-4 w-4 text-indigo-600" />
+              <Truck className="h-4 w-4 text-blue-600" />
               Histórico de Entregas do Período
             </h3>
             <div className="overflow-x-auto rounded-xl border border-slate-200">
@@ -389,12 +414,12 @@ function RelatoriosPage() {
                           <div className="text-[10px] text-slate-400 font-normal">{formatDateTime(s.created_at)}</div>
                         </TableCell>
                         <TableCell>
-                          <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100 font-bold text-[10px]">
+                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 font-bold text-[10px]">
                             {s.delivery_method === "motoboy" ? "🛵 Motoboy" : "📦 Correios/Transportadora"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-xs font-semibold text-emerald-700">
-                          {money(Number(s.freight_amount || 0))}
+                          {money(Number(s.surcharge_total || 0))}
                         </TableCell>
                         <TableCell className="text-right font-extrabold text-xs">
                           {money(Number(s.total || 0))}
@@ -419,7 +444,7 @@ function RelatoriosPage() {
 
             <Card className="p-5 rounded-2xl bg-white border-slate-200 shadow-sm space-y-2">
               <span className="text-xs font-semibold text-slate-500">Valor de Venda Potencial</span>
-              <p className="text-2xl font-extrabold text-indigo-600">{money(totalStockPotential)}</p>
+              <p className="text-2xl font-extrabold text-blue-600">{money(totalStockPotential)}</p>
               <p className="text-[11px] text-slate-500 font-medium">Projeção de faturamento bruto</p>
             </Card>
 

@@ -54,10 +54,19 @@ function OrdemDetalhe() {
   const events = useQuery({
     queryKey: ["shipment-events", id],
     queryFn: async () => {
+      // shipment_events.actor_id não tem FK nenhuma (nem pra auth.users, nem pra
+      // profiles) — o embed "actor:profiles(...)" sempre falhava no PostgREST,
+      // deixando a timeline de eventos sempre em branco. Busca o nome à parte.
       const { data, error } = await supabase.from("shipment_events")
-        .select("*, actor:profiles(full_name)").eq("shipment_id", id).order("created_at", { ascending: false });
+        .select("*").eq("shipment_id", id).order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as any[];
+      const rows = (data ?? []) as any[];
+      const actorIds = [...new Set(rows.map((r) => r.actor_id).filter(Boolean))];
+      const { data: profs } = actorIds.length
+        ? await supabase.from("profiles").select("id, full_name").in("id", actorIds)
+        : { data: [] as { id: string; full_name: string | null }[] };
+      const byId = new Map((profs ?? []).map((p) => [p.id, p]));
+      return rows.map((r) => ({ ...r, actor: r.actor_id ? byId.get(r.actor_id) ?? null : null }));
     },
   });
 

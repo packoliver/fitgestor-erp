@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileCode, UploadCloud, CheckCircle2, ArrowRight, PackagePlus, AlertCircle, RefreshCw } from "lucide-react";
 import { parseNFeXML, ParsedNFe, NFeItem } from "@/lib/nfe-parser";
 import { generateSimpleSKU } from "@/lib/sku-generator";
-import { shopifyService } from "@/services/shopify-service";
+import { pushInventoryToShopifyFn } from "@/lib/shopify-sync.functions";
 import { currentOrgId, formatBRL } from "@/lib/erp";
 import { toast } from "sonner";
 
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/estoque/entrada-xml")({
 
 function EntradaNFeXMLPage() {
   const navigate = useNavigate();
+  const pushShopifyStock = useServerFn(pushInventoryToShopifyFn);
   const [parsedNFe, setParsedNFe] = useState<ParsedNFe | null>(null);
   const [items, setItems] = useState<NFeItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -201,25 +203,33 @@ function EntradaNFeXMLPage() {
           });
         }
 
-        // Registrar Histórico na Auditoria de Logs
-        await (supabase as any).from("stock_movements").insert({
+        // Registrar Histórico na Auditoria de Logs (tabela real é inventory_movements —
+        // "stock_movements" nunca existiu, então esse registro nunca era gravado antes)
+        await supabase.from("inventory_movements").insert({
           organization_id: orgId,
           variant_id: targetVariantId,
-          movement_type: "entry",
+          location_id: locationId,
+          movement_type: "entrada",
           quantity: item.quantity,
+          quantity_before: currentQty,
+          quantity_after: newQty,
           reference_type: "nfe_import",
-          notes: `Entrada via NF-e nº ${parsedNFe.header.nNF} (${parsedNFe.header.supplierName})`,
-          created_by: user.id,
-        }).catch(() => null);
+          reason: `Entrada via NF-e nº ${parsedNFe.header.nNF}`,
+          notes: `Fornecedor: ${parsedNFe.header.supplierName}`,
+          user_id: user.id,
+        }).then(({ error }) => {
+          if (error) console.warn("Falha ao registrar movimentação de estoque (entrada NF-e):", error);
+        });
 
         if (targetSku) {
           updatedSkus.push({ sku: targetSku, newQty });
         }
       }
 
-      // 4. Disparar Sincronização Shopify em Segundo Plano
+      // 4. Disparar Sincronização Shopify em Segundo Plano (roda no servidor,
+      // busca o saldo atual no momento do push)
       for (const itemSync of updatedSkus) {
-        shopifyService.syncInventoryToShopify(itemSync.sku, itemSync.newQty).catch((err: any) => {
+        pushShopifyStock({ data: { sku: itemSync.sku } }).catch((err: any) => {
           console.warn("Erro no sync em segundo plano com Shopify:", err);
         });
       }
@@ -246,7 +256,7 @@ function EntradaNFeXMLPage() {
       {!parsedNFe ? (
         <Card className="border-dashed border-2 border-slate-300 bg-slate-50/50 hover:bg-slate-100/50 transition-colors">
           <CardContent className="flex flex-col items-center justify-center p-12 text-center space-y-4">
-            <div className="h-16 w-16 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center">
+            <div className="h-16 w-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
               <UploadCloud className="h-8 w-8" />
             </div>
             <div>
@@ -262,7 +272,7 @@ function EntradaNFeXMLPage() {
                 onChange={handleFileUpload}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
-              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold">
                 <FileCode className="mr-2 h-4 w-4" />
                 Buscar Arquivo XML
               </Button>
@@ -277,7 +287,7 @@ function EntradaNFeXMLPage() {
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <FileCode className="h-5 w-5 text-indigo-600" />
+                    <FileCode className="h-5 w-5 text-blue-600" />
                     NF-e nº {parsedNFe.header.nNF} (Série {parsedNFe.header.serie})
                   </CardTitle>
                   <CardDescription className="text-xs text-slate-500 mt-0.5">
@@ -345,7 +355,7 @@ function EntradaNFeXMLPage() {
                                 value={item.matchedVariantId || ""}
                                 onValueChange={(val) => updateItemAction(index, "link", val)}
                               >
-                                <SelectTrigger className="h-8 text-xs bg-indigo-50/50 border-indigo-200">
+                                <SelectTrigger className="h-8 text-xs bg-blue-50/50 border-blue-200">
                                   <SelectValue placeholder="Selecione a variação..." />
                                 </SelectTrigger>
                                 <SelectContent>

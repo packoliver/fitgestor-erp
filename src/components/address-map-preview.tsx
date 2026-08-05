@@ -65,7 +65,7 @@ export function AddressMapPreview({ lat, lng, label, className }: AddressMapPrev
           href={gmapsUrl}
           target="_blank"
           rel="noreferrer"
-          className="text-[11px] text-indigo-600 hover:underline inline-flex items-center gap-1"
+          className="text-[11px] text-blue-600 hover:underline inline-flex items-center gap-1"
         >
           Abrir no Google Maps <ExternalLink className="h-3 w-3" />
         </a>
