@@ -6,7 +6,6 @@ import {
   getOpenSession, money, normalizeDigits,
   PAYMENT_LABELS, AVAILABLE_METHODS, PaymentMethod, validCPF,
 } from "@/lib/pos";
-import { currentOrgId } from "@/lib/erp";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -582,20 +581,14 @@ function QuickExchangeDialog({ open, onClose, clientId, onVoucherGenerated, onAb
     if (totalReturn <= 0) { toast.error("Selecione ao menos um item para devolver."); return; }
     setSaving(true);
     try {
-      const org = await currentOrgId();
-      if (!org) throw new Error("Organização não identificada.");
-      const code = `QSF-${Date.now().toString(36).toUpperCase().slice(-6)}`;
-      const { error } = await (supabase.from("exchange_vouchers") as any).insert({
-        organization_id: org,
-        code,
-        original_amount: totalReturn,
-        current_balance: totalReturn,
-        status: "active",
-        client_id: clientId ?? null,
+      const { data, error } = await supabase.rpc("issue_quick_exchange_voucher" as any, {
+        _amount: totalReturn,
+        _client_id: clientId ?? null,
       });
       if (error) throw error;
-      toast.success(`Vale-Troca ${code} gerado! Saldo: ${money(totalReturn)}`);
-      onVoucherGenerated({ code, balance: totalReturn });
+      const voucher = Array.isArray(data) ? data[0] : data;
+      toast.success(`Vale-Troca ${voucher.code} gerado! Saldo: ${money(totalReturn)}`);
+      onVoucherGenerated({ code: voucher.code, balance: totalReturn });
       onClose();
     } catch (err: any) {
       toast.error(err.message || "Erro ao gerar vale.");
