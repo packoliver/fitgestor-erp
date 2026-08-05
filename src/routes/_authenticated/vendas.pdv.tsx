@@ -249,7 +249,7 @@ function CheckoutDialog({
 
   useEffect(() => {
     if (open && remaining > 0) setPayAmount(remaining.toFixed(2));
-  }, [open, total]);
+  }, [open, total, remaining, setPayAmount]);
 
   const handlePixSuccess = () => {
     const amount = Number(payAmount) || remaining;
@@ -806,15 +806,8 @@ function ShiftSummaryDialog({ open, onClose, sellerName, sellerId }: ShiftSummar
 interface PosUser {
   id: string;
   name: string;
-  pin: string;
   role: "vendedora" | "gerente";
 }
-
-const DEFAULT_POS_USERS: PosUser[] = [
-  { id: "usr_carla", name: "Carla", pin: "1010", role: "vendedora" },
-  { id: "usr_mariana", name: "Mariana", pin: "2020", role: "vendedora" },
-  { id: "usr_juliana", name: "Juliana (Gerente)", pin: "9999", role: "gerente" },
-];
 
 interface QuickPinDialogProps {
   open: boolean;
@@ -825,15 +818,41 @@ interface QuickPinDialogProps {
 function QuickPinDialog({ open, onClose, onSelectUser }: QuickPinDialogProps) {
   const [pin, setPin] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     if (open) {
       setPin("");
       setErrorMsg("");
+      setVerifying(false);
     }
   }, [open]);
 
+  const verifyPin = useCallback(async (enteredPin: string) => {
+    setVerifying(true);
+    try {
+      const { data, error } = await supabase.rpc("pos_verify_operator_pin" as any, { _pin: enteredPin });
+      if (error) throw error;
+      const found = Array.isArray(data) ? data[0] : data;
+      if (found) {
+        const user: PosUser = { id: found.id, name: found.full_name ?? "Operador", role: found.is_manager ? "gerente" : "vendedora" };
+        toast.success(`Operador alterado para ${user.name}`);
+        onSelectUser(user);
+        onClose();
+      } else {
+        setErrorMsg("PIN inválido. Tente novamente.");
+        setTimeout(() => setPin(""), 600);
+      }
+    } catch (e: any) {
+      setErrorMsg(e.message ?? "Erro ao verificar PIN.");
+      setTimeout(() => setPin(""), 600);
+    } finally {
+      setVerifying(false);
+    }
+  }, [onSelectUser, onClose]);
+
   const handleDigit = useCallback((digit: string) => {
+    if (verifying) return;
     setPin((prev) => {
       if (prev.length < 4) {
         const next = prev + digit;
@@ -845,7 +864,7 @@ function QuickPinDialog({ open, onClose, onSelectUser }: QuickPinDialogProps) {
       }
       return prev;
     });
-  }, []);
+  }, [verifying, verifyPin]);
 
   const handleClear = useCallback(() => {
     setPin("");
@@ -856,18 +875,6 @@ function QuickPinDialog({ open, onClose, onSelectUser }: QuickPinDialogProps) {
     setPin((prev) => prev.slice(0, -1));
     setErrorMsg("");
   }, []);
-
-  const verifyPin = useCallback((enteredPin: string) => {
-    const found = DEFAULT_POS_USERS.find((u) => u.pin === enteredPin);
-    if (found) {
-      toast.success(`Operador alterado para ${found.name}`);
-      onSelectUser(found);
-      onClose();
-    } else {
-      setErrorMsg("PIN inválido. Tente novamente.");
-      setTimeout(() => setPin(""), 600);
-    }
-  }, [onSelectUser, onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -964,10 +971,9 @@ function QuickPinDialog({ open, onClose, onSelectUser }: QuickPinDialogProps) {
           </button>
         </div>
 
-        <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 space-y-1">
-          <p>PINS: <code>1010</code> (Carla) · <code>2020</code> (Mariana)</p>
-          <p><code>9999</code> (Juliana Gerente)</p>
-        </div>
+        <p className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+          Não tem um PIN? Peça a um administrador para configurar em Funcionários.
+        </p>
       </DialogContent>
     </Dialog>
   );
@@ -1018,14 +1024,21 @@ function ManagerAuthDialog({ open, actionName, onClose, onAuthorized }: ManagerA
     setErrorMsg("");
   }, []);
 
-  const verifyManagerPin = useCallback((enteredPin: string) => {
-    const manager = DEFAULT_POS_USERS.find((u) => u.pin === enteredPin && u.role === "gerente");
-    if (manager) {
-      toast.success(`Ação autorizada por ${manager.name}!`);
-      onAuthorized();
-      onClose();
-    } else {
-      setErrorMsg("PIN do Gerente incorreto.");
+  const verifyManagerPin = useCallback(async (enteredPin: string) => {
+    try {
+      const { data, error } = await supabase.rpc("pos_verify_manager_pin" as any, { _pin: enteredPin });
+      if (error) throw error;
+      const manager = Array.isArray(data) ? data[0] : data;
+      if (manager) {
+        toast.success(`Ação autorizada por ${manager.full_name ?? "gerente"}!`);
+        onAuthorized();
+        onClose();
+      } else {
+        setErrorMsg("PIN do Gerente incorreto.");
+        setTimeout(() => setPin(""), 600);
+      }
+    } catch (e: any) {
+      setErrorMsg(e.message ?? "Erro ao verificar PIN.");
       setTimeout(() => setPin(""), 600);
     }
   }, [onAuthorized, onClose]);
@@ -1623,14 +1636,14 @@ function VendasPdvPage() {
   const [managerAuthOpen, setManagerAuthOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<{ actionName: string; callback: () => void } | null>(null);
 
-  function requireManagerApproval(actionName: string, onApproved: () => void) {
+  const requireManagerApproval = useCallback((actionName: string, onApproved: () => void) => {
     if (sellerRole === "gerente" || isAdmin) {
       onApproved();
     } else {
       setPendingAction({ actionName, callback: onApproved });
       setManagerAuthOpen(true);
     }
-  }
+  }, [sellerRole, isAdmin]);
 
   function handleSelectPosUser(user: PosUser) {
     setSellerId(user.id);
@@ -2105,7 +2118,7 @@ function VendasPdvPage() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [cart.length, checkoutOpen, clientOpen, exchangeOpen, sellerOpen, configOpen, doneSale, pickedVariant, term]);
+  }, [cart.length, checkoutOpen, clientOpen, exchangeOpen, sellerOpen, configOpen, doneSale, pickedVariant, term, shiftOpen, pinDialogOpen, managerAuthOpen, requireManagerApproval]);
 
   const timeLabel = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   const dateLabel = now.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
