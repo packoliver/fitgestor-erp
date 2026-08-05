@@ -1,20 +1,5 @@
-export interface ShopifyConfig {
-  storeDomain: string;
-  accessToken: string;
-  locationId: string;
-  apiVersion: string;
-}
-
-export interface ShopifySyncLog {
-  id: string;
-  sku: string;
-  quantity: number;
-  status: "pending" | "success" | "error";
-  attempts: number;
-  errorMessage?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+// Tipos do payload de Webhook de pedido da Shopify (orders/create, orders/paid).
+// Ver: https://shopify.dev/docs/api/webhooks?reference=toml#list-of-topics-orders
 
 export interface ShopifyWebhookLineItem {
   sku?: string | null;
@@ -24,10 +9,14 @@ export interface ShopifyWebhookLineItem {
 }
 
 export interface ShopifyWebhookOrderPayload {
+  id: number | string;
   order_number: number | string;
+  name?: string;
+  financial_status?: string;
   total_price?: string | number;
   subtotal_price?: string | number;
   total_discounts?: string | number;
+  total_shipping_price_set?: { shop_money?: { amount?: string | number } };
   created_at?: string;
   line_items: ShopifyWebhookLineItem[];
 }

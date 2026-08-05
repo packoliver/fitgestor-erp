@@ -38,7 +38,8 @@ import {
 import { AddressAutocomplete, type AddressResult } from "@/components/address-autocomplete";
 import { DispatchDeliveryDialog } from "@/components/dispatch-delivery-dialog";
 import { type DeliveryAddressData } from "@/lib/delivery-utils";
-import { syncInventoryToShopify } from "@/services/shopify-service";
+import { useServerFn } from "@tanstack/react-start";
+import { pushInventoryToShopifyFn } from "@/lib/shopify-sync.functions";
 import { PixPaymentDialog } from "@/components/pix-payment-dialog";
 
 export const Route = createFileRoute("/_authenticated/vendas/pdv")({
@@ -1604,6 +1605,7 @@ function BlindCloseShiftDialog({
 // ─────────────────────────────────────────────────────────────────────────────
 function VendasPdvPage() {
   const qc = useQueryClient();
+  const pushShopifyStock = useServerFn(pushInventoryToShopifyFn);
   const searchRef = useRef<HTMLInputElement>(null);
   const { has } = usePermissions();
   const isAdmin = has("user.manage") || has("role.manage") || has("settings.manage");
@@ -1988,11 +1990,11 @@ function VendasPdvPage() {
     },
     onSuccess: (data: any) => {
       toast.success(`Venda #${data.sale_number ?? ""} concluída! ✅`);
-      // Dispara sincronização com e-commerce Shopify em segundo plano
+      // Dispara sincronização com e-commerce Shopify em segundo plano (roda no
+      // servidor — busca o saldo real no momento do push, não um valor calculado aqui)
       cart.forEach((l) => {
         if (l.sku) {
-          const remainingQty = Math.max(0, l.available - l.quantity);
-          syncInventoryToShopify(l.sku, remainingQty).catch(console.warn);
+          pushShopifyStock({ data: { sku: l.sku } }).catch(console.warn);
         }
       });
       const cashPaid = payments.filter((p) => p.payment_method === "cash").reduce((s, p) => s + p.amount, 0);

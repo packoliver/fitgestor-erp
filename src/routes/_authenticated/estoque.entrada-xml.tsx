@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileCode, UploadCloud, CheckCircle2, ArrowRight, PackagePlus, AlertCircle, RefreshCw } from "lucide-react";
 import { parseNFeXML, ParsedNFe, NFeItem } from "@/lib/nfe-parser";
 import { generateSimpleSKU } from "@/lib/sku-generator";
-import { shopifyService } from "@/services/shopify-service";
+import { pushInventoryToShopifyFn } from "@/lib/shopify-sync.functions";
 import { currentOrgId, formatBRL } from "@/lib/erp";
 import { toast } from "sonner";
 
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/estoque/entrada-xml")({
 
 function EntradaNFeXMLPage() {
   const navigate = useNavigate();
+  const pushShopifyStock = useServerFn(pushInventoryToShopifyFn);
   const [parsedNFe, setParsedNFe] = useState<ParsedNFe | null>(null);
   const [items, setItems] = useState<NFeItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -201,25 +203,33 @@ function EntradaNFeXMLPage() {
           });
         }
 
-        // Registrar Histórico na Auditoria de Logs
-        await (supabase as any).from("stock_movements").insert({
+        // Registrar Histórico na Auditoria de Logs (tabela real é inventory_movements —
+        // "stock_movements" nunca existiu, então esse registro nunca era gravado antes)
+        await supabase.from("inventory_movements").insert({
           organization_id: orgId,
           variant_id: targetVariantId,
-          movement_type: "entry",
+          location_id: locationId,
+          movement_type: "entrada",
           quantity: item.quantity,
+          quantity_before: currentQty,
+          quantity_after: newQty,
           reference_type: "nfe_import",
-          notes: `Entrada via NF-e nº ${parsedNFe.header.nNF} (${parsedNFe.header.supplierName})`,
-          created_by: user.id,
-        }).catch(() => null);
+          reason: `Entrada via NF-e nº ${parsedNFe.header.nNF}`,
+          notes: `Fornecedor: ${parsedNFe.header.supplierName}`,
+          user_id: user.id,
+        }).then(({ error }) => {
+          if (error) console.warn("Falha ao registrar movimentação de estoque (entrada NF-e):", error);
+        });
 
         if (targetSku) {
           updatedSkus.push({ sku: targetSku, newQty });
         }
       }
 
-      // 4. Disparar Sincronização Shopify em Segundo Plano
+      // 4. Disparar Sincronização Shopify em Segundo Plano (roda no servidor,
+      // busca o saldo atual no momento do push)
       for (const itemSync of updatedSkus) {
-        shopifyService.syncInventoryToShopify(itemSync.sku, itemSync.newQty).catch((err: any) => {
+        pushShopifyStock({ data: { sku: itemSync.sku } }).catch((err: any) => {
           console.warn("Erro no sync em segundo plano com Shopify:", err);
         });
       }
