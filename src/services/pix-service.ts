@@ -57,19 +57,18 @@ export const pixService = {
   },
 
   /**
-   * Consulta o status do pagamento PIX (Polling / Webhook).
+   * Consulta o status do pagamento PIX.
+   *
+   * IMPORTANTE: este QR Code não está ligado a nenhum banco/PSP real — não
+   * existe hoje uma integração de pagamento de verdade (ver README/PR). Não
+   * há nenhum jeito automático de saber se o dinheiro entrou de fato; a
+   * confirmação é sempre manual, feita pelo operador em confirmPaymentManually().
    */
   async checkPixPaymentStatus(paymentId: string): Promise<PixStatusResponse> {
     const order = memoryPixOrders.get(paymentId);
 
     if (!order) {
       return { payment_id: paymentId, status: "pending" };
-    }
-
-    // Auto-aprovação de simulação após 12 segundos para testes práticos do caixa se não for aprovado manualmente
-    const elapsedSeconds = (Date.now() - order.createdAt) / 1000;
-    if (elapsedSeconds > 12 && order.status === "pending") {
-      order.status = "approved";
     }
 
     return {
@@ -80,9 +79,11 @@ export const pixService = {
   },
 
   /**
-   * Aprova manualmente o pagamento (botão de simulação/teste para o operador).
+   * Confirma manualmente que o operador conferiu o recebimento no extrato do
+   * banco. Não existe verificação automática — quem confirma é responsável
+   * por checar de fato antes de clicar.
    */
-  async simulatePaymentApproval(paymentId: string): Promise<void> {
+  async confirmPaymentManually(paymentId: string): Promise<void> {
     const order = memoryPixOrders.get(paymentId);
     if (order) {
       order.status = "approved";

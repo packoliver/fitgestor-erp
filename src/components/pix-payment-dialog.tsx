@@ -100,11 +100,12 @@ export const PixPaymentDialog: React.FC<PixPaymentDialogProps> = ({
     }, 3000);
   };
 
-  const handleSimulateApproval = async () => {
+  const handleConfirmManually = async () => {
     if (!pixOrder) return;
-    await pixService.simulatePaymentApproval(pixOrder.payment_id);
+    if (!window.confirm("Confirma que já conferiu no extrato/app do banco que o valor entrou de verdade?")) return;
+    await pixService.confirmPaymentManually(pixOrder.payment_id);
     setStatus("approved");
-    toast.success("✓ Pagamento Aprovado Manualmente!");
+    toast.success("✓ Pagamento confirmado manualmente!");
     setTimeout(() => {
       onPaymentSuccess();
     }, 1000);
@@ -190,22 +191,26 @@ export const PixPaymentDialog: React.FC<PixPaymentDialogProps> = ({
                 )}
               </Button>
 
-              <div className="flex items-center justify-center gap-2 pt-1 text-xs text-slate-500">
-                <Loader2 className="h-3.5 w-3.5 text-blue-600 animate-spin" />
-                <span>⌛ Aguardando confirmação do banco...</span>
+              <div className="flex items-center justify-center gap-2 pt-1 text-xs text-amber-600 font-medium">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Este QR Code não é validado automaticamente por nenhum banco</span>
               </div>
             </div>
 
-            {/* Botão de Teste / Liberação Manual para o Operador */}
-            <div className="pt-2 border-t border-slate-100">
+            {/* Confirmação manual: NÃO existe verificação automática de pagamento.
+                O operador precisa checar o extrato/app do banco antes de confirmar. */}
+            <div className="pt-2 border-t border-slate-100 space-y-1.5">
+              <p className="text-[11px] text-slate-500 text-center">
+                Confira no aplicativo do banco que o valor realmente entrou antes de confirmar.
+              </p>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                onClick={handleSimulateApproval}
-                className="text-[11px] text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 w-full"
+                onClick={handleConfirmManually}
+                className="w-full font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50"
               >
                 <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
-                Simular Confirmação Instantânea
+                Confirmar recebimento (conferi no banco)
               </Button>
             </div>
           </div>
