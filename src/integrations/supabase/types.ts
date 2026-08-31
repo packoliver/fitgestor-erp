@@ -2636,6 +2636,7 @@ export type Database = {
           organization_id: string
           product_id: string
           sale_price: number | null
+          shopify_inventory_item_id: string | null
           shopify_variant_id: string | null
           size: string
           sku: string | null
@@ -2652,6 +2653,7 @@ export type Database = {
           organization_id: string
           product_id: string
           sale_price?: number | null
+          shopify_inventory_item_id?: string | null
           shopify_variant_id?: string | null
           size: string
           sku?: string | null
@@ -2668,6 +2670,7 @@ export type Database = {
           organization_id?: string
           product_id?: string
           sale_price?: number | null
+          shopify_inventory_item_id?: string | null
           shopify_variant_id?: string | null
           size?: string
           sku?: string | null
@@ -2810,6 +2813,7 @@ export type Database = {
           id: string
           organization_id: string | null
           phone: string | null
+          pos_pin_hash: string | null
           status: Database["public"]["Enums"]["user_status"]
           updated_at: string
         }
@@ -2821,6 +2825,7 @@ export type Database = {
           id: string
           organization_id?: string | null
           phone?: string | null
+          pos_pin_hash?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
         }
@@ -2832,6 +2837,7 @@ export type Database = {
           id?: string
           organization_id?: string | null
           phone?: string | null
+          pos_pin_hash?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
         }
@@ -4389,6 +4395,14 @@ export type Database = {
         Args: { _items: Json; _sale_id: string }
         Returns: string
       }
+      issue_quick_exchange_voucher: {
+        Args: { _amount: number; _client_id?: string }
+        Returns: {
+          code: string
+          current_balance: number
+          id: string
+        }[]
+      }
       link_courier_user: {
         Args: { _courier_id: string; _user_id: string }
         Returns: undefined
@@ -4454,6 +4468,25 @@ export type Database = {
       open_cash_session: {
         Args: { _location_id: string; _notes?: string; _opening_amount: number }
         Returns: string
+      }
+      pos_set_operator_pin: {
+        Args: { _pin: string; _user_id?: string }
+        Returns: undefined
+      }
+      pos_verify_manager_pin: {
+        Args: { _pin: string }
+        Returns: {
+          full_name: string
+          id: string
+        }[]
+      }
+      pos_verify_operator_pin: {
+        Args: { _pin: string }
+        Returns: {
+          full_name: string
+          id: string
+          is_manager: boolean
+        }[]
       }
       post_sale_assign: {
         Args: { _task_id: string; _user_id: string }
