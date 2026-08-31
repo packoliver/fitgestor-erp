@@ -10,9 +10,13 @@ export const Route = createFileRoute("/api/public/hooks/olist-sync")({
       POST: async ({ request }) => {
         const key = request.headers.get("x-cron-secret");
         const expected = process.env.CRON_OLIST_SECRET;
-        if (expected && key !== expected) {
+        if (!expected) {
+          return new Response("Cron secret not configured", { status: 503 });
+        }
+        if (key !== expected) {
           return new Response("Unauthorized", { status: 401 });
         }
+
         try {
           const { processPendingOlistEventsQueue, runOlistSync } = await import("@/lib/olist-sync.server");
           
