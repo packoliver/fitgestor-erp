@@ -204,16 +204,41 @@ function fmtDate(d: Date | null): string | null {
   return `${dd}/${mm}/${yyyy}`;
 }
 
+/**
+ * Erro FATAL de autenticação/token junto à Olist/Tiny.
+ * Quando lançado, a execução deve parar imediatamente — não faz sentido
+ * continuar paginando (todas as chamadas falharão igual) nem gerar
+ * dezenas de integration_events repetidos.
+ */
+export class OlistAuthError extends Error {
+  readonly fatal = true;
+  constructor(message: string) {
+    super(message);
+    this.name = "OlistAuthError";
+  }
+}
+
+/** Detecta mensagens de token/autenticação inválida da API v2 da Tiny/Olist. */
+function isAuthErrorMessage(msg: string): boolean {
+  return /token/i.test(msg) && /inv[áa]lid|n[ãa]o informad|expirad|incorret/i.test(msg)
+    || /autentica|autoriza|credenciais/i.test(msg) && /inv[áa]lid|negad|falh/i.test(msg);
+}
+
 async function olistCall(endpoint: string, params: Record<string, string>, attempt = 0): Promise<any> {
   const token = process.env.OLIST_API_TOKEN;
-  if (!token) throw new Error("OLIST_API_TOKEN não configurado");
+  if (!token) throw new OlistAuthError("OLIST_API_TOKEN não configurado");
   const body = new URLSearchParams({ token, formato: "JSON", ...params });
   const res = await fetchWithTimeout(`${OLIST_BASE}/${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: body.toString(),
   }, OLIST_TIMEOUT_MS);
-  if (!res.ok) throw new Error(`Olist HTTP ${res.status}`);
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      throw new OlistAuthError(`Olist HTTP ${res.status} — token inválido ou sem permissão`);
+    }
+    throw new Error(`Olist HTTP ${res.status}`);
+  }
   const json = await res.json();
   const status = json?.retorno?.status;
   if (status === "Erro") {
@@ -222,6 +247,8 @@ async function olistCall(endpoint: string, params: Record<string, string>, attem
       return { empty: true, raw: json };
     }
     const msg = String(json?.retorno?.erros?.[0]?.erro || `Olist erro ${codes ?? ""}`);
+    // Erro de autenticação/token: FATAL — aborta a execução inteira imediatamente.
+    if (isAuthErrorMessage(msg)) throw new OlistAuthError(msg);
     // Rate-limit: aguarda e tenta novamente (até 3x)
     if (/API Bloqueada|Excedido o número de acessos/i.test(msg) && attempt < 3) {
       await sleep(30_000 + attempt * 15_000);
@@ -230,6 +257,10 @@ async function olistCall(endpoint: string, params: Record<string, string>, attem
     throw new Error(msg);
   }
   return json?.retorno ?? {};
+}
+
+function isFatalSyncError(e: any): boolean {
+  return e instanceof OlistAuthError || e?.fatal === true;
 }
 
 async function firstOrgId(): Promise<string> {
@@ -851,6 +882,9 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
         apiCallsThisRun++;
         consecutiveFailures = 0;
       } catch (e: any) {
+        // Erro fatal (token/autenticação): aborta a execução inteira imediatamente,
+        // sem paginar nem gerar novas tentativas — o catch externo grava UM único evento de erro.
+        if (isFatalSyncError(e)) throw e;
         counters.errors.push({ scope: "produtos.pesquisa", id: `pag ${pagina}`, message: e?.message ?? String(e) });
         consecutiveFailures++;
         if (consecutiveFailures >= 3) break;
@@ -909,6 +943,8 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
               apiCallsThisRun++;
             }
           } catch (e: any) {
+            // Token inválido durante produto.obter: propaga como fatal e para tudo.
+            if (isFatalSyncError(e)) throw e;
             counters.errors.push({ scope: "produto", id: externalId, message: e?.message ?? String(e) });
           }
           productsProcessed++;
@@ -988,6 +1024,8 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
       await persistProgress({ phase: "estoque" });
       await syncStock(orgId, sinceEstoque, counters);
     } catch (e: any) {
+      // Token inválido também aborta a fase de estoque como erro fatal.
+      if (isFatalSyncError(e)) throw e;
       counters.errors.push({ scope: "stock.list", message: e?.message ?? String(e) });
     }
 

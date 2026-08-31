@@ -48,6 +48,7 @@ function Dashboard() {
       return (data ?? {}) as Stats;
     },
     staleTime: 30_000,
+    retry: 1,
   });
 
   const canPostSale = perms.has("post_sale.view");
@@ -110,7 +111,19 @@ function Dashboard() {
       />
 
       {q.isLoading && <Card className="p-8 text-sm text-muted-foreground text-center">Carregando…</Card>}
-      {q.error && <Card className="p-4 text-sm text-destructive">Falha ao carregar métricas.</Card>}
+      {q.error && (
+        <Card className="p-4 flex flex-wrap items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-destructive">Falha ao carregar métricas.</div>
+            <div className="text-xs text-muted-foreground break-words">
+              {q.error instanceof Error ? q.error.message : String(q.error)}
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => q.refetch()} disabled={q.isFetching}>
+            {q.isFetching ? "Tentando…" : "Tentar novamente"}
+          </Button>
+        </Card>
+      )}
 
       {/* 1. Resumo do dia — só com permissão financeira */}
       {canFinance && (
