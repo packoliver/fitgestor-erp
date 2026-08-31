@@ -11,9 +11,13 @@ export const Route = createFileRoute("/api/public/hooks/shopify-sync")({
       POST: async ({ request }) => {
         const key = request.headers.get("x-cron-secret");
         const expected = process.env.CRON_SHOPIFY_SECRET;
-        if (expected && key !== expected) {
+        if (!expected) {
+          return new Response("Cron secret not configured", { status: 503 });
+        }
+        if (key !== expected) {
           return new Response("Unauthorized", { status: 401 });
         }
+
         try {
           const { processPendingShopifyEventsQueue } = await import("@/lib/shopify-sync.server");
           const queueStats = await processPendingShopifyEventsQueue(20);

@@ -1,11 +1,10 @@
-import { createFileRoute, redirect, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { BrandLockup } from "@/components/brand-logo";
@@ -20,6 +19,16 @@ export const Route = createFileRoute("/auth")({
     const { data } = await supabase.auth.getSession();
     if (data.session) throw redirect({ to: "/dashboard" });
   },
+  head: () => ({
+    meta: [
+      { title: "Entrar | FitGestor" },
+      { name: "description", content: "Acesse o FitGestor para gerenciar estoque, vendas e entregas da sua loja." },
+      { property: "og:title", content: "Entrar | FitGestor" },
+      { property: "og:description", content: "Acesse o FitGestor para gerenciar sua loja." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: AuthPage,
 });
 
@@ -27,14 +36,9 @@ const credentialsSchema = z.object({
   email: z.string().trim().email("E-mail inválido").max(255),
   password: z.string().min(6, "Mínimo de 6 caracteres").max(72),
 });
-const signupSchema = credentialsSchema.extend({
-  fullName: z.string().trim().min(2, "Informe seu nome").max(120),
-});
 
 function AuthPage() {
-  const search = Route.useSearch();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"signin" | "signup">(search.mode ?? "signin");
 
   return (
     <SignInFlow
@@ -47,18 +51,7 @@ function AuthPage() {
         </>
       }
     >
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")}>
-        <TabsList className="grid w-full grid-cols-2 bg-white/5">
-          <TabsTrigger value="signin">Entrar</TabsTrigger>
-          <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-        </TabsList>
-        <TabsContent value="signin" className="mt-6">
-          <SignInForm onDone={() => navigate({ to: "/dashboard" })} />
-        </TabsContent>
-        <TabsContent value="signup" className="mt-6">
-          <SignUpForm onDone={() => navigate({ to: "/setup" })} />
-        </TabsContent>
-      </Tabs>
+      <SignInForm onDone={() => navigate({ to: "/dashboard" })} />
     </SignInFlow>
   );
 }
@@ -147,83 +140,6 @@ function SignInForm({ onDone }: { onDone: () => void }) {
       >
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Entrar
-      </Button>
-    </form>
-  );
-}
-
-function SignUpForm({ onDone }: { onDone: () => void }) {
-  const [loading, setLoading] = useState(false);
-  const [values, setValues] = useState({ fullName: "", email: "", password: "" });
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const parsed = signupSchema.safeParse(values);
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
-      return;
-    }
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: parsed.data.email,
-      password: parsed.data.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { full_name: parsed.data.fullName },
-      },
-    });
-    setLoading(false);
-    if (error) {
-      toast.error("Erro ao cadastrar", { description: error.message });
-      return;
-    }
-    toast.success("Conta criada! Vamos configurar sua loja.");
-    onDone();
-  }
-
-  return (
-    <form onSubmit={submit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="su-name" className="text-white/80">Nome completo</Label>
-        <Input
-          id="su-name"
-          value={values.fullName}
-          onChange={(e) => setValues((v) => ({ ...v, fullName: e.target.value }))}
-          required
-          className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="su-email" className="text-white/80">E-mail</Label>
-        <Input
-          id="su-email"
-          type="email"
-          autoComplete="email"
-          value={values.email}
-          onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
-          required
-          className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="su-pass" className="text-white/80">Senha</Label>
-        <Input
-          id="su-pass"
-          type="password"
-          autoComplete="new-password"
-          value={values.password}
-          onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))}
-          required
-          className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
-        />
-      </div>
-      <Button
-        type="submit"
-        className="w-full bg-gradient-to-r from-blue-800 to-blue-500 hover:from-blue-700 hover:to-blue-400 text-white shadow-lg shadow-blue-800/20"
-        disabled={loading}
-      >
-        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Criar conta
       </Button>
     </form>
   );
