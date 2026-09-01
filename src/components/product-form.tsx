@@ -17,6 +17,7 @@ import { z } from "zod";
 
 type VariantInput = {
   id?: string;
+  color: string;
   size: string;
   sku: string;
   barcode: string;
@@ -53,7 +54,7 @@ export function ProductForm({
 }: {
   initial?: Partial<ProductFormValues>;
   productId?: string;
-  initialVariants?: Array<{ id: string; size: string; sku: string | null; barcode: string | null; cost_price: number | null; sale_price: number | null }>;
+  initialVariants?: Array<{ id: string; color?: string | null; size: string; sku: string | null; barcode: string | null; cost_price: number | null; sale_price: number | null }>;
   initialImages?: Array<{ id: string; image_url: string; storage_path: string | null; is_primary: boolean; position: number }>;
   onSaved?: (id: string) => void;
 }) {
@@ -78,6 +79,7 @@ export function ProductForm({
     initialVariants.length > 0
       ? initialVariants.map((v) => ({
           id: v.id,
+          color: (v as any).color ?? (initial as any)?.color ?? "",
           size: v.size,
           sku: v.sku ?? "",
           barcode: v.barcode ?? "",
@@ -131,7 +133,7 @@ export function ProductForm({
     setVariants((prev) =>
       prev.map((v, i) => {
         if (i !== index) return v;
-        const newSku = v.sku.trim() || generateSKU(values.name, values.color ?? undefined, v.size);
+        const newSku = v.sku.trim() || generateSKU(values.name, (v.color.trim() || values.color) ?? undefined, v.size);
         const newEan = v.barcode.trim() || generateEAN13();
         return { ...v, sku: newSku, barcode: newEan };
       })
@@ -146,7 +148,7 @@ export function ProductForm({
     setVariants((prev) =>
       prev.map((v) => ({
         ...v,
-        sku: v.sku.trim() || generateSKU(values.name, values.color ?? undefined, v.size),
+        sku: v.sku.trim() || generateSKU(values.name, (v.color.trim() || values.color) ?? undefined, v.size),
         barcode: v.barcode.trim() || generateEAN13(),
       }))
     );
@@ -295,12 +297,20 @@ export function ProductForm({
       // Variações
       const existing = new Set(initialVariants.map((v) => v.id));
       const kept = new Set<string>();
-      const seenSizes = new Set<string>();
+      const seenKeys = new Set<string>();
       for (const v of variants) {
         const size = v.size.trim();
         if (!size) continue;
-        if (seenSizes.has(size)) throw new Error(`Tamanho duplicado no formulário: ${size}`);
-        seenSizes.add(size);
+        const color = v.color.trim();
+        const key = `${color.toLowerCase()}|${size.toLowerCase()}`;
+        if (seenKeys.has(key)) {
+          throw new Error(
+            color
+              ? `Variação duplicada no formulário: ${color} / ${size}`
+              : `Tamanho duplicado no formulário: ${size}`,
+          );
+        }
+        seenKeys.add(key);
         const sku = v.sku.trim() || null;
         const barcode = v.barcode.trim() || null;
 
@@ -310,6 +320,7 @@ export function ProductForm({
         const varPayload = {
           organization_id: org,
           product_id: id!,
+          color: color || parsed.data.color?.trim() || null,
           size,
           sku,
           barcode,
@@ -660,6 +671,6 @@ export function ProductForm({
   }
 }
 
-function emptyVariant(size: string): VariantInput {
-  return { size, sku: "", barcode: "", cost_price: "", sale_price: "", initial_stock: "", minimum_stock: "" };
+function emptyVariant(size: string, color = ""): VariantInput {
+  return { color, size, sku: "", barcode: "", cost_price: "", sale_price: "", initial_stock: "", minimum_stock: "" };
 }
