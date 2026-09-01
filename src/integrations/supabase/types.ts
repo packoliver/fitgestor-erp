@@ -2628,7 +2628,6 @@ export type Database = {
       product_variants: {
         Row: {
           barcode: string | null
-          color: string | null
           cost_price: number | null
           created_at: string
           deleted_at: string | null
@@ -2646,7 +2645,6 @@ export type Database = {
         }
         Insert: {
           barcode?: string | null
-          color?: string | null
           cost_price?: number | null
           created_at?: string
           deleted_at?: string | null
@@ -2664,7 +2662,6 @@ export type Database = {
         }
         Update: {
           barcode?: string | null
-          color?: string | null
           cost_price?: number | null
           created_at?: string
           deleted_at?: string | null
