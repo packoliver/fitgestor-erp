@@ -198,8 +198,13 @@ export function ProductForm({
           throw new Error(`Erro ao enviar foto: ${upErr.message}`);
         }
 
+        // Sempre a URL pública canônica — nunca signed URL temporária.
         const { data: pubData } = supabase.storage.from("product-images").getPublicUrl(path);
-        const publicUrl = pubData?.publicUrl || item.preview;
+        const publicUrl = pubData?.publicUrl;
+        if (!publicUrl) {
+          await supabase.storage.from("product-images").remove([path]);
+          throw new Error("Não foi possível obter a URL pública da foto.");
+        }
 
         const { data: img, error: iErr } = await supabase.from("product_images").insert({
           organization_id: org,
@@ -210,7 +215,11 @@ export function ProductForm({
           is_primary: images.length === 0 && idx === 0,
         }).select("*").single();
 
-        if (iErr) throw iErr;
+        if (iErr) {
+          // Rollback do blob para não deixar arquivo órfão no Storage.
+          await supabase.storage.from("product-images").remove([path]);
+          throw iErr;
+        }
         uploaded.push(img as any);
       }
 
@@ -375,8 +384,18 @@ export function ProductForm({
   });
 
   async function removeImage(img: (typeof images)[number]) {
-    if (img.storage_path) await supabase.storage.from("product-images").remove([img.storage_path]);
-    await supabase.from("product_images").delete().eq("id", img.id);
+    if (img.storage_path) {
+      const { error: stErr } = await supabase.storage.from("product-images").remove([img.storage_path]);
+      if (stErr) {
+        toast.error(`Não foi possível remover o arquivo: ${stErr.message}`);
+        return;
+      }
+    }
+    const { error: delErr } = await supabase.from("product_images").delete().eq("id", img.id);
+    if (delErr) {
+      toast.error(`Arquivo removido, mas o registro falhou: ${delErr.message}`);
+      return;
+    }
     setImages(images.filter((i) => i.id !== img.id));
     toast.success("Imagem removida");
   }
