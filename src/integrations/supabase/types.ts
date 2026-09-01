@@ -2629,6 +2629,7 @@ export type Database = {
         Row: {
           barcode: string | null
           cost_price: number | null
+          color: string | null
           created_at: string
           deleted_at: string | null
           id: string
@@ -2646,6 +2647,7 @@ export type Database = {
         Insert: {
           barcode?: string | null
           cost_price?: number | null
+          color?: string | null
           created_at?: string
           deleted_at?: string | null
           id?: string
@@ -2663,6 +2665,7 @@ export type Database = {
         Update: {
           barcode?: string | null
           cost_price?: number | null
+          color?: string | null
           created_at?: string
           deleted_at?: string | null
           id?: string
