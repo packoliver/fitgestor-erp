@@ -559,7 +559,7 @@ function QuickExchangeDialog({ open, onClose, clientId, onVoucherGenerated, onAb
         sale_item_id: it.id,
         variant_id: it.variant_id,
         name: it.variant?.product?.name ?? "—",
-        color: it.variant?.product?.color ?? null,
+        color: it.variant?.color ?? it.variant?.product?.color ?? null,
         size: it.variant?.size ?? null,
         unit_price: Number(it.unit_price),
         max_qty: Number(it.quantity),
@@ -1898,7 +1898,7 @@ function VendasPdvPage() {
       }
       return [...prev, {
         variant_id: v.id, product_id: v.product_id,
-        name: v.product?.name ?? "—", color: v.product?.color ?? null,
+        name: v.product?.name ?? "—", color: v.color ?? v.product?.color ?? null,
         size: v.size, sku: v.sku, barcode: v.barcode,
         unit_price: Number(price), quantity: 1, available,
       }];
@@ -2484,7 +2484,7 @@ function VendasPdvPage() {
                         {v.size ?? "—"}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">{v.product?.name}{v.product?.color && ` — ${v.product.color}`}</div>
+                        <div className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">{v.product?.name}{(v.color ?? v.product?.color) ? ` — ${v.color ?? v.product?.color}` : ""}</div>
                         <div className="text-xs text-slate-500 font-mono mt-0.5">SKU: {v.sku ?? "—"} · Saldo: <strong>{available} pcs</strong></div>
                       </div>
                       <div className="text-right shrink-0">
@@ -2503,7 +2503,7 @@ function VendasPdvPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-bold text-base text-blue-950 dark:text-blue-100">{pickedVariant.product?.name}</p>
-                    {pickedVariant.product?.color && <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">{pickedVariant.product.color}</p>}
+                    {(pickedVariant.color ?? pickedVariant.product?.color) && <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">{pickedVariant.color ?? pickedVariant.product?.color}</p>}
                   </div>
                   <button onClick={() => { setPickedVariant(null); setPickedPrice(""); }} className="text-slate-400 hover:text-slate-700 p-1">
                     <X className="h-4 w-4" />

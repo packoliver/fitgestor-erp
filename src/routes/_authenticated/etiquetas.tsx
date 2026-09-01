@@ -150,7 +150,7 @@ function EtiquetasPage() {
       {
         variant_id: v.id,
         product_name: v.product.name,
-        color: v.product.color ?? null,
+        color: (v as any).color ?? v.product.color ?? null,
         size: v.size ?? null,
         sku: v.sku ?? v.barcode ?? "",
         price: price ? Number(price) : null,
@@ -235,7 +235,7 @@ function EtiquetasPage() {
                         onClick={() => addRow(v)}
                         className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
                       >
-                        {v.product.name} · {v.product.color} · {v.size} — {v.sku ?? "sem SKU"}
+                        {v.product.name} · {(v as any).color ?? v.product.color ?? "—"} · {v.size} — {v.sku ?? "sem SKU"}
                       </button>
                     ))}
                   </div>
