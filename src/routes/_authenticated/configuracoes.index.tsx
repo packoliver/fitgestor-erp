@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { Loader2, Upload } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { cleanupProductImageOrphans, type OrphanScanResult } from "@/lib/storage-cleanup.functions";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/")({
   component: Config,
