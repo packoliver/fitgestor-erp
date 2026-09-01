@@ -92,18 +92,18 @@ function PdvPage() {
       const t = term.trim();
       const exact = await supabase
         .from("product_variants")
-        .select("id, product_id, size, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
+        .select("id, product_id, size, color, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
         .or(`barcode.eq.${t},sku.eq.${t}`).is("deleted_at", null).limit(1);
       if (exact.data && exact.data.length === 1) return exact.data;
       const { data } = await supabase
         .from("product_variants")
-        .select("id, product_id, size, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
+        .select("id, product_id, size, color, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
         .is("deleted_at", null)
         .or(`sku.ilike.%${t}%,barcode.ilike.%${t}%,size.ilike.%${t}%`).limit(20);
       if (!data || data.length === 0) {
         const { data: byProduct } = await supabase
           .from("products")
-          .select("id, name, color, sale_price, promotional_price, status, variants:product_variants!inner(id, product_id, size, sku, barcode, sale_price, status, balances:inventory_balances(physical_quantity, reserved_quantity, location_id))")
+          .select("id, name, color, sale_price, promotional_price, status, variants:product_variants!inner(id, product_id, size, color, sku, barcode, sale_price, status, balances:inventory_balances(physical_quantity, reserved_quantity, location_id))")
           .or(`name.ilike.%${t}%,color.ilike.%${t}%`).is("deleted_at", null).limit(20);
         const flat: any[] = [];
         (byProduct ?? []).forEach((p: any) => p.variants?.forEach((v: any) => flat.push({ ...v, product: { id: p.id, name: p.name, color: p.color, sale_price: p.sale_price, promotional_price: p.promotional_price, status: p.status } })));
@@ -193,7 +193,7 @@ function PdvPage() {
       }
       return [...prev, {
         variant_id: v.id, product_id: v.product_id, name: v.product?.name ?? "—",
-        color: v.product?.color ?? null, size: v.size, sku: v.sku, barcode: v.barcode,
+        color: v.color ?? v.product?.color ?? null, size: v.size, sku: v.sku, barcode: v.barcode,
         unit_price: currentPrice, quantity: wantQty, available,
       }];
     });
@@ -664,7 +664,7 @@ function PdvPage() {
                 return (
                   <button key={v.id} onClick={() => pickVariant(v)} className="w-full text-left p-3 hover:bg-accent flex items-center gap-3">
                     <div className="flex-1">
-                      <div className="font-medium">{v.product?.name} {v.product?.color && <span className="text-muted-foreground">— {v.product.color}</span>}</div>
+                      <div className="font-medium">{v.product?.name} {(v.color ?? v.product?.color) && <span className="text-muted-foreground">— {v.color ?? v.product?.color}</span>}</div>
                       <div className="text-xs text-muted-foreground">Tam {v.size} · SKU {v.sku}</div>
                     </div>
                     <div className="text-right">
@@ -681,7 +681,7 @@ function PdvPage() {
           {pickedVariant && (
             <Card className="p-4 space-y-3">
               <div className="text-base font-medium uppercase tracking-wide">
-                {pickedVariant.product?.name} {pickedVariant.product?.color && `— ${pickedVariant.product.color}`}
+                {pickedVariant.product?.name} {(pickedVariant.color ?? pickedVariant.product?.color) ? `— ${pickedVariant.color ?? pickedVariant.product?.color}` : ""}
               </div>
               <div className="border-t pt-3 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Código</span><span>{pickedVariant.sku ?? "—"}</span></div>

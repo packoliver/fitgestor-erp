@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { Loader2, Upload } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { cleanupProductImageOrphans, type OrphanScanResult } from "@/lib/storage-cleanup.functions";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/")({
   component: Config,
@@ -124,6 +126,74 @@ function Config() {
           </Button>
         </CardContent>
       </Card>
+
+      <OrphanImagesCard />
     </div>
+  );
+}
+
+function OrphanImagesCard() {
+  const run = useServerFn(cleanupProductImageOrphans);
+  const [busy, setBusy] = useState<null | "scan" | "clean">(null);
+  const [result, setResult] = useState<OrphanScanResult | null>(null);
+
+  async function exec(dryRun: boolean) {
+    setBusy(dryRun ? "scan" : "clean");
+    try {
+      const res = await run({ data: { dryRun } });
+      setResult(res);
+      if (!res.ok) toast.error(res.error ?? "Falha na verificação.");
+      else if (dryRun) toast.success(`${res.orphans} arquivo(s) órfão(s) encontrado(s).`);
+      else toast.success(`${res.removed} arquivo(s) órfão(s) removido(s).`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao executar a limpeza.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader><CardTitle>Fotos órfãs no armazenamento</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Verifica os arquivos da sua loja no bucket <code>product-images</code> e compara com as fotos
+          cadastradas. Arquivos sem nenhum produto vinculado podem ser removidos para liberar espaço.
+        </p>
+
+        {result && (
+          <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+            <div>Arquivos no armazenamento: <strong>{result.storage_files}</strong></div>
+            <div>Fotos vinculadas a produtos: <strong>{result.referenced_paths}</strong></div>
+            <div>Órfãos encontrados: <strong className="text-destructive">{result.orphans}</strong></div>
+            {result.removed > 0 && <div>Removidos agora: <strong>{result.removed}</strong></div>}
+            {result.truncated && (
+              <div className="text-xs text-amber-600">
+                Lista muito grande — execute novamente após limpar para verificar o restante.
+              </div>
+            )}
+            {result.sample.length > 0 && (
+              <ul className="mt-1 max-h-32 overflow-auto font-mono text-[11px] text-muted-foreground">
+                {result.sample.map((s: string) => <li key={s} className="truncate">{s}</li>)}
+              </ul>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => exec(true)} disabled={busy !== null}>
+            {busy === "scan" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Verificar órfãos
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => exec(false)}
+            disabled={busy !== null || !result?.ok || result.orphans === 0}
+          >
+            {busy === "clean" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Limpar órfãos{result?.orphans ? ` (${result.orphans})` : ""}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

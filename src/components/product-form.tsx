@@ -17,6 +17,7 @@ import { z } from "zod";
 
 type VariantInput = {
   id?: string;
+  color: string;
   size: string;
   sku: string;
   barcode: string;
@@ -53,7 +54,7 @@ export function ProductForm({
 }: {
   initial?: Partial<ProductFormValues>;
   productId?: string;
-  initialVariants?: Array<{ id: string; size: string; sku: string | null; barcode: string | null; cost_price: number | null; sale_price: number | null }>;
+  initialVariants?: Array<{ id: string; color?: string | null; size: string; sku: string | null; barcode: string | null; cost_price: number | null; sale_price: number | null }>;
   initialImages?: Array<{ id: string; image_url: string; storage_path: string | null; is_primary: boolean; position: number }>;
   onSaved?: (id: string) => void;
 }) {
@@ -78,6 +79,7 @@ export function ProductForm({
     initialVariants.length > 0
       ? initialVariants.map((v) => ({
           id: v.id,
+          color: (v as any).color ?? (initial as any)?.color ?? "",
           size: v.size,
           sku: v.sku ?? "",
           barcode: v.barcode ?? "",
@@ -131,7 +133,7 @@ export function ProductForm({
     setVariants((prev) =>
       prev.map((v, i) => {
         if (i !== index) return v;
-        const newSku = v.sku.trim() || generateSKU(values.name, values.color ?? undefined, v.size);
+        const newSku = v.sku.trim() || generateSKU(values.name, (v.color.trim() || values.color) ?? undefined, v.size);
         const newEan = v.barcode.trim() || generateEAN13();
         return { ...v, sku: newSku, barcode: newEan };
       })
@@ -146,7 +148,7 @@ export function ProductForm({
     setVariants((prev) =>
       prev.map((v) => ({
         ...v,
-        sku: v.sku.trim() || generateSKU(values.name, values.color ?? undefined, v.size),
+        sku: v.sku.trim() || generateSKU(values.name, (v.color.trim() || values.color) ?? undefined, v.size),
         barcode: v.barcode.trim() || generateEAN13(),
       }))
     );
@@ -196,8 +198,13 @@ export function ProductForm({
           throw new Error(`Erro ao enviar foto: ${upErr.message}`);
         }
 
+        // Sempre a URL pública canônica — nunca signed URL temporária.
         const { data: pubData } = supabase.storage.from("product-images").getPublicUrl(path);
-        const publicUrl = pubData?.publicUrl || item.preview;
+        const publicUrl = pubData?.publicUrl;
+        if (!publicUrl) {
+          await supabase.storage.from("product-images").remove([path]);
+          throw new Error("Não foi possível obter a URL pública da foto.");
+        }
 
         const { data: img, error: iErr } = await supabase.from("product_images").insert({
           organization_id: org,
@@ -208,7 +215,11 @@ export function ProductForm({
           is_primary: images.length === 0 && idx === 0,
         }).select("*").single();
 
-        if (iErr) throw iErr;
+        if (iErr) {
+          // Rollback do blob para não deixar arquivo órfão no Storage.
+          await supabase.storage.from("product-images").remove([path]);
+          throw iErr;
+        }
         uploaded.push(img as any);
       }
 
@@ -295,12 +306,20 @@ export function ProductForm({
       // Variações
       const existing = new Set(initialVariants.map((v) => v.id));
       const kept = new Set<string>();
-      const seenSizes = new Set<string>();
+      const seenKeys = new Set<string>();
       for (const v of variants) {
         const size = v.size.trim();
         if (!size) continue;
-        if (seenSizes.has(size)) throw new Error(`Tamanho duplicado no formulário: ${size}`);
-        seenSizes.add(size);
+        const color = v.color.trim();
+        const key = `${color.toLowerCase()}|${size.toLowerCase()}`;
+        if (seenKeys.has(key)) {
+          throw new Error(
+            color
+              ? `Variação duplicada no formulário: ${color} / ${size}`
+              : `Tamanho duplicado no formulário: ${size}`,
+          );
+        }
+        seenKeys.add(key);
         const sku = v.sku.trim() || null;
         const barcode = v.barcode.trim() || null;
 
@@ -310,6 +329,7 @@ export function ProductForm({
         const varPayload = {
           organization_id: org,
           product_id: id!,
+          color: color || parsed.data.color?.trim() || null,
           size,
           sku,
           barcode,
@@ -364,8 +384,18 @@ export function ProductForm({
   });
 
   async function removeImage(img: (typeof images)[number]) {
-    if (img.storage_path) await supabase.storage.from("product-images").remove([img.storage_path]);
-    await supabase.from("product_images").delete().eq("id", img.id);
+    if (img.storage_path) {
+      const { error: stErr } = await supabase.storage.from("product-images").remove([img.storage_path]);
+      if (stErr) {
+        toast.error(`Não foi possível remover o arquivo: ${stErr.message}`);
+        return;
+      }
+    }
+    const { error: delErr } = await supabase.from("product_images").delete().eq("id", img.id);
+    if (delErr) {
+      toast.error(`Arquivo removido, mas o registro falhou: ${delErr.message}`);
+      return;
+    }
     setImages(images.filter((i) => i.id !== img.id));
     toast.success("Imagem removida");
   }
@@ -471,7 +501,7 @@ export function ProductForm({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle>Variações de Tamanho & Códigos</CardTitle>
+            <CardTitle>Variações (Cor & Tamanho)</CardTitle>
             <Button type="button" variant="outline" size="sm" onClick={handleGenerateAllSKUAndEAN} className="text-xs">
               <Wand2 className="mr-1.5 h-3.5 w-3.5" />Gerar SKUs e EANs para todos
             </Button>
@@ -481,7 +511,11 @@ export function ProductForm({
               <span className="text-xs text-muted-foreground mr-2">Adicionar tamanho rapidamente:</span>
               {SIZE_SUGGESTIONS.map((s) => (
                 <Button key={s} type="button" size="sm" variant="outline"
-                  onClick={() => setVariants((prev) => prev.some((v) => v.size === s) ? prev : [...prev, emptyVariant(s)])}>
+                  onClick={() => setVariants((prev) => {
+                    const color = (values.color ?? "").trim();
+                    const exists = prev.some((v) => v.size === s && v.color.trim().toLowerCase() === color.toLowerCase());
+                    return exists ? prev : [...prev, emptyVariant(s, color)];
+                  })}>
                   {s}
                 </Button>
               ))}
@@ -490,12 +524,15 @@ export function ProductForm({
               {variants.map((v, i) => (
                 <div key={i} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-12 items-center">
                   <div className="sm:col-span-2">
+                    <Input placeholder="Cor" maxLength={60} value={v.color} onChange={(e) => updateVariant(i, "color", e.target.value)} />
+                  </div>
+                  <div className="sm:col-span-2">
                     <Input placeholder="Tamanho" value={v.size} onChange={(e) => updateVariant(i, "size", e.target.value)} />
                   </div>
                   <div className="sm:col-span-3">
                     <Input placeholder="SKU" value={v.sku} onChange={(e) => updateVariant(i, "sku", e.target.value)} className="font-mono text-xs" />
                   </div>
-                  <div className="sm:col-span-4">
+                  <div className="sm:col-span-2">
                     <Input placeholder="Código EAN-13" value={v.barcode} onChange={(e) => updateVariant(i, "barcode", e.target.value)} className="font-mono text-xs" />
                   </div>
                   <div className="sm:col-span-2">
@@ -515,8 +552,8 @@ export function ProductForm({
                   </div>
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" onClick={() => setVariants([...variants, emptyVariant("")])}>
-                <Plus className="mr-2 h-4 w-4" />Adicionar tamanho
+              <Button type="button" variant="outline" size="sm" onClick={() => setVariants([...variants, emptyVariant("", (values.color ?? "").trim())])}>
+                <Plus className="mr-2 h-4 w-4" />Adicionar variação
               </Button>
             </div>
           </CardContent>
@@ -660,6 +697,6 @@ export function ProductForm({
   }
 }
 
-function emptyVariant(size: string): VariantInput {
-  return { size, sku: "", barcode: "", cost_price: "", sale_price: "", initial_stock: "", minimum_stock: "" };
+function emptyVariant(size: string, color = ""): VariantInput {
+  return { color, size, sku: "", barcode: "", cost_price: "", sale_price: "", initial_stock: "", minimum_stock: "" };
 }

@@ -6,6 +6,15 @@
  * lista.atualizacoes.estoque, grava no banco local via supabaseAdmin.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { parseOlistVariation, olistVariantExternalId } from "@/lib/olist-grade-parser";
+
+/** Primeiro valor de texto não vazio. */
+function firstNonEmpty(...vals: unknown[]): string | null {
+  for (const v of vals) {
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}
 
 const OLIST_BASE = "https://api.tiny.com.br/api2";
 const SLEEP_MS = 2100; // Tiny/Olist: ~30 req/min → ~2s entre chamadas
@@ -410,17 +419,26 @@ async function syncPhotos(
         .from("product-images")
         .upload(path, bytes, { contentType, upsert: false });
       if (upErr) throw upErr;
-      const { data: signed } = await supabaseAdmin.storage
-        .from("product-images")
-        .createSignedUrl(path, 60 * 60 * 24 * 365);
-      await supabaseAdmin.from("product_images").insert({
+      // URL pública canônica (bucket público) — nunca signed URL temporária.
+      const { data: pub } = supabaseAdmin.storage.from("product-images").getPublicUrl(path);
+      const publicUrl = pub?.publicUrl;
+      if (!publicUrl) {
+        await supabaseAdmin.storage.from("product-images").remove([path]);
+        throw new Error("Falha ao obter URL pública da foto");
+      }
+      const { error: insErr } = await supabaseAdmin.from("product_images").insert({
         organization_id: orgId,
         product_id: productId,
-        image_url: signed?.signedUrl ?? "",
+        image_url: publicUrl,
         storage_path: path,
         position,
         is_primary: position === 0,
       });
+      if (insErr) {
+        // Rollback do blob para não deixar órfão no Storage.
+        await supabaseAdmin.storage.from("product-images").remove([path]);
+        throw insErr;
+      }
       counters.photos_synced++;
       position++;
       await sleep(100);
@@ -444,7 +462,8 @@ async function syncOneProduct(
   const price = Number(p.preco ?? 0) || 0;
   const promo = Number(p.preco_promocional ?? 0) || null;
   const status = (p.situacao === "I" ? "inativo" : "ativo") as "ativo" | "inativo";
-  const color: string | null = p.marca ? null : null; // marca é separado; cor não é campo padrão v2
+  // Cor padrão do produto: alguns tenants preenchem em campos livres da v2.
+  const color: string | null = firstNonEmpty(p.cor, p.corProduto, p.color) ?? null;
 
   // Produto
   let productId = await findLocalProductByExternal(orgId, externalId);
@@ -523,6 +542,7 @@ async function syncOneProduct(
           organization_id: orgId,
           product_id: productId,
           size: "ÚNICO",
+          color,
           sku,
           barcode,
           cost_price: cost,
@@ -539,8 +559,10 @@ async function syncOneProduct(
     await adjustStockForVariant(orgId, variantId, locationId, saldo, counters);
   } else {
     for (const v of variacoes) {
-      const varExternalId: string = String(v.id ?? `${externalId}:${v.codigo ?? v.grade?.[0]?.valor ?? Math.random()}`);
-      const size: string = v.grade?.[0]?.valor ?? v.descricao ?? v.codigo ?? "ÚNICO";
+      const parsedVar = parseOlistVariation(v);
+      const varExternalId: string = olistVariantExternalId(externalId, v, parsedVar);
+      const size: string = parsedVar.size;
+      const variantColor: string | null = parsedVar.color ?? color;
       let variantId = await findLocalVariantByExternal(orgId, varExternalId);
       if (!variantId) {
         const sku = v.codigo ?? null;
@@ -552,6 +574,7 @@ async function syncOneProduct(
             .from("product_variants")
             .update({
               size,
+              color: variantColor,
               sale_price: Number(v.preco ?? price) || price,
               olist_variant_id: varExternalId,
             })
@@ -563,6 +586,7 @@ async function syncOneProduct(
             organization_id: orgId,
             product_id: productId,
             size,
+            color: variantColor,
             sku,
             barcode,
             cost_price: Number(v.preco_custo ?? cost) || cost,
@@ -579,6 +603,7 @@ async function syncOneProduct(
           .from("product_variants")
           .update({
             size,
+            color: variantColor,
             sale_price: Number(v.preco ?? price) || price,
           })
           .eq("id", variantId);

@@ -102,7 +102,7 @@ function EtiquetasPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("product_variants")
-        .select("id, size, sku, barcode, sale_price, product:products!inner(name, color, sale_price, promotional_price)")
+        .select("id, size, color, sku, barcode, sale_price, product:products!inner(name, color, sale_price, promotional_price)")
         .is("deleted_at", null)
         .or(`sku.ilike.%${search}%,barcode.ilike.%${search}%`)
         .limit(10);
@@ -150,7 +150,7 @@ function EtiquetasPage() {
       {
         variant_id: v.id,
         product_name: v.product.name,
-        color: v.product.color ?? null,
+        color: (v as any).color ?? v.product.color ?? null,
         size: v.size ?? null,
         sku: v.sku ?? v.barcode ?? "",
         price: price ? Number(price) : null,
@@ -235,7 +235,7 @@ function EtiquetasPage() {
                         onClick={() => addRow(v)}
                         className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
                       >
-                        {v.product.name} · {v.product.color} · {v.size} — {v.sku ?? "sem SKU"}
+                        {v.product.name} · {(v as any).color ?? v.product.color ?? "—"} · {v.size} — {v.sku ?? "sem SKU"}
                       </button>
                     ))}
                   </div>

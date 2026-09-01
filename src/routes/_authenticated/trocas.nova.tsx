@@ -224,7 +224,7 @@ function NovaTrocaPage() {
       const t = productTerm.trim();
       const { data } = await supabase
         .from("product_variants")
-        .select("id, product_id, size, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
+        .select("id, product_id, size, color, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
         .is("deleted_at", null)
         .or(`sku.ilike.%${t}%,barcode.ilike.%${t}%`)
         .limit(20);
@@ -254,7 +254,7 @@ function NovaTrocaPage() {
     const price = v.sale_price ?? v.product?.promotional_price ?? v.product?.sale_price ?? 0;
     setNewItems((p) => [...p, {
       variant_id: v.id, product_id: v.product_id, name: v.product?.name ?? "—",
-      color: v.product?.color ?? null, size: v.size, unit_price: Number(price), quantity: 1, available,
+      color: v.color ?? v.product?.color ?? null, size: v.size, unit_price: Number(price), quantity: 1, available,
     }]);
     setProductTerm("");
   }
@@ -541,7 +541,7 @@ function NovaTrocaPage() {
                 <div className="border rounded max-h-60 overflow-auto divide-y">
                   {productResults.map((v: any) => (
                     <button key={v.id} className="w-full text-left p-2 hover:bg-accent flex justify-between text-sm" onClick={() => addNewItem(v)}>
-                      <span>{v.product?.name} — {v.product?.color} · Tam {v.size} · SKU {v.sku}</span>
+                      <span>{v.product?.name} — {v.color ?? v.product?.color ?? "—"} · Tam {v.size} · SKU {v.sku}</span>
                       <b>{money(v.sale_price ?? v.product?.promotional_price ?? v.product?.sale_price)}</b>
                     </button>
                   ))}
