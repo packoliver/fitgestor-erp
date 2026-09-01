@@ -482,7 +482,7 @@ export function ProductForm({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle>Variações de Tamanho & Códigos</CardTitle>
+            <CardTitle>Variações (Cor & Tamanho)</CardTitle>
             <Button type="button" variant="outline" size="sm" onClick={handleGenerateAllSKUAndEAN} className="text-xs">
               <Wand2 className="mr-1.5 h-3.5 w-3.5" />Gerar SKUs e EANs para todos
             </Button>
@@ -492,7 +492,11 @@ export function ProductForm({
               <span className="text-xs text-muted-foreground mr-2">Adicionar tamanho rapidamente:</span>
               {SIZE_SUGGESTIONS.map((s) => (
                 <Button key={s} type="button" size="sm" variant="outline"
-                  onClick={() => setVariants((prev) => prev.some((v) => v.size === s) ? prev : [...prev, emptyVariant(s)])}>
+                  onClick={() => setVariants((prev) => {
+                    const color = (values.color ?? "").trim();
+                    const exists = prev.some((v) => v.size === s && v.color.trim().toLowerCase() === color.toLowerCase());
+                    return exists ? prev : [...prev, emptyVariant(s, color)];
+                  })}>
                   {s}
                 </Button>
               ))}
@@ -501,12 +505,15 @@ export function ProductForm({
               {variants.map((v, i) => (
                 <div key={i} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-12 items-center">
                   <div className="sm:col-span-2">
+                    <Input placeholder="Cor" maxLength={60} value={v.color} onChange={(e) => updateVariant(i, "color", e.target.value)} />
+                  </div>
+                  <div className="sm:col-span-2">
                     <Input placeholder="Tamanho" value={v.size} onChange={(e) => updateVariant(i, "size", e.target.value)} />
                   </div>
                   <div className="sm:col-span-3">
                     <Input placeholder="SKU" value={v.sku} onChange={(e) => updateVariant(i, "sku", e.target.value)} className="font-mono text-xs" />
                   </div>
-                  <div className="sm:col-span-4">
+                  <div className="sm:col-span-2">
                     <Input placeholder="Código EAN-13" value={v.barcode} onChange={(e) => updateVariant(i, "barcode", e.target.value)} className="font-mono text-xs" />
                   </div>
                   <div className="sm:col-span-2">
@@ -526,8 +533,8 @@ export function ProductForm({
                   </div>
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" onClick={() => setVariants([...variants, emptyVariant("")])}>
-                <Plus className="mr-2 h-4 w-4" />Adicionar tamanho
+              <Button type="button" variant="outline" size="sm" onClick={() => setVariants([...variants, emptyVariant("", (values.color ?? "").trim())])}>
+                <Plus className="mr-2 h-4 w-4" />Adicionar variação
               </Button>
             </div>
           </CardContent>
