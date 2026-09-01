@@ -140,7 +140,8 @@ export function parseOlistVariation(v: any): ParsedVariation {
     size = desc || codigo || "ÚNICO";
   }
 
-  return { color: color?.trim() || null, size: size.trim() || "ÚNICO" };
+  const finalSize = (size ?? "").trim() || "ÚNICO";
+  return { color: color?.trim() || null, size: finalSize };
 }
 
 /** Hash curto e estável (FNV-1a) para IDs externos determinísticos. */
