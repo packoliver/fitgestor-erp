@@ -174,7 +174,7 @@ function OrphanImagesCard() {
             )}
             {result.sample.length > 0 && (
               <ul className="mt-1 max-h-32 overflow-auto font-mono text-[11px] text-muted-foreground">
-                {result.sample.map((s) => <li key={s} className="truncate">{s}</li>)}
+                {result.sample.map((s: string) => <li key={s} className="truncate">{s}</li>)}
               </ul>
             )}
           </div>
