@@ -1929,7 +1929,7 @@ function VendasPdvPage() {
       }
       return [...prev, {
         variant_id: v.id, product_id: v.product_id,
-        name: v.product?.name ?? "—", color: v.product?.color ?? null,
+        name: v.product?.name ?? "—", color: v.color ?? v.product?.color ?? null,
         size: v.size, sku: v.sku, barcode: v.barcode,
         unit_price: currentPrice, quantity: wantQty, available,
       }];
