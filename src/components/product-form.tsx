@@ -578,25 +578,8 @@ export function ProductForm({
         <Card>
           <CardHeader><CardTitle>Galeria de Fotos (Supabase Storage)</CardTitle></CardHeader>
           <CardContent>
-            {bucketStatus === "not_found" && (
-              <div className="mb-3 rounded-md bg-destructive/10 border border-destructive/20 p-2.5 text-xs text-destructive flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <div>
-                  <strong>Bucket 'product-images' não encontrado!</strong>
-                  <p className="mt-0.5 text-[11px] opacity-90">Crie um bucket público chamado <code>product-images</code> no painel do Supabase Storage.</p>
-                </div>
-              </div>
-            )}
 
-            {bucketStatus === "not_public" && (
-              <div className="mb-3 rounded-md bg-amber-500/10 border border-amber-500/20 p-2.5 text-xs text-amber-700 dark:text-amber-400 flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <div>
-                  <strong>Bucket 'product-images' não está Público!</strong>
-                  <p className="mt-0.5 text-[11px] opacity-90">No painel do Supabase Storage, marque o bucket <code>product-images</code> como "Public".</p>
-                </div>
-              </div>
-            )}
+
 
             <div className="grid grid-cols-3 gap-2">
               {images.sort((a, b) => a.position - b.position).map((img) => {
