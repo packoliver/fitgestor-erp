@@ -224,7 +224,7 @@ function NovaTrocaPage() {
       const t = productTerm.trim();
       const { data } = await supabase
         .from("product_variants")
-        .select("id, product_id, size, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
+        .select("id, product_id, size, color, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
         .is("deleted_at", null)
         .or(`sku.ilike.%${t}%,barcode.ilike.%${t}%`)
         .limit(20);

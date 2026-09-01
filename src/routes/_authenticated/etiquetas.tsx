@@ -102,7 +102,7 @@ function EtiquetasPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("product_variants")
-        .select("id, size, sku, barcode, sale_price, product:products!inner(name, color, sale_price, promotional_price)")
+        .select("id, size, color, sku, barcode, sale_price, product:products!inner(name, color, sale_price, promotional_price)")
         .is("deleted_at", null)
         .or(`sku.ilike.%${search}%,barcode.ilike.%${search}%`)
         .limit(10);

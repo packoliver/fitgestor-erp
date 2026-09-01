@@ -545,7 +545,7 @@ function QuickExchangeDialog({ open, onClose, clientId, onVoucherGenerated, onAb
         `id, sale_number, total, completed_at,
          client:clients(full_name, phone),
          items:sale_items(id, variant_id, quantity, unit_price,
-           variant:product_variants(size, sku,
+           variant:product_variants(size, color, sku,
              product:products(name, color)
            )
          )`
@@ -1790,7 +1790,7 @@ function VendasPdvPage() {
       // Exact match first (scanner)
       const { data: exact } = await supabase
         .from("product_variants")
-        .select("id, product_id, size, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
+        .select("id, product_id, size, color, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
         .or(`sku.eq.${t},barcode.eq.${t}`)
         .is("deleted_at", null).limit(1);
       if (exact && exact.length === 1) return exact;
@@ -1799,14 +1799,14 @@ function VendasPdvPage() {
       const firstToken = tokens[0] ?? t;
       const { data: byVariant } = await supabase
         .from("product_variants")
-        .select("id, product_id, size, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
+        .select("id, product_id, size, color, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
         .is("deleted_at", null)
         .or(`sku.ilike.%${t}%,barcode.ilike.%${t}%,size.ilike.%${t}%`).limit(10);
       if (byVariant && byVariant.length > 0) return byVariant;
 
       const { data: byProduct } = await supabase
         .from("products")
-        .select("id, name, color, sale_price, promotional_price, status, variants:product_variants!inner(id, product_id, size, sku, barcode, sale_price, status, balances:inventory_balances(physical_quantity, reserved_quantity, location_id))")
+        .select("id, name, color, sale_price, promotional_price, status, variants:product_variants!inner(id, product_id, size, color, sku, barcode, sale_price, status, balances:inventory_balances(physical_quantity, reserved_quantity, location_id))")
         .is("deleted_at", null)
         .ilike("name", `%${firstToken}%`).limit(25);
 
@@ -1870,7 +1870,7 @@ function VendasPdvPage() {
       // Bipador: exact SKU lookup + auto-add
       const { data } = await supabase
         .from("product_variants")
-        .select("id, product_id, size, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
+        .select("id, product_id, size, color, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
         .or(`sku.eq.${term.trim()},barcode.eq.${term.trim()}`)
         .is("deleted_at", null).limit(1).maybeSingle();
       if (data) {

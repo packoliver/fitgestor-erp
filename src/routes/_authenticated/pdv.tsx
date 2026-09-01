@@ -92,18 +92,18 @@ function PdvPage() {
       const t = term.trim();
       const exact = await supabase
         .from("product_variants")
-        .select("id, product_id, size, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
+        .select("id, product_id, size, color, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
         .or(`barcode.eq.${t},sku.eq.${t}`).is("deleted_at", null).limit(1);
       if (exact.data && exact.data.length === 1) return exact.data;
       const { data } = await supabase
         .from("product_variants")
-        .select("id, product_id, size, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
+        .select("id, product_id, size, color, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
         .is("deleted_at", null)
         .or(`sku.ilike.%${t}%,barcode.ilike.%${t}%,size.ilike.%${t}%`).limit(20);
       if (!data || data.length === 0) {
         const { data: byProduct } = await supabase
           .from("products")
-          .select("id, name, color, sale_price, promotional_price, status, variants:product_variants!inner(id, product_id, size, sku, barcode, sale_price, status, balances:inventory_balances(physical_quantity, reserved_quantity, location_id))")
+          .select("id, name, color, sale_price, promotional_price, status, variants:product_variants!inner(id, product_id, size, color, sku, barcode, sale_price, status, balances:inventory_balances(physical_quantity, reserved_quantity, location_id))")
           .or(`name.ilike.%${t}%,color.ilike.%${t}%`).is("deleted_at", null).limit(20);
         const flat: any[] = [];
         (byProduct ?? []).forEach((p: any) => p.variants?.forEach((v: any) => flat.push({ ...v, product: { id: p.id, name: p.name, color: p.color, sale_price: p.sale_price, promotional_price: p.promotional_price, status: p.status } })));
