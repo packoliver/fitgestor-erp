@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { currentOrgId, formatBRL, SIZE_SUGGESTIONS } from "@/lib/erp";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Trash2, Plus, Loader2, Upload, Star, X, Wand2, PlusCircle, ImageOff, AlertCircle } from "lucide-react";
+import { Trash2, Plus, Loader2, Upload, Star, X, Wand2, PlusCircle, ImageOff } from "lucide-react";
 import { z } from "zod";
 
 type VariantInput = {
