@@ -32,7 +32,7 @@ function ProdutosList() {
     const items: LabelItem[] = (product.product_variants ?? []).map((v: any) => ({
       id: v.id,
       name: product.name,
-      color: product.color,
+      color: v.color ?? product.color,
       size: v.size,
       sku: v.sku ?? v.barcode ?? "SKU-DESCONHECIDO",
       price: Number(v.sale_price ?? product.sale_price ?? 0),
@@ -55,7 +55,7 @@ function ProdutosList() {
       (p.product_variants ?? []).map((v: any) => ({
         id: v.id,
         name: p.name,
-        color: p.color,
+        color: v.color ?? p.color,
         size: v.size,
         sku: v.sku ?? v.barcode ?? "SKU-DESCONHECIDO",
         price: Number(v.sale_price ?? p.sale_price ?? 0),
@@ -76,7 +76,7 @@ function ProdutosList() {
           short_description, description, material, collection, category_id, brand_id, supplier_id,
           brand:brands(name), category:categories(name),
           product_variants!left(
-            id, size, sku, barcode, sale_price, cost_price,
+            id, size, color, sku, barcode, sale_price, cost_price,
             inventory_balances(physical_quantity, available_quantity)
           ),
           product_images(id, image_url, storage_path, is_primary, position)
@@ -144,7 +144,8 @@ function ProdutosList() {
           organization_id: org,
           product_id: newProd.id,
           size: v.size,
-          sku: generateSKU(sourceProduct.name, sourceProduct.color ?? undefined, v.size),
+          color: (v as any).color ?? sourceProduct.color ?? null,
+          sku: generateSKU(sourceProduct.name, ((v as any).color ?? sourceProduct.color) ?? undefined, v.size),
           barcode: generateEAN13(),
           cost_price: v.cost_price,
           sale_price: v.sale_price,
@@ -192,7 +193,8 @@ function ProdutosList() {
       if (p.brand?.name?.toLowerCase().includes(q)) return true;
       if (p.category?.name?.toLowerCase().includes(q)) return true;
       return (p.product_variants ?? []).some((v: any) =>
-        v.sku?.toLowerCase().includes(q) || v.barcode?.toLowerCase().includes(q) || v.size?.toLowerCase().includes(q)
+        v.sku?.toLowerCase().includes(q) || v.barcode?.toLowerCase().includes(q) ||
+        v.size?.toLowerCase().includes(q) || v.color?.toLowerCase().includes(q)
       );
     });
   }, [data, query]);
@@ -294,7 +296,16 @@ function ProdutosList() {
                       <div className="text-xs text-muted-foreground">{p.brand?.name ?? "sem marca"} · {p.category?.name ?? "sem categoria"}</div>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{firstSku}</TableCell>
-                    <TableCell>{p.color ?? "—"}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const cores = Array.from(
+                          new Set(variants.map((v: any) => v.color ?? p.color).filter(Boolean)),
+                        ) as string[];
+                        if (cores.length === 0) return "—";
+                        if (cores.length <= 2) return cores.join(" · ");
+                        return `${cores.slice(0, 2).join(" · ")} +${cores.length - 2}`;
+                      })()}
+                    </TableCell>
                     <TableCell className="text-right">
                       {p.promotional_price ? (
                         <div>
@@ -399,7 +410,8 @@ function ProdutosList() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Variação</TableHead>
+                      <TableHead>Cor</TableHead>
+                      <TableHead>Tamanho</TableHead>
                       <TableHead>Código (SKU)</TableHead>
                       <TableHead>GTIN/EAN</TableHead>
                       <TableHead className="text-right">Preço</TableHead>
@@ -409,11 +421,12 @@ function ProdutosList() {
                   </TableHeader>
                   <TableBody>
                     {(selected.product_variants ?? []).length === 0 ? (
-                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">Sem variações.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">Sem variações.</TableCell></TableRow>
                     ) : (selected.product_variants as any[]).map((v: any) => {
                       const stock = (v.inventory_balances ?? []).reduce((s: number, b: any) => s + Number(b.physical_quantity ?? 0), 0);
                       return (
                         <TableRow key={v.id} className="group">
+                          <TableCell>{v.color ?? selected.color ?? "—"}</TableCell>
                           <TableCell className="font-medium">{v.size}</TableCell>
                           <TableCell className="font-mono text-xs">{v.sku ?? "—"}</TableCell>
                           <TableCell className="font-mono text-xs">{v.barcode ?? "—"}</TableCell>
@@ -421,7 +434,7 @@ function ProdutosList() {
                           <TableCell className={`text-right ${stock === 0 ? "text-destructive" : ""}`}>{stock.toFixed(2)}</TableCell>
                           <TableCell className="text-right">
                             <Button asChild size="sm" variant="ghost" className="h-7 px-2 opacity-60 group-hover:opacity-100">
-                              <Link to="/produtos/$id" params={{ id: selected.id }} aria-label={`Editar ${v.size}`}>
+                              <Link to="/produtos/$id" params={{ id: selected.id }} aria-label={`Editar ${[v.color ?? selected.color, v.size].filter(Boolean).join(" ")}`}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Link>
                             </Button>
