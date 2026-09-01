@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { currentOrgId, formatBRL, SIZE_SUGGESTIONS } from "@/lib/erp";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Trash2, Plus, Loader2, Upload, Star, X, Wand2, PlusCircle, ImageOff, AlertCircle } from "lucide-react";
+import { Trash2, Plus, Loader2, Upload, Star, X, Wand2, PlusCircle, ImageOff } from "lucide-react";
 import { z } from "zod";
 
 type VariantInput = {
@@ -95,7 +95,6 @@ export function ProductForm({
   const [pendingFiles, setPendingFiles] = useState<{ file: File; preview: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [brokenImageIds, setBrokenImageIds] = useState<Set<string>>(new Set());
-  const [bucketStatus, setBucketStatus] = useState<"ok" | "not_found" | "not_public" | "unknown">("unknown");
 
   // Estados para modais de cadastro inline
   const [inlineModal, setInlineModal] = useState<"category" | "brand" | "supplier" | null>(null);
@@ -106,20 +105,7 @@ export function ProductForm({
   const brands = useQuery({ queryKey: ["brands"], queryFn: async () => (await supabase.from("brands").select("id, name").order("name")).data ?? [] });
   const suppliers = useQuery({ queryKey: ["suppliers"], queryFn: async () => (await supabase.from("suppliers").select("id, name").order("name")).data ?? [] });
 
-  // Verificar status do bucket `product-images` no Supabase ao carregar
-  useEffect(() => {
-    supabase.storage.getBucket("product-images").then(({ data, error }) => {
-      if (error || !data) {
-        setBucketStatus("not_found");
-        console.warn("[Supabase Storage] Bucket 'product-images' não encontrado ou não acessível. Crie um bucket público com o nome 'product-images' no painel do Supabase.");
-      } else if (!data.public) {
-        setBucketStatus("not_public");
-        console.warn("[Supabase Storage] O bucket 'product-images' existe mas NÃO está configurado como PÚBLICO no Supabase.");
-      } else {
-        setBucketStatus("ok");
-      }
-    });
-  }, []);
+
 
   const margin = (() => {
     const s = parseFloat((values.sale_price ?? "").replace(",", "."));
@@ -578,25 +564,8 @@ export function ProductForm({
         <Card>
           <CardHeader><CardTitle>Galeria de Fotos (Supabase Storage)</CardTitle></CardHeader>
           <CardContent>
-            {bucketStatus === "not_found" && (
-              <div className="mb-3 rounded-md bg-destructive/10 border border-destructive/20 p-2.5 text-xs text-destructive flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <div>
-                  <strong>Bucket 'product-images' não encontrado!</strong>
-                  <p className="mt-0.5 text-[11px] opacity-90">Crie um bucket público chamado <code>product-images</code> no painel do Supabase Storage.</p>
-                </div>
-              </div>
-            )}
 
-            {bucketStatus === "not_public" && (
-              <div className="mb-3 rounded-md bg-amber-500/10 border border-amber-500/20 p-2.5 text-xs text-amber-700 dark:text-amber-400 flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <div>
-                  <strong>Bucket 'product-images' não está Público!</strong>
-                  <p className="mt-0.5 text-[11px] opacity-90">No painel do Supabase Storage, marque o bucket <code>product-images</code> como "Public".</p>
-                </div>
-              </div>
-            )}
+
 
             <div className="grid grid-cols-3 gap-2">
               {images.sort((a, b) => a.position - b.position).map((img) => {
