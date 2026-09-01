@@ -95,7 +95,6 @@ export function ProductForm({
   const [pendingFiles, setPendingFiles] = useState<{ file: File; preview: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [brokenImageIds, setBrokenImageIds] = useState<Set<string>>(new Set());
-  const [bucketStatus, setBucketStatus] = useState<"ok" | "not_found" | "not_public" | "unknown">("unknown");
 
   // Estados para modais de cadastro inline
   const [inlineModal, setInlineModal] = useState<"category" | "brand" | "supplier" | null>(null);
@@ -106,20 +105,7 @@ export function ProductForm({
   const brands = useQuery({ queryKey: ["brands"], queryFn: async () => (await supabase.from("brands").select("id, name").order("name")).data ?? [] });
   const suppliers = useQuery({ queryKey: ["suppliers"], queryFn: async () => (await supabase.from("suppliers").select("id, name").order("name")).data ?? [] });
 
-  // Verificar status do bucket `product-images` no Supabase ao carregar
-  useEffect(() => {
-    supabase.storage.getBucket("product-images").then(({ data, error }) => {
-      if (error || !data) {
-        setBucketStatus("not_found");
-        console.warn("[Supabase Storage] Bucket 'product-images' não encontrado ou não acessível. Crie um bucket público com o nome 'product-images' no painel do Supabase.");
-      } else if (!data.public) {
-        setBucketStatus("not_public");
-        console.warn("[Supabase Storage] O bucket 'product-images' existe mas NÃO está configurado como PÚBLICO no Supabase.");
-      } else {
-        setBucketStatus("ok");
-      }
-    });
-  }, []);
+
 
   const margin = (() => {
     const s = parseFloat((values.sale_price ?? "").replace(",", "."));
