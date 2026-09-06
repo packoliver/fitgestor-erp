@@ -30,16 +30,23 @@ export function compareCatalog(snapshot, { shopifyLocationId, erpLocationId }) {
     const sku = text(variant.sku);
     const info = { shopifyVariantId: variant.id, shopifyProductId: variant.product.id,
       name: shopProducts.get(variant.product.id)?.title, sku: variant.sku, title: variant.title };
+    const linked = erpExternal.get(gid(variant.id)) ?? [];
+    if (linked.length === 1) {
+      const target = linked[0], parent = erpProducts.get(target.product_id);
+      if (parent?.shopify_product_id && gid(parent.shopify_product_id) === gid(variant.product.id) &&
+        target.shopify_inventory_item_id && gid(target.shopify_inventory_item_id) === gid(variant.inventoryItem?.id)) {
+        candidates.push({shopifyVariant:variant,erpVariant:target,matchedVia:'persisted_shopify_ids'});
+      } else ambiguous.push({...info,reason:'persisted_parent_or_inventory_id_conflict',erpCandidates:[target.id]});
+      if (!sku) withoutSku.push(info);
+      continue;
+    }
+    if (linked.length > 1) {
+      ambiguous.push({...info,reason:'duplicate_persisted_variant_id',erpCandidates:linked.map(v=>v.id)});
+      if (!sku) withoutSku.push(info);
+      continue;
+    }
     if (!sku) {
       withoutSku.push(info);
-      const linked = erpExternal.get(gid(variant.id)) ?? [];
-      if (linked.length === 1) {
-        const target = linked[0], parent = erpProducts.get(target.product_id);
-        if (parent?.shopify_product_id && gid(parent.shopify_product_id) === gid(variant.product.id) &&
-          target.shopify_inventory_item_id && gid(target.shopify_inventory_item_id) === gid(variant.inventoryItem?.id)) {
-          candidates.push({shopifyVariant:variant,erpVariant:target,matchedVia:'persisted_shopify_ids'});
-        } else ambiguous.push({...info,reason:'persisted_parent_or_inventory_id_conflict',erpCandidates:[target.id]});
-      } else if (linked.length > 1) ambiguous.push({...info,reason:'duplicate_persisted_variant_id',erpCandidates:linked.map(v=>v.id)});
       continue;
     }
     const possible = erpSku.get(sku) ?? [];
@@ -104,8 +111,10 @@ export function compareCatalog(snapshot, { shopifyLocationId, erpLocationId }) {
     const price = (numeric(e.promotional_price) ?? 0) > 0 ? Number(e.promotional_price) :
       numeric(e.sale_price) ?? ((numeric(product?.promotional_price) ?? 0) > 0 ? Number(product.promotional_price) : numeric(product?.sale_price));
     const physical = numeric(balance?.physical_quantity), available = numeric(balance?.available_quantity);
-    return { shopifyVariantId: s.id, erpVariantId: e.id, shopifyProductId: s.product.id, erpProductId: e.product_id,
+    return { shopifyVariantId: s.id, shopifyInventoryItemId: s.inventoryItem.id,
+      erpVariantId: e.id, shopifyProductId: s.product.id, erpProductId: e.product_id,
       sku: s.sku, erpSku: e.sku, matchedVia: matchedVia ?? (text(e.sku) === text(s.sku) ? 'sku' : 'source_sku'),
+      skuDiffers: text(s.sku) !== text(e.sku) && text(s.sku) !== text(e.source_sku),
       shopifyPrice: numeric(s.price), erpEffectivePrice: price, shopifyCompareAtPrice: numeric(s.compareAtPrice),
       priceDiffers: price !== null && numeric(s.price) !== null ? Math.abs(price - Number(s.price)) > 0.005 : null,
       shopifyBarcode: s.barcode, erpBarcode: e.barcode, barcodeDiffers: text(s.barcode) !== text(e.barcode),
@@ -142,6 +151,7 @@ export function compareCatalog(snapshot, { shopifyLocationId, erpLocationId }) {
     shopifyPositiveWithoutErpBalance: variantComparisons.filter(v => v.missingErpBalance && numeric(v.shopifyQuantities?.on_hand) > 0).length,
     erpPositiveWithoutShopifyLocation: variantComparisons.filter(v => v.missingShopifyLocation && numeric(v.erpBalance?.physical_quantity) > 0).length,
     priceDifferences: variantComparisons.filter(v => v.priceDiffers === true).length,
+    skuDifferences: variantComparisons.filter(v => v.skuDiffers).length,
     sizeDifferences: variantComparisons.filter(v => v.sizeDiffers === true).length,
     barcodeDifferences: variantComparisons.filter(v => v.barcodeDiffers).length,
     productImageCountDifferences: productComparisons.filter(p => p.imageCountDiffers).length,

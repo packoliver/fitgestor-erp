@@ -21,11 +21,14 @@ async function vercel(uri, method = 'GET', body) {
   }
   return r.json();
 }
-const envs = (await vercel(`/v10/projects/${project}/env`)).envs;
-const entry = envs.find(e => e.key === 'SHOPIFY_AUDIT_RUN_KEY' && e.target.includes('production'));
-if (!entry) throw new Error('Chave de auditoria não configurada.');
-const credential = await vercel(`/v1/projects/${project}/env/${entry.id}`);
-const key = credential.value;
+let key = process.env.SHOPIFY_AUDIT_RUN_KEY;
+if (!key) {
+  const envs = (await vercel(`/v10/projects/${project}/env`)).envs;
+  const entry = envs.find(e => e.key === 'SHOPIFY_AUDIT_RUN_KEY' && e.target.includes('production'));
+  if (!entry) throw new Error('Chave de auditoria não configurada.');
+  const credential = await vercel(`/v1/projects/${project}/env/${entry.id}`);
+  key = credential.value;
+}
 if (typeof key !== 'string' || !/^[a-f0-9]{64}$/.test(key)) throw new Error('Chave de execução indisponível para a auditoria.');
 const bypass = randomBytes(16).toString('hex');
 const protection = await vercel(`/v1/projects/${project}/protection-bypass`, 'PATCH', { generate: { secret: bypass, note: 'Auditoria Shopify temporária; revogada ao encerrar o processo.' } });

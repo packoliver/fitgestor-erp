@@ -8,6 +8,7 @@
  * pedido é conciliado imediatamente em uma transação atômica.
  */
 import { createFileRoute } from "@tanstack/react-router";
+import type { Json } from "@/integrations/supabase/types";
 import type { ShopifyWebhookOrderPayload } from "@/types/shopify";
 
 export const Route = createFileRoute("/api/public/hooks/shopify-webhook")({
@@ -60,7 +61,11 @@ export const Route = createFileRoute("/api/public/hooks/shopify-webhook")({
             event_type: "order_webhook",
             external_event_id: eventId || null,
             status: "pendente",
-            payload: { topic, external_id: String(payload?.id ?? ""), dados: payload },
+            payload: {
+              topic,
+              external_id: String(payload?.id ?? ""),
+              dados: payload as unknown as Json,
+            },
           })
           .select("id")
           .single();
@@ -113,7 +118,12 @@ export const Route = createFileRoute("/api/public/hooks/shopify-webhook")({
                 status: "processado",
                 processed_at: new Date().toISOString(),
                 error_message: null,
-                payload: { topic, external_id: String(payload?.id ?? ""), dados: payload, result },
+                payload: {
+                  topic,
+                  external_id: String(payload?.id ?? ""),
+                  dados: payload as unknown as Json,
+                  result: result as unknown as Json,
+                },
               })
               .eq("id", eventRowId);
           }
