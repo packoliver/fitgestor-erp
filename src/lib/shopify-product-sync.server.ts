@@ -266,6 +266,55 @@ export function createShopifyProductClient(
       };
     },
 
+    /** Creates only the missing FitGestor order webhooks at the exact production URI. */
+    async ensureWebhooks(expectedWebhookUri: string) {
+      const topics = [
+        "ORDERS_CREATE",
+        "ORDERS_PAID",
+        "ORDERS_CANCELLED",
+        "REFUNDS_CREATE",
+      ] as const;
+      const before = await this.inspectFlow(expectedWebhookUri);
+      if (!before.subscriptionPageComplete) {
+        throw new Error("A lista de webhooks da Shopify excedeu o limite seguro da verificação.");
+      }
+
+      const created: string[] = [];
+      for (const topic of topics) {
+        const exists = before.subscriptions.some(
+          (subscription: { topic: string; correctUri: boolean }) =>
+            subscription.topic === topic && subscription.correctUri,
+        );
+        if (exists) continue;
+
+        const result = await request(
+          `mutation FitGestorCreateWebhook(
+            $topic: WebhookSubscriptionTopic!
+            $webhookSubscription: WebhookSubscriptionInput!
+          ) {
+            webhookSubscriptionCreate(
+              topic: $topic
+              webhookSubscription: $webhookSubscription
+            ) {
+              webhookSubscription { id topic uri }
+              userErrors { field message }
+            }
+          }`,
+          { topic, webhookSubscription: { uri: expectedWebhookUri } },
+        );
+        const errors = userErrors(result, "webhookSubscriptionCreate");
+        const subscription = result.webhookSubscriptionCreate?.webhookSubscription;
+        if (errors.length || !subscription?.id || subscription.uri !== expectedWebhookUri) {
+          throw new Error(
+            `Webhook ${topic} não pôde ser cadastrado: ${errors[0]?.message ?? "resposta incompleta"}.`,
+          );
+        }
+        created.push(topic);
+      }
+
+      return { created, flow: await this.inspectFlow(expectedWebhookUri) };
+    },
+
     async collectionId(title: string): Promise<{ id: string; created: boolean }> {
       const existing = await findCollection(title);
       if (existing) return { id: existing.id, created: false };

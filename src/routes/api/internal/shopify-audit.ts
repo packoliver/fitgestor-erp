@@ -4,6 +4,7 @@ import { z } from "zod";
 const inputSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("access") }).strict(),
   z.object({ action: z.literal("flow") }).strict(),
+  z.object({ action: z.literal("ensure_webhooks") }).strict(),
   z.object({ action: z.literal("olist_list"), page: z.number().int().min(1).max(10000) }).strict(),
   z.object({ action: z.literal("olist_product"), id: z.string().regex(/^\d{1,20}$/) }).strict(),
   z.object({ action: z.enum(["products", "variants", "locations"]), cursor: z.string().max(2048).nullable().optional() }).strict(),
@@ -52,7 +53,7 @@ export const Route = createFileRoute("/api/internal/shopify-audit")({
         if (!data || count === null) throw new Error("ERP retornou página sem contagem.");
         return Response.json({ ok: true, organization, data, count, offset: input.offset }, { headers });
       }
-      if (input.action === "flow") {
+      if (input.action === "flow" || input.action === "ensure_webhooks") {
         const {
           createShopifyProductClient,
           productSyncConfigFromEnv,
@@ -62,7 +63,10 @@ export const Route = createFileRoute("/api/internal/shopify-audit")({
         const config = productSyncConfigFromEnv();
         const expectedWebhookUri =
           "https://fitgestor-erp.vercel.app/api/public/hooks/shopify-webhook";
-        const data = await createShopifyProductClient(config).inspectFlow(expectedWebhookUri);
+        const client = createShopifyProductClient(config);
+        const data = input.action === "flow"
+          ? await client.inspectFlow(expectedWebhookUri)
+          : await client.ensureWebhooks(expectedWebhookUri);
         return Response.json({
           ok: true,
           data: {
