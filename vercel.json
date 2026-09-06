@@ -1,0 +1,9 @@
+{
+  "framework": "tanstack-start",
+  "crons": [
+    {
+      "path": "/api/public/hooks/shopify-sync",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}

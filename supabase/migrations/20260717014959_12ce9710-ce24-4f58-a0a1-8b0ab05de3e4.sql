@@ -1,0 +1,1 @@
+ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS pdv_require_cpf boolean NOT NULL DEFAULT false;

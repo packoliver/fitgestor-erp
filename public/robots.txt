@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /produtos
+Disallow: /estoque
+Disallow: /etiquetas
+Disallow: /fornecedores
+Disallow: /categorias
+Disallow: /marcas
+Disallow: /funcionarios
+Disallow: /cargos
+Disallow: /auditoria
+Disallow: /configuracoes
+Disallow: /setup

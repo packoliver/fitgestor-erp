@@ -1,0 +1,10 @@
+import { readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { compareOlistSource } from './lib/compare-olist-source.mjs';
+const folder=path.resolve(process.argv[2]);
+const sourceFolder=path.resolve(process.argv[3]??process.argv[2]);
+const snapshot=JSON.parse(await readFile(path.join(folder,'catalog-snapshot.json'),'utf8'));
+const source=JSON.parse(await readFile(path.join(sourceFolder,'olist-snapshot.json'),'utf8'));
+const report=compareOlistSource(snapshot,source);
+await writeFile(path.join(folder,'olist-comparison.json'),JSON.stringify(report,null,2));
+console.log(JSON.stringify(report.summary,null,2));
