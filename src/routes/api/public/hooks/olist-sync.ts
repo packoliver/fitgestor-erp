@@ -8,11 +8,13 @@ async function handleSync(request: Request, resumeOnly: boolean) {
   const legacyKey = request.headers.get("x-cron-secret");
   const authorization = request.headers.get("authorization");
   const olistSecret = process.env.CRON_OLIST_SECRET;
+  const importSecret = process.env.OLIST_IMPORT_SECRET;
   const platformSecret = process.env.CRON_SECRET;
-  if (!olistSecret && !platformSecret) {
+  if (!olistSecret && !importSecret && !platformSecret) {
     return Response.json({ ok: false, error: "Segredo de cron não configurado" }, { status: 503 });
   }
   const authorized = (olistSecret && legacyKey === olistSecret)
+    || (importSecret && legacyKey === importSecret)
     || (platformSecret && authorization === `Bearer ${platformSecret}`);
   if (!authorized) return new Response("Unauthorized", { status: 401 });
 
