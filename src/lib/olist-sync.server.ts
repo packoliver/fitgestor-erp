@@ -1099,7 +1099,15 @@ export async function runOlistSync(opts: { organizationId?: string } = {}): Prom
         continue;
       }
       if (!retorno?.empty) {
-        const produtos: any[] = Array.isArray(retorno?.produtos) ? retorno.produtos.map((x: any) => x.produto ?? x) : [];
+        // A pesquisa também lista cada filho de grade como se fosse um item.
+        // Filtrar aqui evita gastar uma chamada `produto.obter` por filho apenas
+        // para descartá-lo depois em `syncOneProduct`. O cursor passa a apontar
+        // para a lista de pais desta página, que é estável entre as rodadas.
+        const produtos: any[] = Array.isArray(retorno?.produtos)
+          ? retorno.produtos
+              .map((x: any) => x.produto ?? x)
+              .filter((item: any) => !isOlistChildVariation(item))
+          : [];
         totalPages = Number(retorno?.numero_paginas ?? totalPages);
         // Tiny/Olist v2: numero_registros é da PÁGINA. Preferimos o total global
         // quando presente (numero_registros_totais); senão estimamos com 100/pág.
