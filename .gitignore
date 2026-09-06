@@ -45,4 +45,5 @@ scripts/sandbox/.sandbox-credentials.json
 
 # Notas internas de continuidade entre sessões de IA — não publicar em repositório público
 CONTINUIDADE-CODEX.md
+CONTINUIDADE-CLAUDE.md
 SHOPIFY-AUDIT-STATUS.md
