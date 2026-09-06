@@ -223,6 +223,49 @@ export function createShopifyProductClient(
   }
 
   return {
+    /** Read-only operational check. Never returns credentials or mutates Shopify. */
+    async inspectFlow(expectedWebhookUri: string) {
+      const data = await request(
+        `query FitGestorFlowAudit {
+          currentAppInstallation { accessScopes { handle } }
+          webhookSubscriptions(first: 100) {
+            nodes { id topic uri }
+            pageInfo { hasNextPage }
+          }
+          locations(first: 50, includeInactive: true) {
+            nodes { id name isActive }
+          }
+        }`,
+        {},
+      );
+      const relevantTopics = new Set([
+        "ORDERS_CREATE",
+        "ORDERS_PAID",
+        "ORDERS_CANCELLED",
+        "REFUNDS_CREATE",
+      ]);
+      const subscriptions = (data.webhookSubscriptions?.nodes ?? [])
+        .filter((item: any) => relevantTopics.has(item.topic))
+        .map((item: any) => ({
+          topic: item.topic,
+          uri: item.uri,
+          correctUri: item.uri === expectedWebhookUri,
+        }));
+      const location = (data.locations?.nodes ?? []).find(
+        (item: any) => item.id === config.shopifyLocationId,
+      );
+      return {
+        scopes: (data.currentAppInstallation?.accessScopes ?? [])
+          .map((scope: any) => scope.handle)
+          .sort(),
+        subscriptions,
+        subscriptionPageComplete: data.webhookSubscriptions?.pageInfo?.hasNextPage === false,
+        configuredLocation: location
+          ? { found: true, name: location.name, active: location.isActive }
+          : { found: false },
+      };
+    },
+
     async collectionId(title: string): Promise<{ id: string; created: boolean }> {
       const existing = await findCollection(title);
       if (existing) return { id: existing.id, created: false };

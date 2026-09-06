@@ -3,6 +3,7 @@ import { z } from "zod";
 
 const inputSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("access") }).strict(),
+  z.object({ action: z.literal("flow") }).strict(),
   z.object({ action: z.literal("olist_list"), page: z.number().int().min(1).max(10000) }).strict(),
   z.object({ action: z.literal("olist_product"), id: z.string().regex(/^\d{1,20}$/) }).strict(),
   z.object({ action: z.enum(["products", "variants", "locations"]), cursor: z.string().max(2048).nullable().optional() }).strict(),
@@ -50,6 +51,29 @@ export const Route = createFileRoute("/api/internal/shopify-audit")({
         if (error) throw new Error(`Leitura ERP recusada (${error.code}); verificar campos/permissões.`);
         if (!data || count === null) throw new Error("ERP retornou página sem contagem.");
         return Response.json({ ok: true, organization, data, count, offset: input.offset }, { headers });
+      }
+      if (input.action === "flow") {
+        const {
+          createShopifyProductClient,
+          productSyncConfigFromEnv,
+          shopifyProductSyncStatus,
+        } = await import("@/lib/shopify-product-sync.server");
+        const status = shopifyProductSyncStatus();
+        const config = productSyncConfigFromEnv();
+        const expectedWebhookUri =
+          "https://fitgestor-erp.vercel.app/api/public/hooks/shopify-webhook";
+        const data = await createShopifyProductClient(config).inspectFlow(expectedWebhookUri);
+        return Response.json({
+          ok: true,
+          data: {
+            enabled: status.enabled,
+            configured: status.configured,
+            includeInventory: status.includeInventory,
+            expectedWebhookUri,
+            ...data,
+          },
+          readAt: new Date().toISOString(),
+        }, { headers });
       }
       const { auditConfigFromEnv, createShopifyAuditClient } = await import("@/lib/shopify-audit.server");
       auditClient ??= createShopifyAuditClient(auditConfigFromEnv());

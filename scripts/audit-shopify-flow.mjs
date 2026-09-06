@@ -33,7 +33,7 @@ const graphqlResponse = await fetch(`https://${shop}/admin/api/2026-07/graphql.j
   headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": token },
   body: JSON.stringify({
     query: `query FitGestorFlowAudit {
-      appInstallation { accessScopes { handle } }
+      currentAppInstallation { accessScopes { handle } }
       webhookSubscriptions(first: 100) {
         nodes { id topic uri }
         pageInfo { hasNextPage }
@@ -63,7 +63,7 @@ console.log(JSON.stringify({
   shopifyLocation: configuredLocation
     ? { found: true, name: configuredLocation.name, active: configuredLocation.isActive }
     : { found: false },
-  scopes: (body.data?.appInstallation?.accessScopes ?? []).map((scope) => scope.handle).sort(),
+  scopes: (body.data?.currentAppInstallation?.accessScopes ?? []).map((scope) => scope.handle).sort(),
   subscriptions: relevant,
   subscriptionPageComplete: body.data?.webhookSubscriptions?.pageInfo?.hasNextPage === false,
 }, null, 2));

@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/public/hooks/shopify-webhook")({
         const webhookId = request.headers.get("x-shopify-webhook-id") ?? "";
         const eventId = request.headers.get("x-shopify-event-id") ?? webhookId;
 
-        if (!["orders/create", "orders/paid"].includes(topic)) {
+        if (!["orders/create", "orders/paid", "orders/cancelled", "refunds/create"].includes(topic)) {
           // Reconhece o webhook (evita reenvio), mas não processa tópicos que não usamos.
           return Response.json({ ok: true, ignored: true, topic });
         }
@@ -98,8 +98,14 @@ export const Route = createFileRoute("/api/public/hooks/shopify-webhook")({
           ).data?.id;
 
         try {
-          const { processShopifyOrder } = await import("@/lib/shopify-sync.server");
-          const result = await processShopifyOrder(payload, orgId);
+          const { processShopifyOrder, processShopifyOrderAdjustment } =
+            await import("@/lib/shopify-sync.server");
+          const result =
+            topic === "orders/cancelled"
+              ? await processShopifyOrderAdjustment(payload as unknown as Record<string, unknown>, "cancel", orgId)
+              : topic === "refunds/create"
+                ? await processShopifyOrderAdjustment(payload as unknown as Record<string, unknown>, "refund", orgId)
+                : await processShopifyOrder(payload, orgId);
           if (eventRowId) {
             await supabaseAdmin
               .from("integration_events")

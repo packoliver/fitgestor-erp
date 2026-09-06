@@ -107,6 +107,31 @@ export async function processShopifyOrder(
   };
 }
 
+export async function processShopifyOrderAdjustment(
+  payload: Record<string, unknown>,
+  kind: "cancel" | "refund",
+  orgId?: string,
+): Promise<{ ok: boolean; duplicate?: boolean; ignored?: boolean; items_restocked: number }> {
+  const org = orgId ?? (await firstOrgId());
+  const { erpLocationId } = getShopifyEnv();
+  const { data, error } = await (supabaseAdmin.rpc as any)(
+    "apply_shopify_order_adjustment_atomic",
+    {
+      _organization_id: org,
+      _payload: payload,
+      _kind: kind,
+      _location_id: erpLocationId ?? null,
+    },
+  );
+  if (error) throw new Error(`Ajuste Shopify não conciliado: ${error.message}`);
+  return data as {
+    ok: boolean;
+    duplicate?: boolean;
+    ignored?: boolean;
+    items_restocked: number;
+  };
+}
+
 /**
  * Processa a fila de eventos pendentes de Shopify (`integration_events`, source=shopify).
  * Chamado pelo cron em /api/public/hooks/shopify-sync.
@@ -143,7 +168,13 @@ export async function processPendingShopifyEventsQueue(limit = 20): Promise<{
       let result: any = { ignored: true, event_type: evt.event_type };
 
       if (evt.event_type === "order_webhook") {
-        result = await processShopifyOrder(payload?.dados as ShopifyWebhookOrderPayload, org);
+        if (payload?.topic === "orders/cancelled") {
+          result = await processShopifyOrderAdjustment(payload?.dados, "cancel", org);
+        } else if (payload?.topic === "refunds/create") {
+          result = await processShopifyOrderAdjustment(payload?.dados, "refund", org);
+        } else {
+          result = await processShopifyOrder(payload?.dados as ShopifyWebhookOrderPayload, org);
+        }
       } else if (evt.event_type === "outbound_stock_sync") {
         result = await pushInventoryToShopify(payload?.sku, org);
       }
