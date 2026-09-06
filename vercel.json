@@ -4,6 +4,10 @@
     {
       "path": "/api/public/hooks/shopify-sync",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/public/hooks/olist-sync",
+      "schedule": "* * * * *"
     }
   ]
 }

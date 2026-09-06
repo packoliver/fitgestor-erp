@@ -393,6 +393,18 @@ async function firstOrgId(): Promise<string> {
   return data.id;
 }
 
+/** Indica se existe uma carga de catálogo interrompida aguardando continuação. */
+export async function hasPendingOlistCatalogResume(organizationId?: string): Promise<boolean> {
+  const orgId = organizationId ?? (await firstOrgId());
+  const { data, error } = await supabaseAdmin
+    .from("olist_sync_state")
+    .select("resume_page")
+    .eq("organization_id", orgId)
+    .maybeSingle();
+  if (error) throw error;
+  return Number(data?.resume_page ?? 0) > 0;
+}
+
 async function defaultLocationId(orgId: string): Promise<string> {
   const { data } = await supabaseAdmin
     .from("stock_locations")
