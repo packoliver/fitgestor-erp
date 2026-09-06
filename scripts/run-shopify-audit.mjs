@@ -52,7 +52,12 @@ const start = new Date().toISOString();
 const before = (await request({ action: 'access' })).data;
 console.log('ACCESS', JSON.stringify(before));
 if (before.shop?.myshopifyDomain !== 'jyzmie-ia.myshopify.com') throw new Error('Loja incorreta.');
-if (process.argv.includes('--probe')) {
+if (process.argv.includes('--olist-list-probe')) {
+  const list = await request({ action: 'olist_list', page: 1 });
+  if (list.organization !== '9ffe23cb-4aaf-47d8-a05b-0238ac975700') throw new Error('Organização Olist incorreta.');
+  console.log('OLIST_LIST_PROBE', JSON.stringify({ page: list.data.page,
+    totalPages: list.data.totalPages, records: list.data.products.length, readAt: list.readAt }));
+} else if (process.argv.includes('--probe')) {
   for (const [auditKey, body, expectedStatus] of [
     [null, { action: 'access' }, 401],
     ['invalid-key', { action: 'access' }, 401],

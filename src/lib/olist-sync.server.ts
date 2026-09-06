@@ -906,6 +906,9 @@ async function adjustStockForVariant(
 }
 
 async function syncStock(orgId: string, since: Date | null, counters: Counters) {
+  // Este endpoint é uma fila consumível: a própria Olist marca como processados
+  // os registros devolvidos. Use somente no sincronizador operacional; nunca
+  // em auditorias, probes ou conferências paralelas.
   const params: Record<string, string> = {};
   const d = fmtDate(since);
   if (d) params.dataAlteracao = d;

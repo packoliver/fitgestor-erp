@@ -1,8 +1,3 @@
-export type OlistStockUpdate = {
-  externalId: string;
-  quantity: number;
-};
-
 /** Read-only Olist catalog transport. Never imports the ERP synchronization writer. */
 export function createOlistAuditClient(
   token: string,
@@ -55,31 +50,6 @@ export function createOlistAuditClient(
       const r = await read("produto.obter.php", { id });
       if (!r.produto || String(r.produto.id) !== id) throw new Error("Produto Olist divergente da consulta.");
       return r.produto;
-    },
-    async stockUpdates(since: string): Promise<OlistStockUpdate[]> {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(since)) throw new Error("Data inicial Olist inválida.");
-      const [year, month, day] = since.split("-");
-      const r = await read("lista.atualizacoes.estoque.php", {
-        dataAlteracao: `${day}/${month}/${year}`,
-      });
-      if (r.empty) return [];
-      const products = Array.isArray(r.produtos)
-        ? r.produtos.map((item: any) => item?.produto ?? item)
-        : [];
-      if (
-        products.some(
-          (item: any) =>
-            !item ||
-            !/^\d{1,20}$/.test(String(item.id ?? "")) ||
-            !Number.isFinite(Number(item.saldo)),
-        )
-      ) {
-        throw new Error("Atualizações de estoque Olist incompletas.");
-      }
-      return products.map((item: any) => ({
-        externalId: String(item.id),
-        quantity: Math.max(0, Number(item.saldo)),
-      }));
     },
   };
 }
