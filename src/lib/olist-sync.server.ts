@@ -146,15 +146,21 @@ async function getLastPartialCursor(orgId: string): Promise<ResumeCursor | null>
     .select("resume_page, resume_index, resume_processed, resume_total")
     .eq("organization_id", orgId)
     .maybeSingle();
-  if (st?.resume_page && st.resume_page > 0) {
-    return {
-      page: asPositiveInt(st.resume_page, 1),
-      index: Math.max(0, Number(st.resume_index ?? 0)),
-      processed: Math.max(0, Number(st.resume_processed ?? 0)),
-      total: Math.max(0, Number(st.resume_total ?? 0)),
-    };
+  if (st) {
+    if (st.resume_page && st.resume_page > 0) {
+      return {
+        page: asPositiveInt(st.resume_page, 1),
+        index: Math.max(0, Number(st.resume_index ?? 0)),
+        processed: Math.max(0, Number(st.resume_processed ?? 0)),
+        total: Math.max(0, Number(st.resume_total ?? 0)),
+      };
+    }
+    // A linha existe e o cursor foi limpo explicitamente: isso representa
+    // uma execução concluída/reiniciada. Não ressuscite um evento parcial
+    // histórico, pois ele pode usar índices de uma versão antiga da listagem.
+    return null;
   }
-  // 2) Fallback: último evento parcial
+  // 2) Fallback legado: só quando ainda não existe linha em olist_sync_state.
   const { data } = await supabaseAdmin
     .from("integration_events")
     .select("payload")
