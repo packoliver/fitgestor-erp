@@ -3322,16 +3322,21 @@ export type Database = {
           card_brand: string | null
           cash_session_id: string | null
           created_at: string
+          fee_percent: number
           id: string
           installments: number
+          net_amount: number | null
           notes: string | null
           organization_id: string
           payment_method: string
+          receiving_label: string | null
+          receiving_option_id: string | null
           refund_reason: string | null
           refunded_amount: number
           refunded_at: string | null
           refunded_by: string | null
           sale_id: string
+          settlement_days: number
           status: string
           transaction_reference: string | null
         }
@@ -3341,16 +3346,21 @@ export type Database = {
           card_brand?: string | null
           cash_session_id?: string | null
           created_at?: string
+          fee_percent?: number
           id?: string
           installments?: number
+          net_amount?: number | null
           notes?: string | null
           organization_id: string
           payment_method: string
+          receiving_label?: string | null
+          receiving_option_id?: string | null
           refund_reason?: string | null
           refunded_amount?: number
           refunded_at?: string | null
           refunded_by?: string | null
           sale_id: string
+          settlement_days?: number
           status?: string
           transaction_reference?: string | null
         }
@@ -3360,16 +3370,21 @@ export type Database = {
           card_brand?: string | null
           cash_session_id?: string | null
           created_at?: string
+          fee_percent?: number
           id?: string
           installments?: number
+          net_amount?: number | null
           notes?: string | null
           organization_id?: string
           payment_method?: string
+          receiving_label?: string | null
+          receiving_option_id?: string | null
           refund_reason?: string | null
           refunded_amount?: number
           refunded_at?: string | null
           refunded_by?: string | null
           sale_id?: string
+          settlement_days?: number
           status?: string
           transaction_reference?: string | null
         }
@@ -3410,6 +3425,9 @@ export type Database = {
           client_id: string | null
           client_request_id: string | null
           completed_at: string | null
+          collection_details: Json | null
+          collection_method: string | null
+          collection_timing: string
           created_at: string
           id: string
           item_discount_total: number
@@ -3438,6 +3456,7 @@ export type Database = {
           client_id?: string | null
           client_request_id?: string | null
           completed_at?: string | null
+          collection_details?: Json | null
           collection_method?: string | null
           collection_timing?: string
           created_at?: string
@@ -3468,6 +3487,7 @@ export type Database = {
           client_id?: string | null
           client_request_id?: string | null
           completed_at?: string | null
+          collection_details?: Json | null
           collection_method?: string | null
           collection_timing?: string
           created_at?: string

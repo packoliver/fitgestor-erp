@@ -14,7 +14,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { cleanupProductImageOrphans, type OrphanScanResult } from "@/lib/storage-cleanup.functions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DEFAULT_RECEIVING_OPTIONS, parseReceivingOptions, type PaymentMethod, type ReceivingOption } from "@/lib/pos";
+import {
+  CARD_BRANDS, DEFAULT_RECEIVING_OPTIONS, defaultCardConfig, parseReceivingOptions,
+  type CardReceivingConfig, type PaymentMethod, type ReceivingOption,
+} from "@/lib/pos";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/")({
   component: Config,
@@ -74,6 +77,37 @@ function Config() {
     setReceivingOptions((current) => current.map((option) => option.id === id ? { ...option, ...patch } : option));
   }
 
+  function changeReceivingMethod(id: string, paymentMethod: PaymentMethod) {
+    setReceivingOptions((current) => current.map((option) => {
+      if (option.id !== id) return option;
+      const card = paymentMethod === "credit_card" || paymentMethod === "debit_card"
+        ? (option.card ?? defaultCardConfig(paymentMethod))
+        : undefined;
+      return { ...option, payment_method: paymentMethod, card };
+    }));
+  }
+
+  function patchCardConfig(id: string, updater: (card: CardReceivingConfig) => CardReceivingConfig) {
+    setReceivingOptions((current) => current.map((option) => {
+      if (option.id !== id) return option;
+      const card = option.card ?? defaultCardConfig(option.payment_method);
+      return { ...option, card: updater(card) };
+    }));
+  }
+
+  function setMaxInstallments(option: ReceivingOption, maxInstallments: number) {
+    patchCardConfig(option.id, (card) => {
+      const fallback = defaultCardConfig(option.payment_method);
+      const installmentRules = Array.from({ length: maxInstallments }, (_, index) => {
+        const installments = index + 1;
+        return card.installment_rules.find((rule) => rule.installments === installments)
+          ?? fallback.installment_rules.find((rule) => rule.installments === installments)
+          ?? { installments, fee_percent: 0, brand_fee_percentages: {}, settlement_days: 30 };
+      });
+      return { ...card, max_installments: maxInstallments, installment_rules: installmentRules };
+    });
+  }
+
   function addReceivingOption() {
     setReceivingOptions((current) => [...current, {
       id: `custom_${crypto.randomUUID()}`,
@@ -94,6 +128,14 @@ function Config() {
     }
     if (cleaned.filter((option) => option.active && option.quick).length > 3) {
       toast.error("Escolha no máximo três formas como atalhos do PDV."); return;
+    }
+    const invalidCard = cleaned.find((option) =>
+      option.active
+      && (option.payment_method === "credit_card" || option.payment_method === "debit_card")
+      && (!option.card?.brands.length || !option.card.installment_rules.length),
+    );
+    if (invalidCard) {
+      toast.error(`Selecione ao menos uma bandeira e uma regra de parcela para ${invalidCard.label}.`); return;
     }
     setReceivingSaving(true);
     const { error } = await supabase.from("organizations")
@@ -131,39 +173,141 @@ function Config() {
             Configure o nome exibido no caixa e indique se o valor entra agora ou será cobrado pelo motoboy. Valores da entrega não entram no caixa antes do recebimento.
           </p>
           <div className="space-y-3">
+            <div className="hidden px-3 text-xs font-medium text-muted-foreground md:grid md:grid-cols-[minmax(190px,1.5fr)_180px_170px_auto_auto_auto] md:gap-3">
+              <span>Título exibido no PDV</span><span>Tipo</span><span>Quando receber</span><span>Ativa</span><span>Atalho</span><span />
+            </div>
             {receivingOptions.map((option) => (
-              <div key={option.id} className="grid gap-3 rounded-lg border p-3 md:grid-cols-[minmax(190px,1.5fr)_180px_170px_auto_auto_auto] md:items-center">
-                <Input
-                  aria-label="Nome da forma de recebimento"
-                  value={option.label}
-                  onChange={(event) => patchReceivingOption(option.id, { label: event.target.value })}
-                />
-                <Select value={option.payment_method} onValueChange={(value) => patchReceivingOption(option.id, { payment_method: value as PaymentMethod })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Dinheiro</SelectItem>
-                    <SelectItem value="pix">Pix</SelectItem>
-                    <SelectItem value="debit_card">Cartão de débito</SelectItem>
-                    <SelectItem value="credit_card">Cartão de crédito</SelectItem>
-                    <SelectItem value="other">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={option.timing} onValueChange={(value) => patchReceivingOption(option.id, { timing: value as ReceivingOption["timing"] })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="immediate">Receber na loja</SelectItem>
-                    <SelectItem value="delivery">Receber na entrega</SelectItem>
-                  </SelectContent>
-                </Select>
-                <label className="flex items-center gap-2 text-sm whitespace-nowrap">
-                  <Switch checked={option.active} onCheckedChange={(active) => patchReceivingOption(option.id, { active })} /> Ativa
-                </label>
-                <label className="flex items-center gap-2 text-sm whitespace-nowrap">
-                  <Switch checked={option.quick} onCheckedChange={(quick) => patchReceivingOption(option.id, { quick })} /> Atalho
-                </label>
-                <Button type="button" size="icon" variant="ghost" className="text-destructive" onClick={() => setReceivingOptions((current) => current.filter((item) => item.id !== option.id))}>
-                  <Trash2 className="h-4 w-4" /><span className="sr-only">Excluir opção</span>
-                </Button>
+              <div key={option.id} className="space-y-3 rounded-lg border p-3">
+                <div className="grid gap-3 md:grid-cols-[minmax(190px,1.5fr)_180px_170px_auto_auto_auto] md:items-center">
+                  <Input
+                    aria-label="Título exibido no PDV"
+                    value={option.label}
+                    onChange={(event) => patchReceivingOption(option.id, { label: event.target.value })}
+                  />
+                  <Select value={option.payment_method} onValueChange={(value) => changeReceivingMethod(option.id, value as PaymentMethod)}>
+                    <SelectTrigger aria-label="Tipo de recebimento"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Dinheiro</SelectItem>
+                      <SelectItem value="pix">Pix</SelectItem>
+                      <SelectItem value="debit_card">Cartão de débito</SelectItem>
+                      <SelectItem value="credit_card">Cartão de crédito</SelectItem>
+                      <SelectItem value="other">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={option.timing} onValueChange={(value) => patchReceivingOption(option.id, { timing: value as ReceivingOption["timing"] })}>
+                    <SelectTrigger aria-label="Quando receber"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="immediate">Receber na loja</SelectItem>
+                      <SelectItem value="delivery">Receber na entrega</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                    <Switch checked={option.active} onCheckedChange={(active) => patchReceivingOption(option.id, { active })} /> Ativa
+                  </label>
+                  <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                    <Switch checked={option.quick} onCheckedChange={(quick) => patchReceivingOption(option.id, { quick })} /> Atalho
+                  </label>
+                  <Button type="button" size="icon" variant="ghost" className="text-destructive" onClick={() => setReceivingOptions((current) => current.filter((item) => item.id !== option.id))}>
+                    <Trash2 className="h-4 w-4" /><span className="sr-only">Excluir opção</span>
+                  </Button>
+                </div>
+
+                {(option.payment_method === "credit_card" || option.payment_method === "debit_card") && option.card && (
+                  <details className="rounded-md bg-muted/40 p-3">
+                    <summary className="cursor-pointer text-sm font-medium">Configurar bandeiras, taxas e parcelamento</summary>
+                    <div className="mt-4 space-y-4">
+                      <div className="space-y-2">
+                        <Label>Bandeiras disponíveis</Label>
+                        <div className="flex flex-wrap gap-3">
+                          {CARD_BRANDS.map((brand) => (
+                            <label key={brand.value} className="flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={option.card?.brands.includes(brand.value) ?? false}
+                                onChange={(event) => patchCardConfig(option.id, (card) => ({
+                                  ...card,
+                                  brands: event.target.checked
+                                    ? Array.from(new Set([...card.brands, brand.value]))
+                                    : card.brands.filter((value) => value !== brand.value),
+                                }))}
+                              />
+                              {brand.label}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="max-w-xs space-y-2">
+                        <Label>Máximo de parcelas</Label>
+                        <Select
+                          value={String(option.payment_method === "debit_card" ? 1 : option.card.max_installments)}
+                          onValueChange={(value) => setMaxInstallments(option, Number(value))}
+                          disabled={option.payment_method === "debit_card"}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Array.from({ length: option.payment_method === "credit_card" ? 12 : 1 }, (_, index) => index + 1).map((count) => (
+                              <SelectItem key={count} value={String(count)}>{count}x</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2 overflow-x-auto">
+                        <div
+                          className="grid min-w-max gap-2 text-xs font-medium text-muted-foreground"
+                          style={{ gridTemplateColumns: `80px repeat(${option.card.brands.length}, 120px) 150px` }}
+                        >
+                          <span>Parcelas</span>
+                          {option.card.brands.map((brand) => <span key={brand}>{CARD_BRANDS.find((item) => item.value === brand)?.label ?? brand} (%)</span>)}
+                          <span>Prazo para receber (dias)</span>
+                        </div>
+                        {option.card.installment_rules.slice(0, option.card.max_installments).map((rule) => (
+                          <div
+                            key={rule.installments}
+                            className="grid min-w-max gap-2"
+                            style={{ gridTemplateColumns: `80px repeat(${option.card?.brands.length ?? 0}, 120px) 150px` }}
+                          >
+                            <div className="flex h-10 items-center font-medium">{rule.installments}x</div>
+                            {option.card?.brands.map((brand) => (
+                              <Input
+                                key={brand}
+                                type="number" min={0} max={100} step="0.01"
+                                aria-label={`Taxa ${CARD_BRANDS.find((item) => item.value === brand)?.label ?? brand} em ${rule.installments} parcelas`}
+                                value={rule.brand_fee_percentages?.[brand] ?? rule.fee_percent}
+                                onChange={(event) => patchCardConfig(option.id, (card) => ({
+                                  ...card,
+                                  installment_rules: card.installment_rules.map((item) => item.installments === rule.installments
+                                    ? {
+                                        ...item,
+                                        brand_fee_percentages: {
+                                          ...item.brand_fee_percentages,
+                                          [brand]: Math.min(100, Math.max(0, Number(event.target.value) || 0)),
+                                        },
+                                      }
+                                    : item),
+                                }))}
+                              />
+                            ))}
+                            <Input
+                              type="number" min={0} step="1" aria-label={`Prazo para ${rule.installments} parcelas`}
+                              value={rule.settlement_days}
+                              onChange={(event) => patchCardConfig(option.id, (card) => ({
+                                ...card,
+                                installment_rules: card.installment_rules.map((item) => item.installments === rule.installments
+                                  ? { ...item, settlement_days: Math.max(0, Math.trunc(Number(event.target.value) || 0)) }
+                                  : item),
+                              }))}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        A taxa reduz o valor líquido previsto no financeiro; ela não dá desconto ao cliente automaticamente.
+                      </p>
+                    </div>
+                  </details>
+                )}
               </div>
             ))}
           </div>

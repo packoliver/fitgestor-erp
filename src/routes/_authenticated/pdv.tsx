@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  AVAILABLE_METHODS, getOpenSession, money, normalizeDigits,
+  AVAILABLE_METHODS, CARD_BRANDS, cardFeeFor, defaultCardConfig, getOpenSession, money, normalizeDigits,
   parseReceivingOptions, PAYMENT_LABELS, PaymentMethod, ReceivingOption, validCPF,
 } from "@/lib/pos";
 import {
@@ -32,7 +32,26 @@ type CartLine = {
   unit_price: number; quantity: number; available: number;
 };
 
-type PaymentLine = { payment_method: PaymentMethod; amount: number; installments: number; reference?: string; display_label?: string };
+type PaymentLine = {
+  payment_method: PaymentMethod;
+  amount: number;
+  installments: number;
+  reference?: string;
+  display_label?: string;
+  receiving_option_id?: string;
+  card_brand?: string;
+  fee_percent?: number;
+  settlement_days?: number;
+  net_amount?: number;
+};
+type DeliveryCollection = {
+  option: ReceivingOption;
+  card_brand?: string;
+  installments: number;
+  fee_percent: number;
+  settlement_days: number;
+  net_amount: number;
+};
 type Step = "sale" | "checkout" | "done";
 
 function newRequestId() {
@@ -66,12 +85,14 @@ function PdvPage() {
   const [payMethod, setPayMethod] = useState<PaymentMethod>("cash");
   const [payAmount, setPayAmount] = useState("");
   const [payInst, setPayInst] = useState(1);
+  const [payBrand, setPayBrand] = useState("");
   const [payRef, setPayRef] = useState("");
   const [voucherInfo, setVoucherInfo] = useState<{ code: string; balance: number; expires_at: string | null; holder: string | null } | null>(null);
   const [voucherLookupPending, setVoucherLookupPending] = useState(false);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [creditLookupPending, setCreditLookupPending] = useState(false);
-  const [deliveryCollection, setDeliveryCollection] = useState<ReceivingOption | null>(null);
+  const [selectedReceivingOption, setSelectedReceivingOption] = useState<ReceivingOption | null>(null);
+  const [deliveryCollection, setDeliveryCollection] = useState<DeliveryCollection | null>(null);
 
   const [requestId, setRequestId] = useState(newRequestId());
   const [submitting, setSubmitting] = useState(false);
@@ -228,12 +249,25 @@ function PdvPage() {
   function preparePaymentMethod(m: PaymentMethod) {
     setPayMethod(m);
     setPayAmount(remaining.toFixed(2));
+    setPayInst(1);
+    const option = receivingOptions.find((item) => item.active && item.payment_method === m && item.timing === "immediate") ?? null;
+    setSelectedReceivingOption(option);
+    setPayBrand(option?.card?.brands[0] ?? "");
   }
 
-  function addQuickPayment(option: ReceivingOption) {
+  function chooseReceivingOption(option: ReceivingOption) {
     if (remaining <= 0) { toast.info("A venda já está totalmente recebida."); return; }
+    const isCard = option.payment_method === "credit_card" || option.payment_method === "debit_card";
+    if (isCard) {
+      setSelectedReceivingOption(option);
+      setPayMethod(option.payment_method);
+      setPayAmount(remaining.toFixed(2));
+      setPayInst(1);
+      setPayBrand(option.card?.brands[0] ?? "");
+      return;
+    }
     if (option.timing === "delivery") {
-      setDeliveryCollection(option);
+      setDeliveryCollection({ option, installments: 1, fee_percent: 0, settlement_days: 0, net_amount: remaining });
       setMethodOpen(false);
       return;
     }
@@ -242,6 +276,10 @@ function PdvPage() {
       amount: remaining,
       installments: 1,
       display_label: option.label,
+      receiving_option_id: option.id,
+      fee_percent: 0,
+      settlement_days: 0,
+      net_amount: remaining,
     }]);
     setDeliveryCollection(null);
     setMethodOpen(false);
@@ -250,6 +288,15 @@ function PdvPage() {
   function addPayment() {
     const amount = Number(payAmount);
     if (!amount || amount <= 0) { toast.error("Valor inválido."); return; }
+    const isCard = payMethod === "credit_card" || payMethod === "debit_card";
+    const option = selectedReceivingOption?.payment_method === payMethod ? selectedReceivingOption : null;
+    const cardConfig = option?.card ?? (isCard ? defaultCardConfig(payMethod) : undefined);
+    if (isCard && !payBrand) { toast.error("Selecione a bandeira do cartão."); return; }
+    const rule = cardConfig?.installment_rules.find((item) => item.installments === payInst);
+    if (isCard && !rule) { toast.error("Selecione uma quantidade de parcelas configurada."); return; }
+    const feePercent = cardFeeFor(rule, payBrand);
+    const settlementDays = rule?.settlement_days ?? 0;
+    const netAmount = Math.max(0, Math.round(amount * (1 - feePercent / 100) * 100) / 100);
     if (payMethod === "exchange_voucher") {
       if (!payRef.trim()) { toast.error("Informe o código do vale."); return; }
       if (!voucherInfo) { toast.error("Consulte o vale antes de adicionar."); return; }
@@ -260,9 +307,33 @@ function PdvPage() {
       if (creditBalance === null) { toast.error("Consulte o saldo antes de adicionar."); return; }
       if (amount > creditBalance + 0.005) { toast.error("Valor acima do saldo de crédito."); return; }
     }
-    setPayments((p) => [...p, { payment_method: payMethod, amount, installments: payMethod === "credit_card" ? payInst : 1, reference: payRef.trim() || undefined }]);
+    if (option?.timing === "delivery") {
+      setDeliveryCollection({
+        option,
+        card_brand: isCard ? payBrand : undefined,
+        installments: isCard ? payInst : 1,
+        fee_percent: feePercent,
+        settlement_days: settlementDays,
+        net_amount: netAmount,
+      });
+      setMethodOpen(false);
+      setPayAmount(""); setPayRef(""); setSelectedReceivingOption(null);
+      return;
+    }
+    setPayments((p) => [...p, {
+      payment_method: payMethod,
+      amount,
+      installments: isCard ? payInst : 1,
+      reference: payRef.trim() || undefined,
+      display_label: option?.label,
+      receiving_option_id: option?.id,
+      card_brand: isCard ? payBrand : undefined,
+      fee_percent: feePercent,
+      settlement_days: settlementDays,
+      net_amount: netAmount,
+    }]);
     if (amount >= remaining) setDeliveryCollection(null);
-    setPayAmount(""); setPayRef(""); setVoucherInfo(null);
+    setPayAmount(""); setPayRef(""); setPayBrand(""); setSelectedReceivingOption(null); setVoucherInfo(null);
   }
 
   async function lookupVoucher() {
@@ -306,9 +377,29 @@ function PdvPage() {
         order_discount_type: orderDiscountType || null,
         order_discount_value: Number(orderDiscountValue) || 0,
         collection_timing: deliveryCollection ? "delivery" : "immediate",
-        collection_method: deliveryCollection?.payment_method ?? null,
+        collection_method: deliveryCollection?.option.payment_method ?? null,
+        collection_details: deliveryCollection ? {
+          receiving_option_id: deliveryCollection.option.id,
+          display_label: deliveryCollection.option.label,
+          card_brand: deliveryCollection.card_brand ?? null,
+          installments: deliveryCollection.installments,
+          fee_percent: deliveryCollection.fee_percent,
+          settlement_days: deliveryCollection.settlement_days,
+          net_amount: deliveryCollection.net_amount,
+        } : null,
         items: cart.map((l) => ({ variant_id: l.variant_id, quantity: l.quantity, unit_price: l.unit_price })),
-        payments: payments.map((p) => ({ payment_method: p.payment_method, amount: p.amount, installments: p.installments, reference: p.reference })),
+        payments: payments.map((p) => ({
+          payment_method: p.payment_method,
+          amount: p.amount,
+          installments: p.installments,
+          reference: p.reference,
+          receiving_option_id: p.receiving_option_id,
+          display_label: p.display_label,
+          card_brand: p.card_brand,
+          fee_percent: p.fee_percent,
+          settlement_days: p.settlement_days,
+          net_amount: p.net_amount,
+        })),
       };
       const { data, error } = await supabase.rpc("complete_pos_sale", { _payload: payload });
       if (error) throw error;
@@ -565,6 +656,7 @@ function PdvPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{p.display_label ?? PAYMENT_LABELS[p.payment_method]}</span>
                       {p.installments > 1 && <span className="text-xs text-muted-foreground">{p.installments}x</span>}
+                      {p.card_brand && <span className="text-xs text-muted-foreground">{CARD_BRANDS.find((brand) => brand.value === p.card_brand)?.label ?? p.card_brand}</span>}
                       {p.reference && <span className="text-xs text-muted-foreground">({p.reference})</span>}
                     </div>
                     <div className="flex items-center gap-3">
@@ -581,7 +673,12 @@ function PdvPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="font-medium">A receber na entrega: {money(remaining)}</div>
-                    <div className="text-xs">{deliveryCollection.label} — ainda não entra no caixa.</div>
+                    <div className="text-xs">
+                      {deliveryCollection.option.label}
+                      {deliveryCollection.card_brand ? ` · ${CARD_BRANDS.find((brand) => brand.value === deliveryCollection.card_brand)?.label ?? deliveryCollection.card_brand}` : ""}
+                      {deliveryCollection.installments > 1 ? ` · ${deliveryCollection.installments}x` : ""}
+                      {` · líquido previsto ${money(deliveryCollection.net_amount)}`} — ainda não entra no caixa.
+                    </div>
                   </div>
                   <Button type="button" size="sm" variant="ghost" onClick={() => setDeliveryCollection(null)}>Remover</Button>
                 </div>
@@ -877,6 +974,12 @@ function PdvPage() {
     const activeOptions = receivingOptions.filter((option) => option.active);
     const quickOptions = activeOptions.filter((option) => option.quick).slice(0, 3);
     const otherOptions = activeOptions.filter((option) => !quickOptions.some((quick) => quick.id === option.id));
+    const cardMethod = payMethod === "credit_card" || payMethod === "debit_card";
+    const cardConfig = cardMethod ? (selectedReceivingOption?.card ?? defaultCardConfig(payMethod)) : null;
+    const cardRules = cardConfig?.installment_rules.slice(0, cardConfig.max_installments) ?? [];
+    const selectedCardRule = cardRules.find((rule) => rule.installments === payInst) ?? cardRules[0];
+    const selectedCardFee = cardFeeFor(selectedCardRule, payBrand);
+    const expectedCardNet = Math.max(0, Math.round((Number(payAmount) || 0) * (1 - selectedCardFee / 100) * 100) / 100);
     return (
       <Dialog open={methodOpen} onOpenChange={setMethodOpen}>
         <DialogContent className="max-w-2xl">
@@ -896,7 +999,7 @@ function PdvPage() {
                 icon={option.payment_method === "cash" ? <DollarSign className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
                 label={option.label}
                 hint={String(index + 1)}
-                onClick={() => addQuickPayment(option)}
+                onClick={() => chooseReceivingOption(option)}
               />
             ))}
             <MethodTile icon={<Plus className="h-5 w-5" />} label="Múltiplas" hint="4" onClick={() => { preparePaymentMethod("cash"); }} />
@@ -905,7 +1008,7 @@ function PdvPage() {
             <Label className="text-xs text-muted-foreground">Outras formas de recebimento</Label>
             <Select onValueChange={(id) => {
               const option = activeOptions.find((item) => item.id === id);
-              if (option) addQuickPayment(option);
+              if (option) chooseReceivingOption(option);
             }}>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
@@ -917,18 +1020,47 @@ function PdvPage() {
           {/* Manual add for chosen method */}
           <div className="border-t pt-3 space-y-2">
             <div className="grid grid-cols-[1fr_140px_120px] gap-2">
-              <Select value={payMethod} onValueChange={(v) => setPayMethod(v as PaymentMethod)}>
+              <Select value={payMethod} onValueChange={(v) => preparePaymentMethod(v as PaymentMethod)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{AVAILABLE_METHODS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
               </Select>
               <Input type="number" step="0.01" placeholder="Valor" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} />
-              <Button onClick={addPayment}><Plus className="h-4 w-4 mr-1" /> Adicionar</Button>
+              <Button onClick={addPayment}>
+                <Plus className="h-4 w-4 mr-1" /> {selectedReceivingOption?.timing === "delivery" ? "Definir cobrança" : "Adicionar"}
+              </Button>
             </div>
-            {payMethod === "credit_card" && (
-              <div className="flex items-center gap-2 text-sm">
-                <Label>Parcelas</Label>
-                <Input type="number" min={1} max={12} className="w-20 h-8" value={payInst} onChange={(e) => setPayInst(Number(e.target.value) || 1)} />
-              </div>
+            {cardConfig && (
+                <div className="space-y-3 rounded-md border p-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label>Bandeira *</Label>
+                      <Select value={payBrand} onValueChange={setPayBrand}>
+                        <SelectTrigger><SelectValue placeholder="Selecione a bandeira" /></SelectTrigger>
+                        <SelectContent>
+                          {cardConfig.brands.map((brand) => (
+                            <SelectItem key={brand} value={brand}>{CARD_BRANDS.find((item) => item.value === brand)?.label ?? brand}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Parcelas *</Label>
+                      <Select value={String(payInst)} onValueChange={(value) => setPayInst(Number(value))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {cardRules.map((rule) => (
+                            <SelectItem key={rule.installments} value={String(rule.installments)}>{rule.installments}x</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid gap-2 rounded-md bg-muted/50 p-3 text-sm sm:grid-cols-3">
+                    <div><span className="block text-xs text-muted-foreground">Taxa da operadora</span><strong>{selectedCardFee.toFixed(2)}%</strong></div>
+                    <div><span className="block text-xs text-muted-foreground">Líquido previsto</span><strong>{money(expectedCardNet)}</strong></div>
+                    <div><span className="block text-xs text-muted-foreground">Prazo previsto</span><strong>{selectedCardRule?.settlement_days ?? 0} dia(s)</strong></div>
+                  </div>
+                </div>
             )}
             {payMethod === "exchange_voucher" && (
               <div className="flex items-center gap-2">
