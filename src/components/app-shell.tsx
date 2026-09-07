@@ -746,7 +746,7 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
             {/* Quick Cash Status Badge */}
             <button
               type="button"
-              onClick={() => navigate({ to: "/vendas/pdv" })}
+              onClick={() => navigate({ to: "/pdv" })}
               title="Ir para a Frente de Caixa (PDV)"
               className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition shadow-2xs ${
                 cashShiftStatus === "open"
@@ -767,7 +767,7 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
 
             {/* Direct PDV Action Button */}
             <Button
-              onClick={() => navigate({ to: "/vendas/pdv" })}
+              onClick={() => navigate({ to: "/pdv" })}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs gap-1.5"
             >
               <ShoppingCart className="h-4 w-4" />
@@ -827,7 +827,7 @@ export function AppShell({ children, userEmail }: { children: ReactNode; userEma
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/vendas/pdv">
+                  <Link to="/pdv">
                     <ShoppingCart className="mr-2 h-4 w-4 text-emerald-600" />
                     Ir para Frente de Caixa
                   </Link>
