@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -17,6 +18,7 @@ import {
 import {
   Banknote, CreditCard, DollarSign, Plus, Search, Share2, ShoppingCart,
   Trash2, User, X, Printer, FileText, ChevronDown, ArrowLeft,
+  ArrowLeftRight, Receipt, Loader2, ShoppingBag,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { PostSaleDeliveryDialog } from "@/components/post-sale-delivery-dialog";
@@ -54,8 +56,195 @@ type DeliveryCollection = {
 };
 type Step = "sale" | "checkout" | "done";
 
+type ReturnItem = {
+  sale_item_id: string; variant_id: string;
+  name: string; color: string | null; size: string | null;
+  unit_price: number; max_qty: number; return_qty: number;
+};
+
 function newRequestId() {
   return (crypto as any).randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+}
+
+/**
+ * Troca rápida: busca uma venda anterior, deixa marcar os itens devolvidos e
+ * ou gera um vale-troca real (RPC `issue_quick_exchange_voucher`) ou abate o
+ * valor como desconto na venda atual. Portado de vendas.pdv.tsx.
+ */
+function QuickExchangeDialog({
+  open, onClose, clientId, onVoucherGenerated, onAbateNoCarrinho,
+}: {
+  open: boolean; onClose: () => void;
+  clientId: string | null;
+  onVoucherGenerated: (voucher: { code: string; balance: number }) => void;
+  onAbateNoCarrinho: (amount: number) => void;
+}) {
+  const [saleSearch, setSaleSearch] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [foundSale, setFoundSale] = useState<any>(null);
+  const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { if (!open) { setSaleSearch(""); setFoundSale(null); setReturnItems([]); } }, [open]);
+
+  async function lookupSale() {
+    if (!saleSearch.trim()) return;
+    setSearching(true);
+    try {
+      const isNum = /^\d+$/.test(saleSearch.trim());
+      let q = supabase.from("sales").select(
+        `id, sale_number, total, completed_at,
+         client:clients(full_name, phone),
+         items:sale_items(id, variant_id, quantity, unit_price,
+           variant:product_variants(size, color, sku,
+             product:products(name, color)
+           )
+         )`
+      );
+      if (isNum) q = q.eq("sale_number", Number(saleSearch.trim()));
+      else q = (q as any).ilike("client.full_name", `%${saleSearch.trim()}%`);
+      const { data } = await q.maybeSingle();
+      if (!data) { toast.error("Venda não encontrada."); setFoundSale(null); return; }
+      setFoundSale(data);
+      setReturnItems((data.items ?? []).map((it: any) => ({
+        sale_item_id: it.id,
+        variant_id: it.variant_id,
+        name: it.variant?.product?.name ?? "—",
+        color: it.variant?.color ?? it.variant?.product?.color ?? null,
+        size: it.variant?.size ?? null,
+        unit_price: Number(it.unit_price),
+        max_qty: Number(it.quantity),
+        return_qty: 0,
+      })));
+    } finally { setSearching(false); }
+  }
+
+  function toggleItem(idx: number, checked: boolean) {
+    setReturnItems((prev) => prev.map((it, i) => i === idx ? { ...it, return_qty: checked ? it.max_qty : 0 } : it));
+  }
+  function setQty(idx: number, qty: number) {
+    setReturnItems((prev) => prev.map((it, i) => i === idx ? { ...it, return_qty: Math.min(Math.max(0, qty), it.max_qty) } : it));
+  }
+
+  const totalReturn = returnItems.reduce((s, it) => s + it.unit_price * it.return_qty, 0);
+
+  async function handleGenerateVoucher() {
+    if (totalReturn <= 0) { toast.error("Selecione ao menos um item para devolver."); return; }
+    setSaving(true);
+    try {
+      const { data, error } = await supabase.rpc("issue_quick_exchange_voucher" as any, {
+        _amount: totalReturn,
+        _client_id: clientId ?? null,
+      });
+      if (error) throw error;
+      const voucher = Array.isArray(data) ? data[0] : data;
+      toast.success(`Vale-Troca ${voucher.code} gerado! Saldo: ${money(totalReturn)}`);
+      onVoucherGenerated({ code: voucher.code, balance: totalReturn });
+      onClose();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao gerar vale.");
+    } finally { setSaving(false); }
+  }
+
+  function handleAbateClick() {
+    if (totalReturn <= 0) { toast.error("Selecione ao menos um item."); return; }
+    onAbateNoCarrinho(totalReturn);
+    onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && !saving && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ArrowLeftRight className="h-5 w-5 text-primary" />
+            Troca Rápida
+          </DialogTitle>
+          <DialogDescription>Busque a venda original pelo número do comprovante.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Nº do pedido (ex: 1234)..."
+              value={saleSearch}
+              onChange={(e) => setSaleSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && lookupSale()}
+            />
+            <Button onClick={lookupSale} disabled={searching} className="shrink-0">
+              {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            </Button>
+          </div>
+
+          {foundSale && (
+            <div className="space-y-3">
+              <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+                <p className="font-semibold">Pedido #{foundSale.sale_number}</p>
+                <p className="text-muted-foreground text-xs">
+                  {foundSale.client?.full_name ?? "Consumidor Final"} · {money(foundSale.total)}
+                </p>
+              </div>
+
+              <div className="rounded-lg border divide-y max-h-52 overflow-y-auto">
+                {returnItems.map((it, idx) => (
+                  <div key={it.sale_item_id} className="flex items-center gap-3 px-3 py-2.5">
+                    <Checkbox
+                      checked={it.return_qty > 0}
+                      onCheckedChange={(c) => toggleItem(idx, !!c)}
+                      id={`ri-${idx}`}
+                    />
+                    <label htmlFor={`ri-${idx}`} className="flex-1 text-sm cursor-pointer">
+                      <span className="font-medium">{it.name}</span>
+                      {it.size && <span className="text-muted-foreground"> · {it.size}</span>}
+                      {it.color && <span className="text-muted-foreground"> · {it.color}</span>}
+                      <span className="block text-xs text-muted-foreground">{money(it.unit_price)} × {it.max_qty} = {money(it.unit_price * it.max_qty)}</span>
+                    </label>
+                    {it.return_qty > 0 && (
+                      <Input
+                        type="number" min={1} max={it.max_qty}
+                        value={it.return_qty}
+                        onChange={(e) => setQty(idx, Number(e.target.value))}
+                        className="w-16 h-7 text-center text-xs"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {totalReturn > 0 && (
+                <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Valor a devolver</p>
+                  <p className="text-2xl font-bold text-primary">{money(totalReturn)}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleAbateClick}
+                  disabled={totalReturn <= 0 || saving}
+                  className="flex-col h-auto py-3 gap-1"
+                >
+                  <ShoppingBag className="h-5 w-5" />
+                  <span className="text-xs font-semibold">Abater no Carrinho</span>
+                  <span className="text-[10px] text-muted-foreground">desconto automático</span>
+                </Button>
+                <Button
+                  onClick={handleGenerateVoucher}
+                  disabled={totalReturn <= 0 || saving}
+                  className="flex-col h-auto py-3 gap-1"
+                >
+                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Receipt className="h-5 w-5" />}
+                  <span className="text-xs font-semibold">Gerar Vale-Troca</span>
+                  <span className="text-[10px] opacity-80">código imprimível</span>
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function PdvPage() {
@@ -81,6 +270,7 @@ function PdvPage() {
   const [shipping, setShipping] = useState("0");
 
   const [methodOpen, setMethodOpen] = useState(false);
+  const [exchangeOpen, setExchangeOpen] = useState(false);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
   const [payMethod, setPayMethod] = useState<PaymentMethod>("cash");
   const [payAmount, setPayAmount] = useState("");
@@ -562,6 +752,17 @@ function PdvPage() {
     );
   }
 
+  // ── Troca rápida: callbacks ──────────────────────────────────────────────
+  function handleVoucherGenerated(voucher: { code: string; balance: number }) {
+    setPayments((p) => [...p, { payment_method: "exchange_voucher", amount: voucher.balance, installments: 1, reference: voucher.code }]);
+    setVoucherInfo({ code: voucher.code, balance: voucher.balance, expires_at: null, holder: null });
+  }
+  function handleAbateNoCarrinho(amount: number) {
+    setOrderDiscountType("value");
+    setOrderDiscountValue(amount.toFixed(2));
+    toast.success(`${money(amount)} de crédito de troca aplicado como desconto.`);
+  }
+
   // ================= CHECKOUT SCREEN =================
   if (step === "checkout") {
     const creditUsed = payments.filter(p => p.payment_method === "store_credit").reduce((s, p) => s + p.amount, 0);
@@ -643,9 +844,12 @@ function PdvPage() {
               </div>
             </div>
 
-            <div>
+            <div className="flex flex-wrap gap-2">
               <Button variant="secondary" onClick={() => setMethodOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" /> adicionar recebimento <span className="ml-2 text-xs text-muted-foreground">F4</span>
+              </Button>
+              <Button variant="outline" onClick={() => setExchangeOpen(true)}>
+                <ArrowLeftRight className="h-4 w-4 mr-1" /> troca rápida
               </Button>
             </div>
 
@@ -715,6 +919,13 @@ function PdvPage() {
         {renderClientDialog()}
         {renderSellerDialog()}
         {renderMethodDialog()}
+        <QuickExchangeDialog
+          open={exchangeOpen}
+          onClose={() => setExchangeOpen(false)}
+          clientId={clientId}
+          onVoucherGenerated={handleVoucherGenerated}
+          onAbateNoCarrinho={handleAbateNoCarrinho}
+        />
       </div>
     );
   }
