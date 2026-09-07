@@ -946,7 +946,9 @@ async function syncStock(orgId: string, since: Date | null, counters: Counters) 
         variantId = await findLocalVariantByExternal(orgId, `${externalId}:unico`);
       }
       if (!variantId) continue;
-      const saldo = Number(item?.saldo ?? 0) || 0;
+      // A Olist pode reportar saldo negativo (venda sem disponibilidade).
+      // O FitGestor representa disponibilidade vendável com piso zero.
+      const saldo = Math.max(0, Number(item?.saldo ?? 0) || 0);
       const { data: bal } = await supabaseAdmin
         .from("inventory_balances")
         .select("physical_quantity")
