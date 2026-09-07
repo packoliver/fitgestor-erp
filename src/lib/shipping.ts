@@ -87,23 +87,25 @@ export function renderTemplate(
     troco_para:
       ctx.troco_para != null && Number(ctx.troco_para) > 0
         ? money(ctx.troco_para)
-        : "—",
+        : "Não necessário",
     maps_link: ctx.maps_link ?? "",
   };
   return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_m, k) => map[k] ?? "");
 }
 
-export const DEFAULT_WHATSAPP_TEMPLATE = `📦 Entrega #{{pedido}} — Rota {{rota}} · Parada {{parada}}
-Cliente: {{cliente}}
-Telefone: {{telefone}}
-Endereço: {{endereco}}
-Referência: {{referencia}}
-Observações: {{observacoes}}
+export const DEFAULT_WHATSAPP_TEMPLATE = `*ROTA {{rota}} - ENTREGA #{{pedido}} - PARADA {{parada}}*
 
-💰 Valor a receber: {{valor_receber}}
-💵 Cliente pagará com: {{troco_para}}
+*Cliente:* {{cliente}}
+*Telefone:* {{telefone}}
+*Endereço:* {{endereco}}
+*Referência:* {{referencia}}
+*Observações:* {{observacoes}}
 
-🗺️ Mapa: {{maps_link}}`;
+*Valor a receber:* {{valor_receber}}
+*Troco para:* {{troco_para}}
+
+*Abrir no Google Maps:*
+{{maps_link}}`;
 
 export const SHIPMENT_STATUS_LABEL: Record<string, string> = {
   pending_pick: "Aguardando separação",
