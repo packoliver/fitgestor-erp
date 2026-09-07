@@ -32,7 +32,7 @@ type CartLine = {
   unit_price: number; quantity: number; available: number;
 };
 
-type PaymentLine = { payment_method: PaymentMethod; amount: number; installments: number; reference?: string };
+type PaymentLine = { payment_method: PaymentMethod; amount: number; installments: number; reference?: string; display_label?: string };
 type Step = "sale" | "checkout" | "done";
 
 function newRequestId() {
@@ -241,7 +241,7 @@ function PdvPage() {
       payment_method: option.payment_method,
       amount: remaining,
       installments: 1,
-      reference: option.label,
+      display_label: option.label,
     }]);
     setDeliveryCollection(null);
     setMethodOpen(false);
@@ -563,7 +563,7 @@ function PdvPage() {
                 {payments.map((p, i) => (
                   <div key={i} className="flex items-center justify-between p-3 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{PAYMENT_LABELS[p.payment_method]}</span>
+                      <span className="font-medium">{p.display_label ?? PAYMENT_LABELS[p.payment_method]}</span>
                       {p.installments > 1 && <span className="text-xs text-muted-foreground">{p.installments}x</span>}
                       {p.reference && <span className="text-xs text-muted-foreground">({p.reference})</span>}
                     </div>
