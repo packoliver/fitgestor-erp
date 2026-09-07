@@ -15,11 +15,12 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CheckCircle2, Truck, Store, Package, Mail, MoreHorizontal, Loader2 } from "lucide-react";
+import { CheckCircle2, Truck, Store, Package, Mail, MoreHorizontal, Loader2, MessageCircle } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { money } from "@/lib/pos";
 import { OverrideScheduleDialog } from "@/components/shipping/override-schedule-dialog";
 import { CepAddressFields } from "@/components/cep-address-fields";
+import { generateMotoboyMessage } from "@/lib/delivery-utils";
 
 type DeliveryMethod = "pickup" | "motoboy" | "correios" | "carrier" | "other";
 
@@ -176,6 +177,26 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
   });
 
   // includeOverride replaced by <OverrideScheduleDialog />.
+
+  function handleSendWhatsApp() {
+    const message = generateMotoboyMessage({
+      logradouro: addr.address,
+      numero: addr.address_number,
+      complemento: addr.address_complement || undefined,
+      bairro: addr.neighborhood,
+      cidade: addr.city,
+      uf: addr.state,
+      cep: addr.zip_code || undefined,
+      lat: addr.latitude ? Number(addr.latitude) : undefined,
+      lng: addr.longitude ? Number(addr.longitude) : undefined,
+      clientName: addr.recipient_name,
+      clientPhone: addr.phone,
+      orderTotal: toCollect,
+      paymentMethod: toCollect > 0 ? "a cobrar na entrega" : "já pago",
+      orderNumber: saleNumber != null ? String(saleNumber) : undefined,
+    });
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener");
+  }
 
   const canOverride = perms.has("shipping.override_schedule");
   const forecastLabel = forecast ? (() => {
@@ -352,6 +373,10 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
 
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button variant="outline" onClick={onClose}>Fechar</Button>
+              <Button variant="outline" onClick={handleSendWhatsApp}>
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Enviar para o motoboy
+              </Button>
               <Button variant="outline" asChild>
                 <Link to="/vendas/$id" params={{ id: saleId }}>Ver venda</Link>
               </Button>
