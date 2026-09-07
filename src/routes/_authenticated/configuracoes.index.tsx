@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Plus, Trash2, Upload } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { cleanupProductImageOrphans, type OrphanScanResult } from "@/lib/storage-cleanup.functions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DEFAULT_RECEIVING_OPTIONS, parseReceivingOptions, type PaymentMethod, type ReceivingOption } from "@/lib/pos";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/")({
   component: Config,
@@ -23,6 +25,8 @@ function Config() {
   const [values, setValues] = useState({ name: "", document: "", phone: "", email: "" });
   const [pdvRequireCpf, setPdvRequireCpf] = useState(false);
   const [pdvSaving, setPdvSaving] = useState(false);
+  const [receivingSaving, setReceivingSaving] = useState(false);
+  const [receivingOptions, setReceivingOptions] = useState<ReceivingOption[]>(DEFAULT_RECEIVING_OPTIONS);
   const [orgId, setOrgId] = useState<string | null>(null);
   const qc = useQueryClient();
 
@@ -37,6 +41,7 @@ function Config() {
       if (o) {
         setValues({ name: o.name ?? "", document: o.document ?? "", phone: o.phone ?? "", email: o.email ?? "" });
         setPdvRequireCpf(!!(o as any).pdv_require_cpf);
+        setReceivingOptions(parseReceivingOptions((o as any).pdv_receiving_options));
       }
     })();
   }, []);
@@ -65,6 +70,44 @@ function Config() {
     }
   }
 
+  function patchReceivingOption(id: string, patch: Partial<ReceivingOption>) {
+    setReceivingOptions((current) => current.map((option) => option.id === id ? { ...option, ...patch } : option));
+  }
+
+  function addReceivingOption() {
+    setReceivingOptions((current) => [...current, {
+      id: `custom_${crypto.randomUUID()}`,
+      label: "Nova forma de recebimento",
+      payment_method: "other",
+      timing: "immediate",
+      active: true,
+      quick: false,
+    }]);
+  }
+
+  async function saveReceivingOptions() {
+    if (!orgId) return;
+    const cleaned = receivingOptions.map((option) => ({ ...option, label: option.label.trim() }));
+    if (cleaned.some((option) => !option.label)) { toast.error("Todas as formas precisam de um nome."); return; }
+    if (!cleaned.some((option) => option.active && option.timing === "immediate")) {
+      toast.error("Mantenha ao menos uma forma ativa de pagamento na loja."); return;
+    }
+    if (cleaned.filter((option) => option.active && option.quick).length > 3) {
+      toast.error("Escolha no máximo três formas como atalhos do PDV."); return;
+    }
+    setReceivingSaving(true);
+    const { error } = await supabase.from("organizations")
+      .update({ pdv_receiving_options: cleaned } as any)
+      .eq("id", orgId);
+    setReceivingSaving(false);
+    if (error) toast.error(error.message);
+    else {
+      setReceivingOptions(cleaned);
+      qc.invalidateQueries({ queryKey: ["pdv-org-settings"] });
+      toast.success("Formas de recebimento salvas");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="Configurações" description="Dados da sua loja." />
@@ -77,6 +120,58 @@ function Config() {
           <div className="sm:col-span-2 space-y-2"><Label>E-mail</Label><Input value={values.email} onChange={(e) => setValues({ ...values, email: e.target.value })} /></div>
           <div className="sm:col-span-2">
             <Button onClick={save} disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-4xl">
+        <CardHeader><CardTitle>Formas de recebimento do PDV</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Configure o nome exibido no caixa e indique se o valor entra agora ou será cobrado pelo motoboy. Valores da entrega não entram no caixa antes do recebimento.
+          </p>
+          <div className="space-y-3">
+            {receivingOptions.map((option) => (
+              <div key={option.id} className="grid gap-3 rounded-lg border p-3 md:grid-cols-[minmax(190px,1.5fr)_180px_170px_auto_auto_auto] md:items-center">
+                <Input
+                  aria-label="Nome da forma de recebimento"
+                  value={option.label}
+                  onChange={(event) => patchReceivingOption(option.id, { label: event.target.value })}
+                />
+                <Select value={option.payment_method} onValueChange={(value) => patchReceivingOption(option.id, { payment_method: value as PaymentMethod })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Dinheiro</SelectItem>
+                    <SelectItem value="pix">Pix</SelectItem>
+                    <SelectItem value="debit_card">Cartão de débito</SelectItem>
+                    <SelectItem value="credit_card">Cartão de crédito</SelectItem>
+                    <SelectItem value="other">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={option.timing} onValueChange={(value) => patchReceivingOption(option.id, { timing: value as ReceivingOption["timing"] })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="immediate">Receber na loja</SelectItem>
+                    <SelectItem value="delivery">Receber na entrega</SelectItem>
+                  </SelectContent>
+                </Select>
+                <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                  <Switch checked={option.active} onCheckedChange={(active) => patchReceivingOption(option.id, { active })} /> Ativa
+                </label>
+                <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                  <Switch checked={option.quick} onCheckedChange={(quick) => patchReceivingOption(option.id, { quick })} /> Atalho
+                </label>
+                <Button type="button" size="icon" variant="ghost" className="text-destructive" onClick={() => setReceivingOptions((current) => current.filter((item) => item.id !== option.id))}>
+                  <Trash2 className="h-4 w-4" /><span className="sr-only">Excluir opção</span>
+                </Button>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={addReceivingOption}><Plus className="mr-2 h-4 w-4" />Adicionar forma</Button>
+            <Button type="button" onClick={saveReceivingOptions} disabled={receivingSaving || !orgId}>
+              {receivingSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar formas de recebimento
+            </Button>
           </div>
         </CardContent>
       </Card>

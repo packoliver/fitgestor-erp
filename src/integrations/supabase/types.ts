@@ -2190,6 +2190,7 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          pdv_receiving_options: Json
           pdv_require_cpf: boolean
           phone: string | null
           timezone: string
@@ -2203,6 +2204,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          pdv_receiving_options?: Json
           pdv_require_cpf?: boolean
           phone?: string | null
           timezone?: string
@@ -2216,6 +2218,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          pdv_receiving_options?: Json
           pdv_require_cpf?: boolean
           phone?: string | null
           timezone?: string
@@ -3024,6 +3027,8 @@ export type Database = {
         Row: {
           cancelled_at: string | null
           completed_at: string | null
+          collection_method: string | null
+          collection_timing: string
           courier_id: string
           created_at: string
           created_by: string | null
@@ -3412,6 +3417,7 @@ export type Database = {
           notes: string | null
           order_discount_total: number
           organization_id: string
+          outstanding_amount: number
           sale_number: number
           seller_id: string | null
           status: string
@@ -3432,6 +3438,8 @@ export type Database = {
           client_id?: string | null
           client_request_id?: string | null
           completed_at?: string | null
+          collection_method?: string | null
+          collection_timing?: string
           created_at?: string
           id?: string
           item_discount_total?: number
@@ -3439,6 +3447,7 @@ export type Database = {
           notes?: string | null
           order_discount_total?: number
           organization_id: string
+          outstanding_amount?: number
           sale_number: number
           seller_id?: string | null
           status?: string
@@ -3459,6 +3468,8 @@ export type Database = {
           client_id?: string | null
           client_request_id?: string | null
           completed_at?: string | null
+          collection_method?: string | null
+          collection_timing?: string
           created_at?: string
           id?: string
           item_discount_total?: number
@@ -3466,6 +3477,7 @@ export type Database = {
           notes?: string | null
           order_discount_total?: number
           organization_id?: string
+          outstanding_amount?: number
           sale_number?: number
           seller_id?: string | null
           status?: string

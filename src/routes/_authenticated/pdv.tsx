@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AVAILABLE_METHODS, getOpenSession, money, normalizeDigits,
-  PAYMENT_LABELS, PaymentMethod, validCPF,
+  parseReceivingOptions, PAYMENT_LABELS, PaymentMethod, ReceivingOption, validCPF,
 } from "@/lib/pos";
 import {
   Banknote, CreditCard, DollarSign, Plus, Search, Share2, ShoppingCart,
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { PostSaleDeliveryDialog } from "@/components/post-sale-delivery-dialog";
+import { CepAddressFields } from "@/components/cep-address-fields";
 
 export const Route = createFileRoute("/_authenticated/pdv")({
   component: PdvPage,
@@ -70,6 +71,7 @@ function PdvPage() {
   const [voucherLookupPending, setVoucherLookupPending] = useState(false);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [creditLookupPending, setCreditLookupPending] = useState(false);
+  const [deliveryCollection, setDeliveryCollection] = useState<ReceivingOption | null>(null);
 
   const [requestId, setRequestId] = useState(newRequestId());
   const [submitting, setSubmitting] = useState(false);
@@ -133,8 +135,6 @@ function PdvPage() {
     zip_code: "", address: "", address_number: "", address_complement: "",
     neighborhood: "", city: "", state: "",
   });
-  const [fullClientForm, setFullClientForm] = useState(false);
-  const [cepLoading, setCepLoading] = useState(false);
   const qc = useQueryClient();
 
   // Organization settings (for CPF policy)
@@ -145,11 +145,15 @@ function PdvPage() {
       if (!user) return null;
       const { data: p } = await supabase.from("profiles").select("organization_id").eq("id", user.id).maybeSingle();
       if (!p?.organization_id) return null;
-      const { data: o } = await supabase.from("organizations").select("pdv_require_cpf").eq("id", p.organization_id).maybeSingle();
-      return o as { pdv_require_cpf: boolean } | null;
+      const { data: o } = await supabase.from("organizations").select("pdv_require_cpf, pdv_receiving_options").eq("id", p.organization_id).maybeSingle();
+      return o as { pdv_require_cpf: boolean; pdv_receiving_options?: unknown } | null;
     },
   });
   const requireCpf = !!orgSettings?.pdv_require_cpf;
+  const receivingOptions = useMemo(
+    () => parseReceivingOptions(orgSettings?.pdv_receiving_options),
+    [orgSettings?.pdv_receiving_options],
+  );
 
   // Seller (profiles)
   const { data: sellers = [] } = useQuery({
@@ -221,9 +225,25 @@ function PdvPage() {
   const change = Math.max(paid - total, 0);
   const totalQty = cart.reduce((s, l) => s + l.quantity, 0);
 
-  function pickPaymentMethod(m: PaymentMethod) {
+  function preparePaymentMethod(m: PaymentMethod) {
     setPayMethod(m);
-    setPayAmount((total - paid).toFixed(2));
+    setPayAmount(remaining.toFixed(2));
+  }
+
+  function addQuickPayment(option: ReceivingOption) {
+    if (remaining <= 0) { toast.info("A venda já está totalmente recebida."); return; }
+    if (option.timing === "delivery") {
+      setDeliveryCollection(option);
+      setMethodOpen(false);
+      return;
+    }
+    setPayments((current) => [...current, {
+      payment_method: option.payment_method,
+      amount: remaining,
+      installments: 1,
+      reference: option.label,
+    }]);
+    setDeliveryCollection(null);
     setMethodOpen(false);
   }
 
@@ -241,6 +261,7 @@ function PdvPage() {
       if (amount > creditBalance + 0.005) { toast.error("Valor acima do saldo de crédito."); return; }
     }
     setPayments((p) => [...p, { payment_method: payMethod, amount, installments: payMethod === "credit_card" ? payInst : 1, reference: payRef.trim() || undefined }]);
+    if (amount >= remaining) setDeliveryCollection(null);
     setPayAmount(""); setPayRef(""); setVoucherInfo(null);
   }
 
@@ -274,7 +295,7 @@ function PdvPage() {
     mutationFn: async () => {
       if (!session) throw new Error("O caixa precisa estar aberto.");
       if (cart.length === 0) throw new Error("Adicione ao menos um item.");
-      if (paid < total) throw new Error("Pagamento insuficiente.");
+      if (paid < total && !deliveryCollection) throw new Error("Pagamento insuficiente.");
       setSubmitting(true);
       const payload = {
         client_request_id: requestId,
@@ -284,6 +305,8 @@ function PdvPage() {
         seller_id: sellerId,
         order_discount_type: orderDiscountType || null,
         order_discount_value: Number(orderDiscountValue) || 0,
+        collection_timing: deliveryCollection ? "delivery" : "immediate",
+        collection_method: deliveryCollection?.payment_method ?? null,
         items: cart.map((l) => ({ variant_id: l.variant_id, quantity: l.quantity, unit_price: l.unit_price })),
         payments: payments.map((p) => ({ payment_method: p.payment_method, amount: p.amount, installments: p.installments, reference: p.reference })),
       };
@@ -320,15 +343,13 @@ function PdvPage() {
         phone: normalizeDigits(newClient.phone) || null,
         email: newClient.email.trim() || null,
       };
-      if (fullClientForm) {
-        payload.zip_code = normalizeDigits(newClient.zip_code) || null;
-        payload.address = newClient.address.trim() || null;
-        payload.address_number = newClient.address_number.trim() || null;
-        payload.address_complement = newClient.address_complement.trim() || null;
-        payload.neighborhood = newClient.neighborhood.trim() || null;
-        payload.city = newClient.city.trim() || null;
-        payload.state = newClient.state.trim().toUpperCase() || null;
-      }
+      payload.zip_code = normalizeDigits(newClient.zip_code) || null;
+      payload.address = newClient.address.trim() || null;
+      payload.address_number = newClient.address_number.trim() || null;
+      payload.address_complement = newClient.address_complement.trim() || null;
+      payload.neighborhood = newClient.neighborhood.trim() || null;
+      payload.city = newClient.city.trim() || null;
+      payload.state = newClient.state.trim().toUpperCase() || null;
       const { data, error } = await supabase.from("clients").insert(payload).select("id, full_name").single();
       if (error) throw error;
       return data;
@@ -340,7 +361,6 @@ function PdvPage() {
         zip_code: "", address: "", address_number: "", address_complement: "",
         neighborhood: "", city: "", state: "",
       });
-      setFullClientForm(false);
       qc.invalidateQueries({ queryKey: ["pdv-clients"] });
       qc.invalidateQueries({ queryKey: ["clients"] });
       toast.success(`Cliente "${c.full_name}" cadastrado`);
@@ -348,30 +368,9 @@ function PdvPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  async function lookupCep(raw: string) {
-    const cep = normalizeDigits(raw);
-    if (cep.length !== 8) return;
-    setCepLoading(true);
-    try {
-      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data?.erro) return;
-      setNewClient((prev) => ({
-        ...prev,
-        zip_code: cep,
-        address: prev.address || data.logradouro || "",
-        neighborhood: prev.neighborhood || data.bairro || "",
-        city: prev.city || data.localidade || "",
-        state: prev.state || data.uf || "",
-      }));
-    } catch { /* silent */ }
-    finally { setCepLoading(false); }
-  }
-
   function startNewSale() {
     setStep("sale");
-    setCart([]); setPayments([]);
+    setCart([]); setPayments([]); setDeliveryCollection(null);
     setOrderDiscountType(""); setOrderDiscountValue("0"); setShipping("0");
     setClientId(null); setClientName("");
     setSellerId(null); setSellerName("");
@@ -390,14 +389,14 @@ function PdvPage() {
       }
       if (e.ctrlKey && e.key === "Enter") {
         if (step === "sale" && cart.length > 0) { setStep("checkout"); e.preventDefault(); }
-        else if (step === "checkout" && remaining === 0 && cart.length > 0) { complete.mutate(); e.preventDefault(); }
+        else if (step === "checkout" && (remaining === 0 || !!deliveryCollection) && cart.length > 0) { complete.mutate(); e.preventDefault(); }
         else if (step === "done") { startNewSale(); e.preventDefault(); }
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, cart.length, remaining]);
+  }, [step, cart.length, remaining, deliveryCollection]);
 
   // ================= NO SESSION =================
   if (!session) {
@@ -577,6 +576,18 @@ function PdvPage() {
               </div>
             )}
 
+            {deliveryCollection && remaining > 0 && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-medium">A receber na entrega: {money(remaining)}</div>
+                    <div className="text-xs">{deliveryCollection.label} — ainda não entra no caixa.</div>
+                  </div>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setDeliveryCollection(null)}>Remover</Button>
+                </div>
+              </div>
+            )}
+
             {(creditUsed > 0 || voucherUsed > 0) && (
               <div className="text-xs text-muted-foreground space-y-0.5">
                 {creditUsed > 0 && <div>Crédito da loja usado: {money(creditUsed)}</div>}
@@ -589,7 +600,7 @@ function PdvPage() {
         {/* Footer */}
         <div className="border-t bg-background sticky bottom-0">
           <div className="px-6 py-3 flex items-center gap-6">
-            <Button size="lg" className="h-14 px-8 rounded-xl" disabled={submitting || remaining > 0 || cart.length === 0} onClick={() => complete.mutate()}>
+            <Button size="lg" className="h-14 px-8 rounded-xl" disabled={submitting || (remaining > 0 && !deliveryCollection) || cart.length === 0} onClick={() => complete.mutate()}>
               {submitting ? "finalizando…" : "finalizar venda"}
               <span className="ml-3 text-xs opacity-80">CTRL+ENTER OU F2</span>
             </Button>
@@ -797,7 +808,7 @@ function PdvPage() {
   function renderClientDialog() {
     return (
       <Dialog open={clientOpen} onOpenChange={setClientOpen}>
-        <DialogContent className={fullClientForm ? "max-w-2xl" : undefined}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Cliente</DialogTitle></DialogHeader>
           <Input placeholder="Buscar por nome, CPF ou telefone…" value={clientTerm} onChange={(e) => setClientTerm(e.target.value)} />
           <div className="max-h-60 overflow-auto divide-y border rounded">
@@ -813,16 +824,7 @@ function PdvPage() {
             ))}
           </div>
           <div className="border-t pt-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-medium">{fullClientForm ? "Cadastro completo" : "Cadastro rápido"}</div>
-              <button
-                type="button"
-                onClick={() => setFullClientForm((v) => !v)}
-                className="text-xs text-primary hover:underline"
-              >
-                {fullClientForm ? "Usar cadastro rápido" : "Cadastro completo"}
-              </button>
-            </div>
+            <div className="text-sm font-medium mb-2">Cadastro rápido</div>
             <div className="space-y-2">
               <Input placeholder="Nome completo *" value={newClient.full_name} onChange={(e) => setNewClient({ ...newClient, full_name: e.target.value })} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -835,29 +837,12 @@ function PdvPage() {
                 <Input placeholder="Telefone" value={newClient.phone} onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })} inputMode="tel" />
               </div>
               <Input placeholder="E-mail (opcional)" type="email" value={newClient.email} onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} />
-              {fullClientForm && (
-                <div className="space-y-2 pt-2 border-t">
-                  <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-2">
-                    <Input
-                      placeholder={cepLoading ? "Buscando…" : "CEP"}
-                      value={newClient.zip_code}
-                      onChange={(e) => setNewClient({ ...newClient, zip_code: e.target.value })}
-                      onBlur={(e) => lookupCep(e.target.value)}
-                      inputMode="numeric"
-                    />
-                    <Input placeholder="Logradouro" value={newClient.address} onChange={(e) => setNewClient({ ...newClient, address: e.target.value })} />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-2">
-                    <Input placeholder="Número" value={newClient.address_number} onChange={(e) => setNewClient({ ...newClient, address_number: e.target.value })} />
-                    <Input placeholder="Complemento" value={newClient.address_complement} onChange={(e) => setNewClient({ ...newClient, address_complement: e.target.value })} />
-                  </div>
-                  <Input placeholder="Bairro" value={newClient.neighborhood} onChange={(e) => setNewClient({ ...newClient, neighborhood: e.target.value })} />
-                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_80px] gap-2">
-                    <Input placeholder="Cidade" value={newClient.city} onChange={(e) => setNewClient({ ...newClient, city: e.target.value })} />
-                    <Input placeholder="UF" maxLength={2} value={newClient.state} onChange={(e) => setNewClient({ ...newClient, state: e.target.value.toUpperCase() })} />
-                  </div>
-                </div>
-              )}
+              <div className="pt-2 border-t">
+                <CepAddressFields
+                  value={newClient}
+                  onChange={(patch) => setNewClient((current) => ({ ...current, ...patch }))}
+                />
+              </div>
               <Button className="w-full" onClick={() => createClient.mutate()} disabled={createClient.isPending}>
                 {createClient.isPending ? "Salvando…" : "Cadastrar e selecionar"}
               </Button>
@@ -889,6 +874,9 @@ function PdvPage() {
   }
 
   function renderMethodDialog() {
+    const activeOptions = receivingOptions.filter((option) => option.active);
+    const quickOptions = activeOptions.filter((option) => option.quick).slice(0, 3);
+    const otherOptions = activeOptions.filter((option) => !quickOptions.some((quick) => quick.id === option.id));
     return (
       <Dialog open={methodOpen} onOpenChange={setMethodOpen}>
         <DialogContent className="max-w-2xl">
@@ -902,21 +890,26 @@ function PdvPage() {
             </div>
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <MethodTile icon={<DollarSign className="h-5 w-5" />} label="Dinheiro" hint="1" onClick={() => pickPaymentMethod("cash")} />
-            <MethodTile icon={<CreditCard className="h-5 w-5" />} label="Cartão de crédito" hint="2" onClick={() => pickPaymentMethod("credit_card")} />
-            <MethodTile icon={<CreditCard className="h-5 w-5" />} label="Cartão de débito" hint="3" onClick={() => pickPaymentMethod("debit_card")} />
-            <MethodTile icon={<Plus className="h-5 w-5" />} label="Múltiplas" hint="4" onClick={() => { setPayAmount(""); setMethodOpen(false); }} />
+            {quickOptions.map((option, index) => (
+              <MethodTile
+                key={option.id}
+                icon={option.payment_method === "cash" ? <DollarSign className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
+                label={option.label}
+                hint={String(index + 1)}
+                onClick={() => addQuickPayment(option)}
+              />
+            ))}
+            <MethodTile icon={<Plus className="h-5 w-5" />} label="Múltiplas" hint="4" onClick={() => { preparePaymentMethod("cash"); }} />
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Outras formas de recebimento</Label>
-            <Select onValueChange={(v) => pickPaymentMethod(v as PaymentMethod)}>
+            <Select onValueChange={(id) => {
+              const option = activeOptions.find((item) => item.id === id);
+              if (option) addQuickPayment(option);
+            }}>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
-                {AVAILABLE_METHODS.filter(m => !["cash", "credit_card", "debit_card"].includes(m.value)).filter(m => {
-                  if (m.value === "store_credit") return perms.has("pos.use_store_credit");
-                  if (m.value === "exchange_voucher") return perms.has("pos.use_voucher");
-                  return true;
-                }).map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                {otherOptions.map((option) => <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -964,7 +957,7 @@ function PdvPage() {
 
 function MethodTile({ icon, label, hint, onClick }: { icon: React.ReactNode; label: string; hint: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex items-center justify-between rounded-xl border bg-muted/40 hover:bg-muted p-4 text-left transition">
+    <button type="button" onClick={onClick} className="flex items-center justify-between rounded-xl border bg-muted/40 hover:bg-muted p-4 text-left transition">
       <span className="flex items-center gap-3">
         <span className="h-9 w-9 rounded-full bg-background flex items-center justify-center">{icon}</span>
         <span className="font-medium">{label}</span>
