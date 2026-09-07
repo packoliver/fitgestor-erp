@@ -34,7 +34,8 @@ import {
   KeyRound, Delete, CornerDownLeft, Shield, ArrowUpRight,
   ArrowDownRight, Wallet, Vault, FileSpreadsheet, Scale,
 } from "lucide-react";
-import { AddressAutocomplete, type AddressResult } from "@/components/address-autocomplete";
+import type { AddressResult } from "@/components/address-autocomplete";
+import { CepAddressFields } from "@/components/cep-address-fields";
 import { DispatchDeliveryDialog } from "@/components/dispatch-delivery-dialog";
 import { type DeliveryAddressData } from "@/lib/delivery-utils";
 import { useServerFn } from "@tanstack/react-start";
@@ -2616,8 +2617,28 @@ function VendasPdvPage() {
 
             {saleType === "delivery" && (
               <div className="pt-3 border-t border-slate-100 dark:border-zinc-800 space-y-3 animate-in fade-in duration-200">
-                <AddressAutocomplete
-                  onAddressSelect={(addr) => setDeliveryAddress(addr)}
+                <CepAddressFields
+                  required
+                  value={{
+                    zip_code: deliveryAddress?.cep ?? "",
+                    address: deliveryAddress?.logradouro ?? "",
+                    address_number: deliveryAddress?.numero ?? "",
+                    address_complement: deliveryAddress?.complemento ?? "",
+                    neighborhood: deliveryAddress?.bairro ?? "",
+                    city: deliveryAddress?.cidade ?? "",
+                    state: deliveryAddress?.uf ?? "",
+                  }}
+                  onChange={(patch) =>
+                    setDeliveryAddress((current) => ({
+                      logradouro: patch.address ?? current?.logradouro ?? "",
+                      numero: patch.address_number ?? current?.numero ?? "",
+                      complemento: patch.address_complement ?? current?.complemento ?? "",
+                      bairro: patch.neighborhood ?? current?.bairro ?? "",
+                      cidade: patch.city ?? current?.cidade ?? "",
+                      uf: patch.state ?? current?.uf ?? "",
+                      cep: patch.zip_code ?? current?.cep ?? "",
+                    }))
+                  }
                 />
               </div>
             )}

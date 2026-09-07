@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useState } from "react";
 import { Plus, Search, Trash2, Wallet } from "lucide-react";
 import { normalizeDigits, validCPF } from "@/lib/pos";
-import { AddressAutocomplete } from "@/components/address-autocomplete";
+import { CepAddressFields } from "@/components/cep-address-fields";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/clientes/")({
@@ -115,37 +115,17 @@ function ClientesPage() {
                 </div>
                 <div><Label>E-mail</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
 
-                <div className="pt-2 border-t">
-                  <Label>Endereço <span className="text-xs text-muted-foreground font-normal">(buscar no Google Maps)</span></Label>
-                  <AddressAutocomplete
-                    value={form.address}
-                    onChange={(v) => setForm((f) => ({ ...f, address: v }))}
-                    onSelect={(p) => setForm((f) => ({
-                      ...f,
-                      address: p.address || f.address,
-                      address_number: p.address_number || f.address_number,
-                      neighborhood: p.neighborhood || f.neighborhood,
-                      city: p.city || f.city,
-                      state: p.state || f.state,
-                      zip_code: p.zip_code || f.zip_code,
-                      latitude: p.latitude,
-                      longitude: p.longitude,
-                      place_id: p.place_id,
+                <div className="border-t pt-2">
+                  <CepAddressFields
+                    value={form}
+                    onChange={(patch) => setForm((current) => ({
+                      ...current,
+                      ...patch,
+                      latitude: null,
+                      longitude: null,
+                      place_id: "",
                     }))}
-                    placeholder="Rua, número, bairro, cidade…"
                   />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div><Label>Número</Label><Input value={form.address_number} onChange={(e) => setForm({ ...form, address_number: e.target.value })} /></div>
-                  <div className="col-span-2"><Label>Complemento</Label><Input value={form.address_complement} onChange={(e) => setForm({ ...form, address_complement: e.target.value })} /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Bairro</Label><Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} /></div>
-                  <div><Label>CEP</Label><Input value={form.zip_code} onChange={(e) => setForm({ ...form, zip_code: e.target.value })} /></div>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="col-span-2"><Label>Cidade</Label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
-                  <div><Label>UF</Label><Input maxLength={2} value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })} /></div>
                 </div>
                 {form.latitude != null && form.longitude != null && (
                   <p className="text-xs text-muted-foreground">📍 Localização salva: {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}</p>

@@ -19,7 +19,7 @@ import { CheckCircle2, Truck, Store, Package, Mail, MoreHorizontal, Loader2 } fr
 import { usePermissions } from "@/hooks/use-permissions";
 import { money } from "@/lib/pos";
 import { OverrideScheduleDialog } from "@/components/shipping/override-schedule-dialog";
-import { AddressAutocomplete } from "@/components/address-autocomplete";
+import { CepAddressFields } from "@/components/cep-address-fields";
 
 type DeliveryMethod = "pickup" | "motoboy" | "correios" | "carrier" | "other";
 
@@ -271,48 +271,17 @@ export function PostSaleDeliveryDialog({ saleId, saleNumber, clientId, onClose }
                   <Label>Telefone *</Label>
                   <Input inputMode="tel" value={addr.phone} onChange={(e) => setAddr({ ...addr, phone: e.target.value })} />
                 </div>
-                <div>
-                  <Label>CEP</Label>
-                  <Input inputMode="numeric" value={addr.zip_code} onChange={(e) => setAddr({ ...addr, zip_code: e.target.value })} />
-                </div>
                 <div className="sm:col-span-2">
-                  <Label>Endereço * <span className="text-xs text-muted-foreground font-normal">(buscar no Google Maps)</span></Label>
-                  <AddressAutocomplete
-                    value={addr.address}
-                    onChange={(v) => setAddr((a) => ({ ...a, address: v }))}
-                    onSelect={(p) => setAddr((a) => ({
-                      ...a,
-                      address: p.address || a.address,
-                      address_number: p.address_number || a.address_number,
-                      neighborhood: p.neighborhood || a.neighborhood,
-                      city: p.city || a.city,
-                      state: p.state || a.state,
-                      zip_code: p.zip_code || a.zip_code,
-                      latitude: p.latitude != null ? String(p.latitude) : a.latitude,
-                      longitude: p.longitude != null ? String(p.longitude) : a.longitude,
+                  <CepAddressFields
+                    required
+                    value={addr}
+                    onChange={(patch) => setAddr((current) => ({
+                      ...current,
+                      ...patch,
+                      latitude: "",
+                      longitude: "",
                     }))}
-                    placeholder="Rua, número, bairro, cidade…"
                   />
-                </div>
-                <div>
-                  <Label>Número *</Label>
-                  <Input value={addr.address_number} onChange={(e) => setAddr({ ...addr, address_number: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Complemento</Label>
-                  <Input value={addr.address_complement} onChange={(e) => setAddr({ ...addr, address_complement: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Bairro *</Label>
-                  <Input value={addr.neighborhood} onChange={(e) => setAddr({ ...addr, neighborhood: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Cidade *</Label>
-                  <Input value={addr.city} onChange={(e) => setAddr({ ...addr, city: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Estado (UF) *</Label>
-                  <Input maxLength={2} value={addr.state} onChange={(e) => setAddr({ ...addr, state: e.target.value.toUpperCase() })} />
                 </div>
                 <div className="sm:col-span-2">
                   <Label>Ponto de referência</Label>
