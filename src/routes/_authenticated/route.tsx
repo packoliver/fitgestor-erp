@@ -24,14 +24,18 @@ export const Route = createFileRoute("/_authenticated")({
 
     if (!profile || !profile.organization_id) throw redirect({ to: "/setup" });
 
-    // Bloqueia usuários banidos ou com acesso removido, mas permite convite_pendente
-    // (usuários que acabaram de aceitar o convite) — nesse caso promovemos para ativo.
+    // Bloqueia usuários banidos ou com acesso removido. Convites pendentes são
+    // ativados por uma RPC restrita, sem permitir que o cliente altere o próprio status.
     if (profile.status === "bloqueado" || profile.status === "acesso_removido" || profile.status === "inativo") {
       await supabase.auth.signOut();
       throw redirect({ to: "/auth" });
     }
     if (profile.status === "convite_pendente" || profile.status === "pendente") {
-      await supabase.from("profiles").update({ status: "ativo" }).eq("id", user.id);
+      const { error } = await supabase.rpc("accept_employee_invite" as any);
+      if (error) {
+        await supabase.auth.signOut();
+        throw redirect({ to: "/auth" });
+      }
     } else if (profile.status !== "ativo") {
       throw redirect({ to: "/auth" });
     }
