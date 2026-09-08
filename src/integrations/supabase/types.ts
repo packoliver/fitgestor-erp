@@ -3614,6 +3614,12 @@ export type Database = {
           collection_timing: string
           completed_at: string | null
           created_at: string
+          fiscal_document_number: string | null
+          fiscal_document_type: string | null
+          fiscal_issued_at: string | null
+          fiscal_issued_by: string | null
+          fiscal_notes: string | null
+          fiscal_status: string
           id: string
           item_discount_total: number
           location_id: string
@@ -3645,6 +3651,12 @@ export type Database = {
           collection_timing?: string
           completed_at?: string | null
           created_at?: string
+          fiscal_document_number?: string | null
+          fiscal_document_type?: string | null
+          fiscal_issued_at?: string | null
+          fiscal_issued_by?: string | null
+          fiscal_notes?: string | null
+          fiscal_status?: string
           id?: string
           item_discount_total?: number
           location_id: string
@@ -3676,6 +3688,12 @@ export type Database = {
           collection_timing?: string
           completed_at?: string | null
           created_at?: string
+          fiscal_document_number?: string | null
+          fiscal_document_type?: string | null
+          fiscal_issued_at?: string | null
+          fiscal_issued_by?: string | null
+          fiscal_notes?: string | null
+          fiscal_status?: string
           id?: string
           item_discount_total?: number
           location_id?: string
@@ -4973,6 +4991,16 @@ export type Database = {
         Returns: Json
       }
       process_due_post_sale_rules: { Args: never; Returns: Json }
+      record_external_fiscal_document: {
+        Args: {
+          _document_number?: string
+          _document_type?: string
+          _notes?: string
+          _sale_id: string
+          _status: string
+        }
+        Returns: Json
+      }
       record_payment_refund: {
         Args: { _amount: number; _payment_id: string; _reason?: string }
         Returns: undefined

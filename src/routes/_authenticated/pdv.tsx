@@ -931,10 +931,8 @@ function PdvPage() {
               onClick={() => window.open(`/vendas/${doneSale.saleId}`, "_blank")} />
             <ActionCard icon={<Share2 className="h-5 w-5" />} label="Compartilhar" hint="CTRL+3"
               onClick={() => navigator.clipboard.writeText(`${window.location.origin}/vendas/${doneSale.saleId}`).then(() => toast.success("Link copiado"))} />
-            <ActionCard icon={<Printer className="h-5 w-5" />} label="Imprimir NFC-e" hint="CTRL+4"
-              onClick={() => toast.info("NFC-e não configurada")} />
-            <ActionCard icon={<FileText className="h-5 w-5" />} label="Gerar NFe" hint="CTRL+5"
-              onClick={() => toast.info("NFe não configurada")} />
+            <ActionCard icon={<Printer className="h-5 w-5" />} label="Registrar nota fiscal" hint="CTRL+4"
+              onClick={() => window.open(`/vendas/${doneSale.saleId}`, "_blank")} />
           </div>
         </div>
 

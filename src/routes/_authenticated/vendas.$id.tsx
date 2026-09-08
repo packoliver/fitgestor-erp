@@ -8,13 +8,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { money, PAYMENT_LABELS } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
-import { Printer, Truck, Undo2 } from "lucide-react";
+import { Printer, Truck, Undo2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { PrintDialog } from "@/components/print/print-dialog";
 import { SaleReceipt, type EnrichedPayment } from "@/components/print/sale-receipt";
@@ -32,6 +37,10 @@ function VendaDetalhe() {
   const [deliveryOpen, setDeliveryOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [fiscalOpen, setFiscalOpen] = useState(false);
+  const [fiscalType, setFiscalType] = useState<"nfce" | "nfe">("nfce");
+  const [fiscalNumber, setFiscalNumber] = useState("");
+  const [fiscalNotes, setFiscalNotes] = useState("");
 
   const delivery = useQuery({
     queryKey: ["sale-delivery", id],
@@ -113,6 +122,42 @@ function VendaDetalhe() {
       toast.success("Venda estornada. Estoque devolvido.");
       setCancelOpen(false);
       setCancelReason("");
+      qc.invalidateQueries({ queryKey: ["sale", id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const recordFiscal = useMutation({
+    mutationFn: async () => {
+      const number = fiscalNumber.trim();
+      if (!number) throw new Error("Informe o número da nota.");
+      const { error } = await supabase.rpc("record_external_fiscal_document", {
+        _sale_id: id,
+        _status: "issued_external",
+        _document_type: fiscalType,
+        _document_number: number,
+        _notes: fiscalNotes.trim() || undefined,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Nota fiscal registrada.");
+      setFiscalOpen(false);
+      setFiscalNumber(""); setFiscalNotes("");
+      qc.invalidateQueries({ queryKey: ["sale", id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const markExempt = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("record_external_fiscal_document", {
+        _sale_id: id, _status: "exempt",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Venda marcada como dispensada de nota.");
       qc.invalidateQueries({ queryKey: ["sale", id] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -213,6 +258,38 @@ function VendaDetalhe() {
         </div>
       </Card>
 
+      <Card className="p-4 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <b>Nota fiscal</b>
+            {sale.fiscal_status === "issued_external" ? (
+              <>
+                <Badge variant="secondary">
+                  {sale.fiscal_document_type === "nfe" ? "NF-e" : "NFC-e"} nº {sale.fiscal_document_number}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  emitida em outro sistema {sale.fiscal_issued_at ? `· ${formatDateTime(sale.fiscal_issued_at)}` : ""}
+                </span>
+              </>
+            ) : sale.fiscal_status === "exempt" ? (
+              <Badge variant="outline">Dispensada</Badge>
+            ) : (
+              <span className="text-muted-foreground">Nada registrado. O FitGestor não emite nota — registre aqui o número emitido em outro sistema.</span>
+            )}
+          </div>
+          {sale.fiscal_status === "not_issued" && (
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => markExempt.mutate()} disabled={markExempt.isPending}>
+                Marcar dispensada
+              </Button>
+              <Button size="sm" onClick={() => setFiscalOpen(true)}>
+                <FileText className="mr-1 h-3.5 w-3.5" /> Registrar nota
+              </Button>
+            </div>
+          )}
+        </div>
+      </Card>
 
       <Card className="mb-4">
         <div className="p-3 font-semibold">Itens</div>
@@ -317,6 +394,44 @@ function VendaDetalhe() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={fiscalOpen} onOpenChange={(open) => !recordFiscal.isPending && setFiscalOpen(open)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Registrar nota fiscal emitida</DialogTitle>
+            <DialogDescription>
+              O FitGestor ainda não emite NFC-e/NF-e. Isso só anota, pra histórico e auditoria, que a nota
+              desta venda foi emitida em outro sistema (ex: Olist).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Tipo</label>
+              <Select value={fiscalType} onValueChange={(v) => setFiscalType(v as "nfce" | "nfe")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nfce">NFC-e</SelectItem>
+                  <SelectItem value="nfe">NF-e</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Número da nota *</label>
+              <Input value={fiscalNumber} onChange={(e) => setFiscalNumber(e.target.value)} placeholder="Ex: 12345" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Observação (opcional)</label>
+              <Textarea rows={2} value={fiscalNotes} onChange={(e) => setFiscalNotes(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFiscalOpen(false)} disabled={recordFiscal.isPending}>Cancelar</Button>
+            <Button onClick={() => recordFiscal.mutate()} disabled={recordFiscal.isPending || !fiscalNumber.trim()}>
+              {recordFiscal.isPending ? "Salvando…" : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
