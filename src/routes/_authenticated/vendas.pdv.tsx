@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
@@ -43,6 +43,9 @@ import { pushInventoryToShopifyFn } from "@/lib/shopify-sync.functions";
 import { PixPaymentDialog } from "@/components/pix-payment-dialog";
 
 export const Route = createFileRoute("/_authenticated/vendas/pdv")({
+  beforeLoad: () => {
+    throw redirect({ to: "/pdv", replace: true });
+  },
   component: VendasPdvPage,
 });
 

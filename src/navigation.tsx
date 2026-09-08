@@ -43,16 +43,11 @@ export const NAV_ITEMS: NavItem[] = [
     keywords: ["atalhos","tarefas","trabalho","hoje"] },
 
   // ── Vendas ────────────────────────────────────────────────
-  { id: "frente-de-caixa", title: "Frente de Caixa", url: "/vendas/pdv", icon: ShoppingCart,
+  { id: "frente-de-caixa", title: "Frente de Caixa", url: "/pdv", icon: ShoppingCart,
     perm: "pos.view", group: "Vendas", workspaces: ["employee","admin"], priority: 110, mobile: true,
     essential: true,
     description: "Nova tela de PDV com bipador, troca rápida e comprovante WhatsApp.",
     keywords: ["pdv","venda","caixa","balcao","bipador","scanner","frente de caixa","checkout"] },
-  { id: "pdv", title: "PDV (clássico)", url: "/pdv", icon: ShoppingCart, perm: "pos.view",
-    group: "Vendas", workspaces: ["employee","admin"], priority: 100, mobile: true, essential: false,
-    description: "Registre uma nova venda no balcão (versão anterior).",
-    keywords: ["vender","venda","balcao","caixa registradora","cupom"] },
-
   { id: "caixa", title: "Caixa", url: "/caixa", icon: Wallet,
     perm: ["pos.open_cash","pos.close_cash","pos.view"],
     group: "Vendas", workspaces: ["employee","admin"], priority: 90,
