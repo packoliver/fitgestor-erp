@@ -33,9 +33,12 @@ function RelatoriosPage() {
           sale_payments(payment_method, amount),
           sale_items(quantity, unit_price, original_unit_price, variant:product_variants(id, size, sku, product:products(name, cost_price)))
         `)
-        // "draft"/"pending" nunca viraram venda de fato, e "cancelled" foi estornada —
-        // nenhum dos dois deve contar como faturamento.
-        .not("status", "in", "(draft,pending,cancelled)")
+        // Só "completed" é faturamento de verdade. "draft"/"pending" nunca viraram
+        // venda; "refunded"/"partially_refunded"/"cancelled" foram estornadas — o
+        // filtro antigo só excluía "cancelled" e deixava passar "refunded" e
+        // "partially_refunded" como se fossem venda plena, inflando o faturamento
+        // reportado. Mesmo critério já usado em admin_dashboard_stats.
+        .eq("status", "completed")
         .order("created_at", { ascending: false });
 
       const now = new Date();

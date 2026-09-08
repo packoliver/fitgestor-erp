@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/financeiro/contas-a-recebe
   component: ContasAReceberPage,
 });
 
-type Status = "pending" | "received" | "all";
+type Status = "pending" | "received" | "cancelled" | "all";
 
 function ContasAReceberPage() {
   const qc = useQueryClient();
@@ -62,7 +62,8 @@ function ContasAReceberPage() {
   const today = new Date().toISOString().slice(0, 10);
   const totalPending = rows.filter((r: any) => r.status === "pending").reduce((s: number, r: any) => s + Number(r.net_amount), 0);
   const totalOverdue = rows.filter((r: any) => r.status === "pending" && r.due_date < today).reduce((s: number, r: any) => s + Number(r.net_amount), 0);
-  const totalReceived = rows.filter((r: any) => r.status === "received").reduce((s: number, r: any) => s + Number(r.net_amount), 0);
+  const totalReceived = rows.filter((r: any) => r.status === "received" || r.status === "reconciled").reduce((s: number, r: any) => s + Number(r.net_amount), 0);
+  const totalCancelled = rows.filter((r: any) => r.status === "cancelled").reduce((s: number, r: any) => s + Number(r.net_amount), 0);
 
   return (
     <RequirePermission code="finance.manage_receivables">
@@ -72,7 +73,7 @@ function ContasAReceberPage() {
           description="Parcelas de cartão a receber das adquirentes. Baixa é sempre manual — confirme quando o valor cair na conta."
         />
 
-        <div className="grid gap-4 md:grid-cols-3 mb-4">
+        <div className="grid gap-4 md:grid-cols-4 mb-4">
           <Card className="p-4">
             <div className="text-xs text-muted-foreground">A receber</div>
             <div className="text-2xl font-semibold">{money(totalPending)}</div>
@@ -85,12 +86,16 @@ function ContasAReceberPage() {
             <div className="text-xs text-muted-foreground">Recebido</div>
             <div className="text-2xl font-semibold text-emerald-600">{money(totalReceived)}</div>
           </Card>
+          <Card className="p-4">
+            <div className="text-xs text-muted-foreground">Cancelado (venda estornada)</div>
+            <div className="text-2xl font-semibold text-muted-foreground">{money(totalCancelled)}</div>
+          </Card>
         </div>
 
         <div className="flex gap-2 mb-3">
-          {(["pending", "received", "all"] as Status[]).map((s) => (
+          {(["pending", "received", "cancelled", "all"] as Status[]).map((s) => (
             <Button key={s} size="sm" variant={status === s ? "default" : "outline"} onClick={() => setStatus(s)}>
-              {s === "pending" ? "Pendentes" : s === "received" ? "Recebidas" : "Todas"}
+              {s === "pending" ? "Pendentes" : s === "received" ? "Recebidas" : s === "cancelled" ? "Canceladas" : "Todas"}
             </Button>
           ))}
         </div>
@@ -128,8 +133,15 @@ function ContasAReceberPage() {
                     <TableCell className="text-right text-muted-foreground">-{money(r.fee_amount)}</TableCell>
                     <TableCell className="text-right font-medium">{money(r.net_amount)}</TableCell>
                     <TableCell>
-                      <Badge variant={r.status === "received" ? "default" : overdue ? "destructive" : "secondary"}>
-                        {r.status === "received" ? "Recebido" : overdue ? "Vencido" : "Pendente"}
+                      <Badge variant={
+                        r.status === "received" || r.status === "reconciled" ? "default"
+                        : r.status === "cancelled" ? "outline"
+                        : overdue ? "destructive" : "secondary"
+                      }>
+                        {r.status === "received" ? "Recebido"
+                          : r.status === "reconciled" ? "Conciliado"
+                          : r.status === "cancelled" ? "Cancelado"
+                          : overdue ? "Vencido" : "Pendente"}
                       </Badge>
                     </TableCell>
                     <TableCell>
