@@ -32,9 +32,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { RequirePermission } from "@/components/require-permission";
 
 export const Route = createFileRoute("/_authenticated/etiquetas")({
-  component: EtiquetasPage,
+  component: () => (
+    <RequirePermission code="label.print">
+      <EtiquetasPage />
+    </RequirePermission>
+  ),
 });
 
 type Row = {
