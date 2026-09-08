@@ -454,6 +454,14 @@ body {
 }
 [data-sidebar="sidebar"] > * { position: relative; z-index: 1; }
 
+/* The mobile sidebar is also the Radix Sheet panel. Keep it fixed to the
+   viewport; the generic liquid-glass rule above must not push it below the
+   application content on small screens. */
+[data-sidebar="sidebar"][data-mobile="true"] {
+  position: fixed;
+  height: 100dvh;
+}
+
 /* Item ativo — cápsula líquida iOS */
 [data-sidebar="menu-button"] {
   border-radius: 12px !important;
