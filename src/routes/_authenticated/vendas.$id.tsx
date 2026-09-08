@@ -1,15 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { money, PAYMENT_LABELS } from "@/lib/pos";
 import { formatDateTime } from "@/lib/erp";
-import { Printer, Truck } from "lucide-react";
+import { Printer, Truck, Undo2 } from "lucide-react";
+import { toast } from "sonner";
 import { PrintDialog } from "@/components/print/print-dialog";
 import { SaleReceipt, type EnrichedPayment } from "@/components/print/sale-receipt";
 import { PostSaleDeliveryDialog } from "@/components/post-sale-delivery-dialog";
@@ -21,8 +27,11 @@ export const Route = createFileRoute("/_authenticated/vendas/$id")({
 
 function VendaDetalhe() {
   const { id } = Route.useParams();
+  const qc = useQueryClient();
   const [printOpen, setPrintOpen] = useState(false);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const delivery = useQuery({
     queryKey: ["sale-delivery", id],
@@ -89,7 +98,27 @@ function VendaDetalhe() {
     queryFn: async () => (await supabase.from("exchange_settings").select("receipt_footer_text").eq("organization_id", sale!.organization_id).maybeSingle()).data,
   });
 
+  const cancelSale = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("cancel_sale", {
+        _sale_id: id,
+        _reason: cancelReason.trim() || undefined,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Venda estornada. Estoque devolvido.");
+      setCancelOpen(false);
+      setCancelReason("");
+      qc.invalidateQueries({ queryKey: ["sale", id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (!sale) return <div>Carregando…</div>;
+
+  const canCancel = sale.status === "completed" && sale.channel === "physical_store";
 
   // Enriquecer os pagamentos com snapshot histórico do saldo pós-transação.
   // Casamos por par (método, valor) na ordem de criação.
@@ -122,7 +151,16 @@ function VendaDetalhe() {
             <Button variant="outline" onClick={() => setPrintOpen(true)}><Printer className="mr-2 h-4 w-4" />Comprovante</Button>
             <Button asChild variant="outline"><Link to="/vendas">Voltar</Link></Button>
             <Button variant="outline" disabled title="Disponível em próxima etapa">Iniciar troca</Button>
-            <Button variant="outline" disabled title="Disponível em próxima etapa">Realizar estorno</Button>
+            <Button
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              disabled={!canCancel}
+              title={canCancel ? undefined : "Só é possível estornar vendas concluídas do balcão"}
+              onClick={() => setCancelOpen(true)}
+            >
+              <Undo2 className="mr-2 h-4 w-4" />
+              Realizar estorno
+            </Button>
           </>
         }
       />
@@ -245,6 +283,38 @@ function VendaDetalhe() {
           onClose={() => { setDeliveryOpen(false); delivery.refetch(); }}
         />
       )}
+
+      <AlertDialog open={cancelOpen} onOpenChange={(open) => !cancelSale.isPending && setCancelOpen(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Estornar venda #{sale.sale_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O estoque de cada item volta ao saldo, os pagamentos são marcados como estornados e a venda
+              passa a contar como estornada nos relatórios. O dinheiro/cartão em si precisa ser devolvido
+              ao cliente manualmente — isto aqui só ajusta os registros do sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Motivo (opcional)</label>
+            <Textarea
+              rows={3}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Ex: cliente desistiu da compra"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelSale.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={cancelSale.isPending}
+              onClick={(e) => { e.preventDefault(); cancelSale.mutate(); }}
+            >
+              {cancelSale.isPending ? "Estornando…" : "Confirmar estorno"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

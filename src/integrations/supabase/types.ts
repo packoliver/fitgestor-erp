@@ -3027,8 +3027,6 @@ export type Database = {
         Row: {
           cancelled_at: string | null
           completed_at: string | null
-          collection_method: string | null
-          collection_timing: string
           courier_id: string
           created_at: string
           created_by: string | null
@@ -3424,10 +3422,10 @@ export type Database = {
           channel: string
           client_id: string | null
           client_request_id: string | null
-          completed_at: string | null
           collection_details: Json | null
           collection_method: string | null
           collection_timing: string
+          completed_at: string | null
           created_at: string
           id: string
           item_discount_total: number
@@ -3455,10 +3453,10 @@ export type Database = {
           channel?: string
           client_id?: string | null
           client_request_id?: string | null
-          completed_at?: string | null
           collection_details?: Json | null
           collection_method?: string | null
           collection_timing?: string
+          completed_at?: string | null
           created_at?: string
           id?: string
           item_discount_total?: number
@@ -3486,10 +3484,10 @@ export type Database = {
           channel?: string
           client_id?: string | null
           client_request_id?: string | null
-          completed_at?: string | null
           collection_details?: Json | null
           collection_method?: string | null
           collection_timing?: string
+          completed_at?: string | null
           created_at?: string
           id?: string
           item_discount_total?: number
@@ -4362,6 +4360,15 @@ export type Database = {
         Args: { _event: string; _sale_id: string }
         Returns: Json
       }
+      apply_shopify_order_adjustment_atomic: {
+        Args: {
+          _kind: string
+          _location_id?: string
+          _organization_id: string
+          _payload: Json
+        }
+        Returns: Json
+      }
       apply_stock_movement: {
         Args: {
           _location_id: string
@@ -4436,6 +4443,10 @@ export type Database = {
       cancel_route: {
         Args: { _reason: string; _route_id: string }
         Returns: undefined
+      }
+      cancel_sale: {
+        Args: { _reason?: string; _sale_id: string }
+        Returns: Json
       }
       claim_shopify_product_sync_jobs: {
         Args: { _limit?: number; _product_id?: string; _worker_id: string }
