@@ -60,11 +60,16 @@ import {
   type LabelPayload,
   type LabelTemplate,
 } from "@/lib/label-pdf";
+import { RequirePermission } from "@/components/require-permission";
 
 export const Route = createFileRoute(
   "/_authenticated/estoque/recebimento-rapido"
 )({
-  component: RecebimentoRapidoPage,
+  component: () => (
+    <RequirePermission code="goods_receipt.create">
+      <RecebimentoRapidoPage />
+    </RequirePermission>
+  ),
 });
 
 const STANDARD_GRID_SIZES = [

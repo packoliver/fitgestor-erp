@@ -101,7 +101,6 @@ type BadgeMap = Record<string, number>;
 
 function useNavBadges(hasAny: (...c: string[]) => boolean, isLoading: boolean): BadgeMap {
   const canPostSale = !isLoading && hasAny("post_sale.view", "post_sale.manage");
-  const canInbound = !isLoading && hasAny("inventory.view", "inventory.manage");
   const canShipping =
     !isLoading && hasAny("shipping.view", "shipping.view_all", "shipping.dispatch");
 
@@ -114,19 +113,6 @@ function useNavBadges(hasAny: (...c: string[]) => boolean, isLoading: boolean): 
         .from("post_sale_tasks")
         .select("id", { count: "exact", head: true })
         .in("status", ["pending", "scheduled"]);
-      return count ?? 0;
-    },
-  });
-
-  const inbound = useQuery({
-    queryKey: ["nav-badge", "estoque-entrada"],
-    enabled: canInbound,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("goods_receipt_drafts")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "draft");
       return count ?? 0;
     },
   });
@@ -148,7 +134,6 @@ function useNavBadges(hasAny: (...c: string[]) => boolean, isLoading: boolean): 
 
   return {
     "pos-venda": posSale.data ?? 0,
-    "estoque-entrada": inbound.data ?? 0,
     expedicao: shipping.data ?? 0,
   };
 }

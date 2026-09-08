@@ -120,8 +120,15 @@ function EntradaNFeXMLPage() {
       if (!user) throw new Error("Usuário não autenticado.");
 
       // Buscar local de estoque padrão
-      const { data: defaultLocation } = await supabase.from("stock_locations").select("id").limit(1).maybeSingle();
-      const locationId = defaultLocation?.id || "00000000-0000-0000-0000-000000000000";
+      const { data: defaultLocation } = await supabase
+        .from("stock_locations")
+        .select("id")
+        .eq("status", "ativo")
+        .order("created_at")
+        .limit(1)
+        .maybeSingle();
+      if (!defaultLocation) throw new Error("Nenhum local de estoque ativo encontrado. Cadastre um local primeiro.");
+      const locationId = defaultLocation.id;
 
       const updatedSkus: { sku: string; newQty: number }[] = [];
 
@@ -175,54 +182,24 @@ function EntradaNFeXMLPage() {
             .eq("id", targetVariantId);
         }
 
-        // 3. Atualizar / Incrementar Estoque
-        const { data: existingBalance } = await supabase
-          .from("inventory_balances")
-          .select("id, physical_quantity, available_quantity")
-          .eq("variant_id", targetVariantId)
-          .maybeSingle();
-
-        let currentQty = Number(existingBalance?.physical_quantity ?? 0);
-        let newQty = currentQty + item.quantity;
-
-        if (existingBalance) {
-          await supabase
-            .from("inventory_balances")
-            .update({
-              physical_quantity: newQty,
-              available_quantity: Number(existingBalance.available_quantity ?? 0) + item.quantity,
-            })
-            .eq("id", existingBalance.id);
-        } else {
-          await supabase.from("inventory_balances").insert({
-            organization_id: orgId,
-            location_id: locationId,
-            variant_id: targetVariantId,
-            physical_quantity: item.quantity,
-            available_quantity: item.quantity,
-          });
-        }
-
-        // Registrar Histórico na Auditoria de Logs (tabela real é inventory_movements —
-        // "stock_movements" nunca existiu, então esse registro nunca era gravado antes)
-        await supabase.from("inventory_movements").insert({
-          organization_id: orgId,
-          variant_id: targetVariantId,
-          location_id: locationId,
-          movement_type: "entrada",
-          quantity: item.quantity,
-          quantity_before: currentQty,
-          quantity_after: newQty,
-          reference_type: "nfe_import",
-          reason: `Entrada via NF-e nº ${parsedNFe.header.nNF}`,
-          notes: `Fornecedor: ${parsedNFe.header.supplierName}`,
-          user_id: user.id,
-        }).then(({ error }) => {
-          if (error) console.warn("Falha ao registrar movimentação de estoque (entrada NF-e):", error);
+        // 3. Atualizar estoque pela função central (mesmo caminho usado por todas as
+        // outras telas de entrada — trava a linha do saldo e grava o histórico em
+        // inventory_movements de forma atômica, evitando saldo errado em entradas
+        // simultâneas, que era o risco do UPDATE manual anterior).
+        const { error: mErr } = await supabase.rpc("apply_stock_movement", {
+          _variant_id: targetVariantId,
+          _location_id: locationId,
+          _movement_type: "entrada",
+          _quantity: item.quantity,
+          _reason: `Entrada via NF-e nº ${parsedNFe.header.nNF}`,
+          _notes: `Fornecedor: ${parsedNFe.header.supplierName}`,
+          _reference_type: "nfe_import",
+          _source: "entrada_xml",
         });
+        if (mErr) throw mErr;
 
         if (targetSku) {
-          updatedSkus.push({ sku: targetSku, newQty });
+          updatedSkus.push({ sku: targetSku, newQty: item.quantity });
         }
       }
 
