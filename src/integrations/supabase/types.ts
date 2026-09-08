@@ -2250,6 +2250,102 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_held_sales: {
+        Row: {
+          cash_session_id: string | null
+          client_id: string | null
+          completed_sale_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          item_count: number
+          label: string
+          location_id: string
+          organization_id: string
+          quantity_total: number
+          seller_id: string | null
+          snapshot: Json
+          status: string
+          total: number
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          cash_session_id?: string | null
+          client_id?: string | null
+          completed_sale_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          item_count: number
+          label: string
+          location_id: string
+          organization_id: string
+          quantity_total: number
+          seller_id?: string | null
+          snapshot: Json
+          status?: string
+          total: number
+          updated_at?: string
+          updated_by?: string
+        }
+        Update: {
+          cash_session_id?: string | null
+          client_id?: string | null
+          completed_sale_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          item_count?: number
+          label?: string
+          location_id?: string
+          organization_id?: string
+          quantity_total?: number
+          seller_id?: string | null
+          snapshot?: Json
+          status?: string
+          total?: number
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_held_sales_cash_session_id_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_held_sales_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_held_sales_completed_sale_id_fkey"
+            columns: ["completed_sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_held_sales_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_held_sales_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_sale_rules: {
         Row: {
           active: boolean

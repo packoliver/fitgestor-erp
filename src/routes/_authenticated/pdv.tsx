@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ import {
 import {
   Banknote, CreditCard, DollarSign, Plus, Search, Share2, ShoppingCart,
   Trash2, User, X, Printer, FileText, ChevronDown, ArrowLeft,
-  ArrowLeftRight, Receipt, Loader2, ShoppingBag,
+  ArrowLeftRight, Receipt, Loader2, ShoppingBag, BookmarkPlus, Play,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { PostSaleDeliveryDialog } from "@/components/post-sale-delivery-dialog";
@@ -55,6 +56,29 @@ type DeliveryCollection = {
   net_amount: number;
 };
 type Step = "sale" | "checkout" | "done";
+
+type HeldSaleSnapshot = {
+  version: 1;
+  request_id: string;
+  cart: CartLine[];
+  client: { id: string | null; name: string };
+  seller: { id: string | null; name: string };
+  order_discount_type: "percent" | "value" | "";
+  order_discount_value: string;
+  shipping: string;
+};
+
+type HeldSale = {
+  id: string;
+  label: string;
+  snapshot: HeldSaleSnapshot;
+  item_count: number;
+  quantity_total: number;
+  total: number;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+};
 
 type ReturnItem = {
   sale_item_id: string; variant_id: string;
@@ -286,6 +310,9 @@ function PdvPage() {
 
   const [requestId, setRequestId] = useState(newRequestId());
   const [submitting, setSubmitting] = useState(false);
+  const [heldOpen, setHeldOpen] = useState(false);
+  const [activeHeldId, setActiveHeldId] = useState<string | null>(null);
+  const [heldBusyId, setHeldBusyId] = useState<string | null>(null);
   const [doneSale, setDoneSale] = useState<{ saleId: string; saleNumber: any; total: number; cashPaid: number } | null>(null);
   const [postSale, setPostSale] = useState<{ saleId: string; saleNumber: string | number | null; clientId: string | null } | null>(null);
 
@@ -295,6 +322,20 @@ function PdvPage() {
 
   const { data: session } = useQuery({
     queryKey: ["pdv-session"], queryFn: () => getOpenSession(),
+  });
+
+  const { data: heldSales = [] } = useQuery<HeldSale[]>({
+    queryKey: ["pdv-held-sales", session?.location_id],
+    enabled: !!session?.location_id,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("pos_held_sales")
+        .select("id, label, snapshot, item_count, quantity_total, total, created_at, updated_at, created_by")
+        .eq("status", "active")
+        .eq("location_id", session!.location_id)
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as HeldSale[];
+    },
   });
 
   // Product search
@@ -593,7 +634,15 @@ function PdvPage() {
       };
       const { data, error } = await supabase.rpc("complete_pos_sale", { _payload: payload });
       if (error) throw error;
-      return data as any;
+      let heldCloseFailed = false;
+      if (activeHeldId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { error: heldError } = await supabase.from("pos_held_sales")
+          .update({ status: "completed", completed_sale_id: (data as any).sale_id, updated_by: user?.id })
+          .eq("id", activeHeldId).eq("status", "active");
+        heldCloseFailed = !!heldError;
+      }
+      return { ...(data as any), heldCloseFailed } as any;
     },
     onSuccess: (data: any) => {
       toast.success(`Venda #${data.sale_number ?? ""} concluída.`);
@@ -602,6 +651,8 @@ function PdvPage() {
       setPostSale({ saleId: data.sale_id, saleNumber: data.sale_number ?? null, clientId });
       setStep("done");
       setSubmitting(false);
+      qc.invalidateQueries({ queryKey: ["pdv-held-sales"] });
+      if (data.heldCloseFailed) toast.warning("A venda foi concluída, mas permaneceu na lista de salvas. A repetição continuará protegida pelo mesmo identificador.");
     },
     onError: (e: Error) => { toast.error(e.message); setSubmitting(false); },
   });
@@ -656,8 +707,162 @@ function PdvPage() {
     setClientId(null); setClientName("");
     setSellerId(null); setSellerName("");
     setPickedVariant(null); setPickedPrice(""); setTerm(""); setQty("1");
+    setActiveHeldId(null);
     setDoneSale(null); setRequestId(newRequestId());
     setTimeout(() => searchRef.current?.focus(), 50);
+  }
+
+  const saveHeldSale = useMutation({
+    mutationFn: async () => {
+      if (!session) throw new Error("O caixa precisa estar aberto.");
+      if (cart.length === 0) throw new Error("Adicione ao menos um item antes de salvar.");
+      if (payments.length > 0 || deliveryCollection) {
+        throw new Error("Remova os recebimentos antes de salvar. Valores recebidos não podem ficar em um carrinho pendente.");
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Sessão expirada. Faça login novamente.");
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles").select("organization_id").eq("id", user.id).single();
+      if (profileError) throw profileError;
+      if (!profile.organization_id) throw new Error("Perfil sem organização.");
+
+      const snapshot: HeldSaleSnapshot = {
+        version: 1,
+        request_id: requestId,
+        cart,
+        client: { id: clientId, name: clientName },
+        seller: { id: sellerId, name: sellerName },
+        order_discount_type: orderDiscountType,
+        order_discount_value: orderDiscountValue,
+        shipping,
+      };
+      const values = {
+        organization_id: profile.organization_id,
+        location_id: session.location_id,
+        cash_session_id: session.id,
+        client_id: clientId,
+        seller_id: sellerId,
+        updated_by: user.id,
+        label: clientName || cart[0]?.name || "Venda pendente",
+        snapshot: snapshot as unknown as Json,
+        item_count: cart.length,
+        quantity_total: totalQty,
+        total,
+        status: "active",
+      };
+
+      if (activeHeldId) {
+        const { data, error } = await supabase.from("pos_held_sales")
+          .update(values).eq("id", activeHeldId).eq("status", "active").select("id").single();
+        if (error) throw error;
+        return { id: data.id as string, updated: true };
+      }
+
+      const { data, error } = await supabase.from("pos_held_sales")
+        .insert({ ...values, created_by: user.id }).select("id").single();
+      if (error) throw error;
+      return { id: data.id as string, updated: false };
+    },
+    onSuccess: ({ updated }) => {
+      toast.success(updated ? "Venda pendente atualizada." : "Venda salva para depois.");
+      qc.invalidateQueries({ queryKey: ["pdv-held-sales"] });
+      startNewSale();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  async function resumeHeldSale(held: HeldSale) {
+    if (!session || heldBusyId) return;
+    if (cart.length > 0 && activeHeldId !== held.id) {
+      toast.error("Salve ou cancele a venda atual antes de retomar outra.");
+      return;
+    }
+    setHeldBusyId(held.id);
+    try {
+      const snapshot = held.snapshot;
+      if (snapshot?.version !== 1 || !Array.isArray(snapshot.cart) || snapshot.cart.length === 0) {
+        throw new Error("Este carrinho salvo está inválido.");
+      }
+
+      const ids = [...new Set(snapshot.cart.map((line) => line.variant_id))];
+      const { data, error } = await supabase
+        .from("product_variants")
+        .select("id, product_id, size, color, sku, barcode, sale_price, promotional_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
+        .in("id", ids).is("deleted_at", null);
+      if (error) throw error;
+
+      const currentById = new Map((data ?? []).map((variant: any) => [variant.id, variant]));
+      const unavailable: string[] = [];
+      let adjustedPrices = 0;
+      let insufficientStock = 0;
+      const restored = snapshot.cart.map((saved) => {
+        const variant: any = currentById.get(saved.variant_id);
+        if (!variant || variant.status !== "ativo" || variant.product?.status !== "ativo") {
+          unavailable.push(saved.name);
+          return null;
+        }
+        const balance = (variant.balances ?? []).find((item: any) => item.location_id === session.location_id);
+        const available = balance ? Number(balance.physical_quantity) - Number(balance.reserved_quantity ?? 0) : 0;
+        const currentUnitPrice = effectiveVariantPrice(variant, variant.product);
+        if (Math.abs(currentUnitPrice - Number(saved.unit_price)) > 0.005) adjustedPrices += 1;
+        if (available < saved.quantity) insufficientStock += 1;
+        return {
+          variant_id: variant.id,
+          product_id: variant.product_id,
+          name: variant.product?.name ?? saved.name,
+          color: variant.color ?? variant.product?.color ?? null,
+          size: variant.size,
+          sku: variant.sku,
+          barcode: variant.barcode,
+          unit_price: currentUnitPrice,
+          quantity: saved.quantity,
+          available,
+        } satisfies CartLine;
+      }).filter((line): line is CartLine => line !== null);
+
+      if (unavailable.length > 0) {
+        throw new Error(`Não foi possível retomar: ${unavailable.length} produto(s) estão inativos ou foram excluídos.`);
+      }
+
+      setCart(restored);
+      setClientId(snapshot.client?.id ?? null); setClientName(snapshot.client?.name ?? "");
+      setSellerId(snapshot.seller?.id ?? null); setSellerName(snapshot.seller?.name ?? "");
+      setOrderDiscountType(snapshot.order_discount_type ?? "");
+      setOrderDiscountValue(snapshot.order_discount_value ?? "0");
+      setShipping(snapshot.shipping ?? "0");
+      setPayments([]); setDeliveryCollection(null);
+      setRequestId(snapshot.request_id || newRequestId());
+      setActiveHeldId(held.id);
+      setStep("sale"); setHeldOpen(false);
+      if (adjustedPrices > 0) toast.info(`${adjustedPrices} preço(s) foram atualizados para os valores atuais.`);
+      if (insufficientStock > 0) toast.warning(`${insufficientStock} item(ns) estão com estoque insuficiente e precisam ser removidos ou ajustados.`);
+      if (adjustedPrices === 0 && insufficientStock === 0) toast.success("Venda retomada.");
+    } catch (error: any) {
+      toast.error(error.message || "Não foi possível retomar a venda.");
+    } finally {
+      setHeldBusyId(null);
+    }
+  }
+
+  async function cancelHeldSale(held: HeldSale) {
+    if (heldBusyId) return;
+    setHeldBusyId(held.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Sessão expirada. Faça login novamente.");
+      const { error } = await supabase.from("pos_held_sales")
+        .update({ status: "cancelled", updated_by: user.id })
+        .eq("id", held.id).eq("status", "active");
+      if (error) throw error;
+      if (activeHeldId === held.id) startNewSale();
+      await qc.invalidateQueries({ queryKey: ["pdv-held-sales"] });
+      toast.success("Venda salva excluída.");
+    } catch (error: any) {
+      toast.error(error.message || "Não foi possível excluir a venda salva.");
+    } finally {
+      setHeldBusyId(null);
+    }
   }
 
   // Keyboard shortcuts
@@ -665,6 +870,10 @@ function PdvPage() {
     function onKey(e: KeyboardEvent) {
       if (e.key === "F8") { e.preventDefault(); setClientOpen(true); }
       if (e.key === "F9") { e.preventDefault(); setSellerOpen(true); }
+      if (e.key === "F10" && (step === "sale" || step === "checkout")) {
+        e.preventDefault();
+        if (!saveHeldSale.isPending) saveHeldSale.mutate();
+      }
       if (e.key === "Escape") {
         if (step === "checkout") { setStep("sale"); e.preventDefault(); }
       }
@@ -905,8 +1114,8 @@ function PdvPage() {
               {submitting ? "finalizando…" : "finalizar venda"}
               <span className="ml-3 text-xs opacity-80">CTRL+ENTER OU F2</span>
             </Button>
-            <button onClick={() => toast.info("Salvar para depois em breve")} className="text-sm">
-              <div>salvar para depois</div>
+            <button disabled={saveHeldSale.isPending} onClick={() => saveHeldSale.mutate()} className="text-sm disabled:opacity-50">
+              <div>{saveHeldSale.isPending ? "salvando…" : activeHeldId ? "atualizar venda salva" : "salvar para depois"}</div>
               <div className="text-xs text-muted-foreground">F10</div>
             </button>
             <div className="ml-auto flex items-center gap-8">
@@ -919,6 +1128,7 @@ function PdvPage() {
         {renderClientDialog()}
         {renderSellerDialog()}
         {renderMethodDialog()}
+        {renderHeldSalesDialog()}
         <QuickExchangeDialog
           open={exchangeOpen}
           onClose={() => setExchangeOpen(false)}
@@ -945,7 +1155,10 @@ function PdvPage() {
         <div className="flex items-center gap-2 text-sm">
           <Button variant="ghost" size="sm" asChild><Link to="/caixa"><FileText className="h-4 w-4 mr-1" /> detalhes do caixa <span className="ml-2 text-xs text-muted-foreground">CTRL+Y</span></Link></Button>
           <Button variant="ghost" size="sm"><Search className="h-4 w-4 mr-1" /> busca avançada <span className="ml-2 text-xs text-muted-foreground">CTRL+B</span></Button>
-          <Button variant="outline" size="sm">mais ações <Badge className="ml-2 rounded-full h-5 w-5 p-0 flex items-center justify-center">…</Badge></Button>
+          <Button variant="outline" size="sm" onClick={() => setHeldOpen(true)}>
+            vendas salvas
+            <Badge className="ml-2 rounded-full h-5 min-w-5 px-1 flex items-center justify-center">{heldSales.length}</Badge>
+          </Button>
         </div>
       </div>
 
@@ -1094,8 +1307,11 @@ function PdvPage() {
               <Button size="lg" className="h-14 px-8 rounded-xl" disabled={cart.length === 0} onClick={() => setStep("checkout")}>
                 continuar <span className="ml-3 text-xs opacity-80">CTRL+ENTER</span>
               </Button>
-              <button onClick={() => toast.info("Salvar para depois em breve")} className="text-sm hidden sm:block"><div>salvar para depois</div><div className="text-xs text-muted-foreground">F10</div></button>
-              <button onClick={() => { if (cart.length) { setCart([]); toast.success("Venda cancelada"); } }} className="text-sm"><div>cancelar venda</div><div className="text-xs text-muted-foreground">ESC</div></button>
+              <button disabled={saveHeldSale.isPending} onClick={() => saveHeldSale.mutate()} className="text-sm disabled:opacity-50">
+                <div>{saveHeldSale.isPending ? "salvando…" : activeHeldId ? "atualizar venda salva" : "salvar para depois"}</div>
+                <div className="text-xs text-muted-foreground">F10</div>
+              </button>
+              <button onClick={() => { if (cart.length) { const wasHeld = !!activeHeldId; startNewSale(); toast.success(wasHeld ? "Venda atual cancelada; a cópia salva permanece." : "Venda cancelada"); } }} className="text-sm"><div>cancelar venda</div><div className="text-xs text-muted-foreground">ESC</div></button>
             </>
           )}
           <div className="w-full sm:w-auto sm:ml-auto flex items-center justify-between sm:justify-end gap-4 sm:gap-10">
@@ -1109,10 +1325,64 @@ function PdvPage() {
       {renderClientDialog()}
       {renderSellerDialog()}
       {renderMethodDialog()}
+      {renderHeldSalesDialog()}
     </div>
   );
 
   // ================= DIALOGS =================
+  function renderHeldSalesDialog() {
+    return (
+      <Dialog open={heldOpen} onOpenChange={setHeldOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookmarkPlus className="h-5 w-5" /> Vendas salvas
+            </DialogTitle>
+            <DialogDescription>
+              Retomar reconfere os preços e o estoque atuais. Salvar não reserva nem baixa produtos.
+            </DialogDescription>
+          </DialogHeader>
+          {heldSales.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              Nenhuma venda salva neste local.
+            </div>
+          ) : (
+            <div className="divide-y rounded-lg border">
+              {heldSales.map((held) => (
+                <div key={held.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{held.label}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {held.item_count} item(ns) · {Number(held.quantity_total)} unidade(s) · {money(Number(held.total))}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Salva em {new Date(held.updated_at).toLocaleString("pt-BR")}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => resumeHeldSale(held)} disabled={!!heldBusyId}>
+                      {heldBusyId === held.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Play className="mr-1 h-4 w-4" />}
+                      Retomar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive"
+                      onClick={() => cancelHeldSale(held)}
+                      disabled={!!heldBusyId}
+                    >
+                      <Trash2 className="mr-1 h-4 w-4" /> Excluir
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   function renderClientDialog() {
     return (
       <Dialog open={clientOpen} onOpenChange={setClientOpen}>
