@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/motoboy")({
 });
 
 function MinhasRotas() {
-  const [outcome, setOutcome] = useState<{ id: string; kind: "delivered" | "absent" | "failed" } | null>(null);
+  const [outcome, setOutcome] = useState<{ id: string; kind: "delivered" | "absent" | "failed"; amountToCollect: number } | null>(null);
 
   const me = useQuery({
     queryKey: ["me-courier"],
@@ -116,11 +116,11 @@ function MinhasRotas() {
                 {s.status === "out_for_delivery" && (
                   <div className="grid grid-cols-3 gap-2">
                     <Button size="lg" onClick={() => {
-                      if (!confirm(`Confirmar entrega de #${s.shipment_number}?`)) return;
-                      setOutcome({ id: s.id, kind: "delivered" });
+                      if (Number(s.amount_to_collect) <= 0 && !confirm(`Confirmar entrega de #${s.shipment_number}?`)) return;
+                      setOutcome({ id: s.id, kind: "delivered", amountToCollect: Number(s.amount_to_collect) || 0 });
                     }}><CheckCircle2 className="mr-1 h-4 w-4" />Entregue</Button>
-                    <Button size="lg" variant="outline" onClick={() => setOutcome({ id: s.id, kind: "absent" })}><UserX className="mr-1 h-4 w-4" />Ausente</Button>
-                    <Button size="lg" variant="outline" onClick={() => setOutcome({ id: s.id, kind: "failed" })}><XCircle className="mr-1 h-4 w-4" />Falha</Button>
+                    <Button size="lg" variant="outline" onClick={() => setOutcome({ id: s.id, kind: "absent", amountToCollect: 0 })}><UserX className="mr-1 h-4 w-4" />Ausente</Button>
+                    <Button size="lg" variant="outline" onClick={() => setOutcome({ id: s.id, kind: "failed", amountToCollect: 0 })}><XCircle className="mr-1 h-4 w-4" />Falha</Button>
                   </div>
                 )}
               </Card>
@@ -138,6 +138,7 @@ function MinhasRotas() {
           onOpenChange={(o) => { if (!o) setOutcome(null); }}
           shipmentId={outcome.id}
           kind={outcome.kind === "delivered" ? "delivered" : outcome.kind}
+          amountToCollect={outcome.amountToCollect}
         />
       )}
     </div>

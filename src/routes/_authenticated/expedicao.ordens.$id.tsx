@@ -276,6 +276,7 @@ function OrdemDetalhe() {
         <DeliveryOutcomeDialog
           open={true} onOpenChange={(o) => { if (!o) setOutcome(null); }}
           shipmentId={id} kind={outcome}
+          amountToCollect={outcome === "delivered" ? Number(s.amount_to_collect) || 0 : 0}
         />
       )}
     </div>

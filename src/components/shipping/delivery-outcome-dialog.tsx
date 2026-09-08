@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,28 +22,67 @@ const TITLES: Record<Kind, string> = {
   cancelled: "Cancelar entrega",
 };
 
+const PAYMENT_METHODS: { value: string; label: string }[] = [
+  { value: "cash", label: "Dinheiro" },
+  { value: "pix", label: "Pix" },
+  { value: "debit_card", label: "Cartão de débito" },
+  { value: "credit_card", label: "Cartão de crédito" },
+  { value: "other", label: "Outro" },
+];
+
+const money = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
 export function DeliveryOutcomeDialog({
-  open, onOpenChange, kind, shipmentId, onDone,
+  open, onOpenChange, kind, shipmentId, amountToCollect = 0, onDone,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   kind: Kind;
   shipmentId: string;
+  /** Valor ainda a receber da venda (cobrança na entrega). 0 = venda já paga. */
+  amountToCollect?: number;
   onDone?: () => void;
 }) {
   const qc = useQueryClient();
   const [notes, setNotes] = useState("");
   const [newDate, setNewDate] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [amountReceived, setAmountReceived] = useState("");
   const requiresNotes = kind === "absent" || kind === "failed";
+  const requiresPayment = kind === "delivered" && amountToCollect > 0.01;
+
+  useEffect(() => {
+    if (open) {
+      setAmountReceived(requiresPayment ? amountToCollect.toFixed(2).replace(".", ",") : "");
+      setPaymentMethod("cash");
+    }
+  }, [open, requiresPayment, amountToCollect]);
+
+  const receivedNumber = Number(amountReceived.replace(",", "."));
+  const change = paymentMethod === "cash" && receivedNumber > amountToCollect
+    ? receivedNumber - amountToCollect
+    : 0;
 
   const mut = useMutation({
     mutationFn: async () => {
       if (requiresNotes && !notes.trim()) throw new Error("Observação obrigatória.");
       if (kind === "delivered") {
-        const { error } = await supabase.rpc("mark_shipment_delivered", {
-          _shipment_id: shipmentId, _notes: notes.trim() || null as any,
-        });
-        if (error) throw error;
+        if (requiresPayment) {
+          if (!receivedNumber || receivedNumber <= 0) throw new Error("Informe o valor recebido.");
+          if (receivedNumber < amountToCollect && Math.abs(receivedNumber - amountToCollect) > 0.01) {
+            throw new Error(`O valor recebido não pode ser menor que ${money(amountToCollect)}.`);
+          }
+          const { error } = await supabase.rpc("mark_shipment_delivered_with_payment" as any, {
+            _shipment_id: shipmentId, _payment_method: paymentMethod, _amount: receivedNumber,
+            _notes: notes.trim() || null,
+          });
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.rpc("mark_shipment_delivered", {
+            _shipment_id: shipmentId, _notes: notes.trim() || null as any,
+          });
+          if (error) throw error;
+        }
       } else if (kind === "absent") {
         const { error } = await supabase.rpc("mark_shipment_absent", {
           _shipment_id: shipmentId, _notes: notes.trim(),
@@ -67,10 +107,10 @@ export function DeliveryOutcomeDialog({
       }
     },
     onSuccess: () => {
-      toast.success("Ação registrada.");
+      toast.success(requiresPayment ? "Entrega e pagamento registrados." : "Ação registrada.");
       qc.invalidateQueries();
       onOpenChange(false);
-      setNotes(""); setNewDate("");
+      setNotes(""); setNewDate(""); setAmountReceived("");
       onDone?.();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -81,12 +121,46 @@ export function DeliveryOutcomeDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{TITLES[kind]}</DialogTitle>
+          {requiresPayment && (
+            <DialogDescription>
+              Esta entrega tem {money(amountToCollect)} a receber. Confirme como o cliente pagou antes de marcar como entregue.
+            </DialogDescription>
+          )}
         </DialogHeader>
         <div className="space-y-3">
           {kind === "rescheduled" && (
             <div>
               <Label>Nova data *</Label>
               <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
+            </div>
+          )}
+          {requiresPayment && (
+            <div className="rounded-md border bg-amber-50 dark:bg-amber-950/20 p-3 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Forma de pagamento *</Label>
+                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_METHODS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Valor recebido *</Label>
+                  <Input
+                    inputMode="decimal"
+                    value={amountReceived}
+                    onChange={(e) => setAmountReceived(e.target.value)}
+                    placeholder="0,00"
+                  />
+                </div>
+              </div>
+              {change > 0 && (
+                <p className="text-xs text-amber-800 dark:text-amber-300">
+                  Troco a devolver: <b>{money(change)}</b>
+                </p>
+              )}
             </div>
           )}
           <div>
