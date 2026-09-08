@@ -19,16 +19,24 @@ export const Route = createFileRoute("/_authenticated/caixa")({
   component: CaixaPage,
 });
 
+type Reconciliation = {
+  payment_method: string;
+  registered_amount: number;
+  declared_amount: number;
+  difference_amount: number;
+};
+
 function CaixaPage() {
   const qc = useQueryClient();
   const [locationId, setLocationId] = useState<string>("");
   const [opening, setOpening] = useState("0");
   const [openNotes, setOpenNotes] = useState("");
-  const [counted, setCounted] = useState("");
+  const [declared, setDeclared] = useState<Record<string, string>>({});
   const [closeNotes, setCloseNotes] = useState("");
   const [movType, setMovType] = useState<"cash_in" | "cash_out">("cash_in");
   const [movAmount, setMovAmount] = useState("");
   const [movReason, setMovReason] = useState("");
+  const [lastClose, setLastClose] = useState<Reconciliation[] | null>(null);
 
   const { data: locations } = useQuery({
     queryKey: ["locations"],
@@ -61,16 +69,22 @@ function CaixaPage() {
   const closeMut = useMutation({
     mutationFn: async () => {
       if (!session) throw new Error("Sem caixa aberto.");
-      if (counted === "") throw new Error("Informe o valor contado.");
+      const declaredPayload: Record<string, number> = {};
+      for (const [method, value] of Object.entries(declared)) {
+        if (value !== "") declaredPayload[method] = Number(value);
+      }
       const { error, data } = await supabase.rpc("close_cash_session", {
-        _session_id: session.id, _counted_amount: Number(counted), _notes: closeNotes || undefined,
+        _session_id: session.id, _declared: declaredPayload, _notes: closeNotes || undefined,
       });
       if (error) throw error;
       return data;
     },
     onSuccess: (data: any) => {
-      toast.success(`Caixa fechado. Diferença: ${money(data.difference)}`);
-      setCounted(""); setCloseNotes("");
+      const recon: Reconciliation[] = data.reconciliation ?? [];
+      const totalDiff = recon.reduce((s, r) => s + Number(r.difference_amount), 0);
+      toast.success(`Caixa fechado. Diferença total: ${money(totalDiff)}`);
+      setLastClose(recon);
+      setDeclared({}); setCloseNotes("");
       qc.invalidateQueries({ queryKey: ["current-session"] });
       qc.invalidateQueries({ queryKey: ["cash-movements"] });
     },
@@ -93,21 +107,46 @@ function CaixaPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Summary by payment method
-  const summary = (movements ?? []).reduce<Record<string, number>>((acc, m: any) => {
+  // Registrado por forma de pagamento nesta sessão (vendas - estornos), igual à conta que
+  // close_cash_session faz no banco — serve só de prévia antes de fechar de verdade.
+  const registeredByMethod = (movements ?? []).reduce<Record<string, number>>((acc, m: any) => {
     if (m.type === "sale") acc[m.payment_method || "other"] = (acc[m.payment_method || "other"] || 0) + Number(m.amount);
+    if (m.type === "refund") acc[m.payment_method || "other"] = (acc[m.payment_method || "other"] || 0) - Number(m.amount);
     return acc;
   }, {});
   const totalIn = (movements ?? []).filter((m: any) => m.type === "cash_in").reduce((s: number, m: any) => s + Number(m.amount), 0);
   const totalOut = (movements ?? []).filter((m: any) => m.type === "cash_out").reduce((s: number, m: any) => s + Number(m.amount), 0);
-  const expectedCash = session ? Number(session.opening_amount) + (summary.cash || 0) + totalIn - totalOut : 0;
+  const expectedCash = session ? Number(session.opening_amount) + (registeredByMethod.cash || 0) + totalIn - totalOut : 0;
+  const registeredForClose: Record<string, number> = { ...registeredByMethod, cash: expectedCash };
+  const methodsToClose = Array.from(new Set(["cash", ...Object.keys(registeredByMethod)]));
 
   return (
     <div>
       <PageHeader title="Caixa" description="Abertura, movimentações e fechamento." />
 
       {!session ? (
-        <Card className="p-5 space-y-3 max-w-lg">
+        <div className="space-y-4 max-w-lg">
+          {lastClose && (
+            <Card className="p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm">Conferência do último fechamento</h3>
+                <Button variant="ghost" size="sm" onClick={() => setLastClose(null)}>fechar</Button>
+              </div>
+              <div className="space-y-1 text-sm">
+                {lastClose.map((r) => (
+                  <div key={r.payment_method} className="grid grid-cols-4 gap-2">
+                    <span>{PAYMENT_LABELS[r.payment_method] || r.payment_method}</span>
+                    <span className="text-right text-muted-foreground">{money(r.registered_amount)}</span>
+                    <span className="text-right">{money(r.declared_amount)}</span>
+                    <b className={`text-right ${Number(r.difference_amount) !== 0 ? "text-amber-600" : "text-emerald-600"}`}>
+                      {money(r.difference_amount)}
+                    </b>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+          <Card className="p-5 space-y-3">
           <h2 className="font-semibold">Abrir caixa</h2>
           <div>
             <Label>Local</Label>
@@ -119,7 +158,8 @@ function CaixaPage() {
           <div><Label>Valor inicial (R$)</Label><Input type="number" step="0.01" value={opening} onChange={(e) => setOpening(e.target.value)} /></div>
           <div><Label>Observação</Label><Textarea value={openNotes} onChange={(e) => setOpenNotes(e.target.value)} /></div>
           <Button onClick={() => openMut.mutate()} disabled={openMut.isPending}>Abrir caixa</Button>
-        </Card>
+          </Card>
+        </div>
       ) : (
         <div className="space-y-4">
           <Card className="p-4 flex items-center gap-4 flex-wrap">
@@ -151,12 +191,45 @@ function CaixaPage() {
 
             <Card className="p-4 space-y-3">
               <h3 className="font-semibold">Fechar caixa</h3>
-              <div><Label>Valor contado em dinheiro</Label><Input type="number" step="0.01" value={counted} onChange={(e) => setCounted(e.target.value)} /></div>
-              <div className="text-sm space-y-1">
-                {Object.entries(summary).map(([m, v]) => <div key={m} className="flex justify-between"><span>{PAYMENT_LABELS[m] || m}</span><b>{money(v)}</b></div>)}
-                <div className="flex justify-between"><span>Suprimentos</span><b>{money(totalIn)}</b></div>
-                <div className="flex justify-between"><span>Sangrias</span><b>-{money(totalOut)}</b></div>
-                <div className="flex justify-between border-t pt-1"><span>Dinheiro esperado</span><b>{money(expectedCash)}</b></div>
+              <p className="text-xs text-muted-foreground">
+                Confira e informe o valor de cada forma de pagamento. Deixe em branco pra assumir
+                que bateu certinho com o registrado.
+              </p>
+              <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-2 text-xs font-medium text-muted-foreground px-1">
+                  <span>Forma</span><span className="text-right">Registrado</span><span className="text-right">Informado</span>
+                </div>
+                {methodsToClose.map((m) => {
+                  const registered = registeredForClose[m] ?? 0;
+                  const declaredValue = declared[m] ?? "";
+                  const declaredNum = declaredValue === "" ? registered : Number(declaredValue);
+                  const diff = declaredNum - registered;
+                  return (
+                    <div key={m} className="grid grid-cols-3 gap-2 items-center">
+                      <span className="text-sm">{PAYMENT_LABELS[m] || m}</span>
+                      <span className="text-sm text-right">{money(registered)}</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder={registered.toFixed(2)}
+                        value={declaredValue}
+                        onChange={(e) => setDeclared((d) => ({ ...d, [m]: e.target.value }))}
+                        className={diff !== 0 ? "border-amber-400 text-right" : "text-right"}
+                      />
+                      {diff !== 0 && (
+                        <div className="col-span-3 text-right text-xs text-amber-600">
+                          diferença: {money(diff)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t">
+                  <span>Suprimentos</span><b>{money(totalIn)}</b>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Sangrias</span><b>-{money(totalOut)}</b>
+                </div>
               </div>
               <div><Label>Observação</Label><Textarea value={closeNotes} onChange={(e) => setCloseNotes(e.target.value)} /></div>
               <Button variant="destructive" onClick={() => closeMut.mutate()} disabled={closeMut.isPending}>Fechar caixa</Button>

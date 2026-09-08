@@ -175,6 +175,7 @@ export type Database = {
           opening_amount: number
           opening_notes: string | null
           organization_id: string
+          payment_reconciliation: Json | null
           status: string
           updated_at: string
         }
@@ -193,6 +194,7 @@ export type Database = {
           opening_amount?: number
           opening_notes?: string | null
           organization_id: string
+          payment_reconciliation?: Json | null
           status?: string
           updated_at?: string
         }
@@ -211,6 +213,7 @@ export type Database = {
           opening_amount?: number
           opening_notes?: string | null
           organization_id?: string
+          payment_reconciliation?: Json | null
           status?: string
           updated_at?: string
         }
@@ -4571,7 +4574,7 @@ export type Database = {
         }
       }
       close_cash_session: {
-        Args: { _counted_amount: number; _notes?: string; _session_id: string }
+        Args: { _declared: Json; _notes?: string; _session_id: string }
         Returns: Json
       }
       complete_exchange: { Args: { _payload: Json }; Returns: Json }
