@@ -72,17 +72,18 @@ export function DeliveryOutcomeDialog({
           if (receivedNumber < amountToCollect && Math.abs(receivedNumber - amountToCollect) > 0.01) {
             throw new Error(`O valor recebido não pode ser menor que ${money(amountToCollect)}.`);
           }
-          const { error } = await supabase.rpc("mark_shipment_delivered_with_payment" as any, {
-            _shipment_id: shipmentId, _payment_method: paymentMethod, _amount: receivedNumber,
-            _notes: notes.trim() || null,
-          });
-          if (error) throw error;
-        } else {
-          const { error } = await supabase.rpc("mark_shipment_delivered", {
-            _shipment_id: shipmentId, _notes: notes.trim() || null as any,
-          });
-          if (error) throw error;
         }
+        // Todas as conclusões passam pela RPC financeira. Mesmo que o snapshot
+        // da tela esteja desatualizado, o banco recalcula o saldo real e impede
+        // uma entrega sem registrar o recebimento devido.
+        const { data, error } = await supabase.rpc("mark_shipment_delivered_with_payment" as any, {
+          _shipment_id: shipmentId,
+          _payment_method: requiresPayment ? paymentMethod : null,
+          _amount: requiresPayment ? receivedNumber : null,
+          _notes: notes.trim() || null,
+        });
+        if (error) throw error;
+        return data as { payment_recorded?: boolean } | null;
       } else if (kind === "absent") {
         const { error } = await supabase.rpc("mark_shipment_absent", {
           _shipment_id: shipmentId, _notes: notes.trim(),
@@ -106,8 +107,8 @@ export function DeliveryOutcomeDialog({
         if (error) throw error;
       }
     },
-    onSuccess: () => {
-      toast.success(requiresPayment ? "Entrega e pagamento registrados." : "Ação registrada.");
+    onSuccess: (result) => {
+      toast.success(result?.payment_recorded ? "Entrega e pagamento registrados." : "Ação registrada.");
       qc.invalidateQueries();
       onOpenChange(false);
       setNotes(""); setNewDate(""); setAmountReceived("");
