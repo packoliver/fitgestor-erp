@@ -513,10 +513,14 @@ export function ProductForm({
       }
       for (const oldId of existing) {
         if (!kept.has(oldId)) {
-          await supabase
+          const { error } = await supabase
             .from("product_variants")
             .update({ deleted_at: new Date().toISOString() })
             .eq("id", oldId);
+          // O erro era ignorado antes — se o banco bloqueasse a remoção (ex.:
+          // variação ainda com estoque), o formulário dizia "salvo com
+          // sucesso" mesmo sem remover nada, sem avisar o motivo.
+          if (error) throw error;
         }
       }
 
