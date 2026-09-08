@@ -100,9 +100,11 @@ function VendaDetalhe() {
 
   const cancelSale = useMutation({
     mutationFn: async () => {
+      const reason = cancelReason.trim();
+      if (reason.length < 3) throw new Error("Informe o motivo do estorno.");
       const { data, error } = await supabase.rpc("cancel_sale", {
         _sale_id: id,
-        _reason: cancelReason.trim() || undefined,
+        _reason: reason,
       });
       if (error) throw error;
       return data;
@@ -289,13 +291,13 @@ function VendaDetalhe() {
           <AlertDialogHeader>
             <AlertDialogTitle>Estornar venda #{sale.sale_number}?</AlertDialogTitle>
             <AlertDialogDescription>
-              O estoque de cada item volta ao saldo, os pagamentos são marcados como estornados e a venda
-              passa a contar como estornada nos relatórios. O dinheiro/cartão em si precisa ser devolvido
-              ao cliente manualmente — isto aqui só ajusta os registros do sistema.
+              O estoque volta ao saldo, o caixa e os pagamentos são estornados e os valores consumidos de
+              crédito ou vale-troca são restaurados. A devolução real em dinheiro, Pix ou cartão ainda deve
+              ser realizada ao cliente no respectivo meio de pagamento.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1">
-            <label className="text-sm font-medium">Motivo (opcional)</label>
+            <label className="text-sm font-medium">Motivo *</label>
             <Textarea
               rows={3}
               value={cancelReason}
@@ -307,7 +309,7 @@ function VendaDetalhe() {
             <AlertDialogCancel disabled={cancelSale.isPending}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={cancelSale.isPending}
+              disabled={cancelSale.isPending || cancelReason.trim().length < 3}
               onClick={(e) => { e.preventDefault(); cancelSale.mutate(); }}
             >
               {cancelSale.isPending ? "Estornando…" : "Confirmar estorno"}
