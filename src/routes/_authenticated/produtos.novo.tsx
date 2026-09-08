@@ -1,9 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { ProductForm } from "@/components/product-form";
+import { RequirePermission } from "@/components/require-permission";
 
 export const Route = createFileRoute("/_authenticated/produtos/novo")({
-  component: NovoProduto,
+  component: () => (
+    <RequirePermission code="product.create">
+      <NovoProduto />
+    </RequirePermission>
+  ),
 });
 
 function NovoProduto() {

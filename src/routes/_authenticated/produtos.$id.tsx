@@ -5,9 +5,14 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { ProductForm } from "@/components/product-form";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { RequirePermission } from "@/components/require-permission";
 
 export const Route = createFileRoute("/_authenticated/produtos/$id")({
-  component: ProdutoDetalhe,
+  component: () => (
+    <RequirePermission code="product.view">
+      <ProdutoDetalhe />
+    </RequirePermission>
+  ),
 });
 
 function ProdutoDetalhe() {

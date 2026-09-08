@@ -8,12 +8,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientCreditPanel } from "@/components/client-credit-panel";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
+import { RequirePermission } from "@/components/require-permission";
 
 const search = z.object({ tab: z.enum(["dados", "credito"]).optional() });
 
 export const Route = createFileRoute("/_authenticated/clientes/$id")({
   validateSearch: (s) => search.parse(s),
-  component: ClienteDetalhe,
+  component: () => (
+    <RequirePermission anyOf={["client.manage", "pos.sell"]}>
+      <ClienteDetalhe />
+    </RequirePermission>
+  ),
 });
 
 function ClienteDetalhe() {

@@ -76,8 +76,19 @@ export function SimpleCrud({
   async function remove(r: any) {
     if (!confirm(`Excluir "${r.name}"?`)) return;
     const { error } = await supabase.from(table).delete().eq("id", r.id);
-    if (error) toast.error(error.message);
-    else { toast.success("Excluído"); qc.invalidateQueries({ queryKey: [table + "-list"] }); }
+    if (error) {
+      // 23503 = violação de chave estrangeira — o banco corretamente recusa
+      // apagar algo que produtos ainda referenciam, mas a mensagem crua do
+      // Postgres não ajuda ninguém na loja a entender o que fazer.
+      if (error.code === "23503") {
+        toast.error(`"${r.name}" está em uso por produtos cadastrados. Remova ou reatribua esses produtos antes de excluir.`);
+      } else {
+        toast.error(error.message);
+      }
+    } else {
+      toast.success("Excluído");
+      qc.invalidateQueries({ queryKey: [table + "-list"] });
+    }
   }
 
   return (

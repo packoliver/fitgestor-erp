@@ -14,9 +14,14 @@ import { currentOrgId, formatBRL } from "@/lib/erp";
 import { generateEAN13, generateSKU } from "@/lib/barcode-utils";
 import { toast } from "sonner";
 import { PrintLabelsDialog, LabelItem } from "@/components/print-labels-dialog";
+import { RequirePermission } from "@/components/require-permission";
 
 export const Route = createFileRoute("/_authenticated/produtos/")({
-  component: ProdutosList,
+  component: () => (
+    <RequirePermission code="product.view">
+      <ProdutosList />
+    </RequirePermission>
+  ),
 });
 
 function ProdutosList() {

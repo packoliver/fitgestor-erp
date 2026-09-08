@@ -13,13 +13,20 @@ import { Plus, Search, Trash2, Wallet } from "lucide-react";
 import { normalizeDigits, validCPF } from "@/lib/pos";
 import { CepAddressFields } from "@/components/cep-address-fields";
 import { toast } from "sonner";
+import { RequirePermission } from "@/components/require-permission";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export const Route = createFileRoute("/_authenticated/clientes/")({
-  component: ClientesPage,
+  component: () => (
+    <RequirePermission anyOf={["client.manage", "pos.sell"]}>
+      <ClientesPage />
+    </RequirePermission>
+  ),
 });
 
 function ClientesPage() {
   const qc = useQueryClient();
+  const { has } = usePermissions();
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -90,8 +97,16 @@ function ClientesPage() {
 
   const softDelete = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("clients").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+      // .select() depois do update deixa explícito quando o RLS bloqueou a
+      // remoção (0 linhas afetadas, sem erro) — sem isso a tela dizia
+      // "cliente removido" mesmo quando nada mudou.
+      const { data, error } = await supabase
+        .from("clients")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .select("id");
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error("Você não tem permissão para remover clientes.");
     },
     onSuccess: () => { toast.success("Cliente removido"); qc.invalidateQueries({ queryKey: ["clients"] }); },
     onError: (e: Error) => toast.error(e.message),
@@ -167,9 +182,11 @@ function ClientesPage() {
                         <Wallet className="h-4 w-4" />
                       </Link>
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => { if (confirm("Remover cliente?")) softDelete.mutate(c.id); }}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {has("client.manage") && (
+                      <Button variant="ghost" size="icon" onClick={() => { if (confirm("Remover cliente?")) softDelete.mutate(c.id); }}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
