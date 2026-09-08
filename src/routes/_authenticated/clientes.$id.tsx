@@ -1,14 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ClientCreditPanel } from "@/components/client-credit-panel";
-import { ArrowLeft } from "lucide-react";
+import { ClientFormFields, type ClientFormValue } from "@/components/client-form-fields";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { z } from "zod";
+import { toast } from "sonner";
+import { normalizeDigits, validCPF } from "@/lib/pos";
 import { RequirePermission } from "@/components/require-permission";
+import { usePermissions } from "@/hooks/use-permissions";
 
 const search = z.object({ tab: z.enum(["dados", "credito"]).optional() });
 
@@ -21,10 +27,36 @@ export const Route = createFileRoute("/_authenticated/clientes/$id")({
   ),
 });
 
+function clientToForm(client: any): ClientFormValue {
+  return {
+    full_name: client.full_name ?? "",
+    cpf: client.cpf ?? "",
+    phone: client.phone ?? "",
+    email: client.email ?? "",
+    birth_date: client.birth_date ?? "",
+    instagram: client.instagram ?? "",
+    zip_code: client.zip_code ?? "",
+    address: client.address ?? "",
+    address_number: client.address_number ?? "",
+    address_complement: client.address_complement ?? "",
+    neighborhood: client.neighborhood ?? "",
+    city: client.city ?? "",
+    state: client.state ?? "",
+    notes: client.notes ?? "",
+    latitude: client.latitude ?? null,
+    longitude: client.longitude ?? null,
+    place_id: client.place_id ?? "",
+  };
+}
+
 function ClienteDetalhe() {
   const { id } = Route.useParams();
   const { tab = "dados" } = Route.useSearch();
   const navigate = Route.useNavigate();
+  const qc = useQueryClient();
+  const { has } = usePermissions();
+  const [editOpen, setEditOpen] = useState(false);
+  const [form, setForm] = useState<ClientFormValue | null>(null);
 
   const { data: client, isLoading } = useQuery({
     queryKey: ["client", id],
@@ -32,8 +64,63 @@ function ClienteDetalhe() {
       (await supabase.from("clients").select("*").eq("id", id).is("deleted_at", null).maybeSingle()).data,
   });
 
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!form) return;
+      if (!form.full_name.trim()) throw new Error("Informe o nome do cliente.");
+      const cpf = normalizeDigits(form.cpf);
+      if (cpf && !validCPF(cpf)) throw new Error("CPF inválido.");
+      const { data, error } = await supabase
+        .from("clients")
+        .update({
+          full_name: form.full_name.trim(),
+          cpf: cpf || null,
+          phone: normalizeDigits(form.phone) || null,
+          email: form.email.trim() || null,
+          birth_date: form.birth_date || null,
+          instagram: form.instagram.trim() || null,
+          zip_code: form.zip_code.trim() || null,
+          address: form.address.trim() || null,
+          address_number: form.address_number.trim() || null,
+          address_complement: form.address_complement.trim() || null,
+          neighborhood: form.neighborhood.trim() || null,
+          city: form.city.trim() || null,
+          state: form.state.trim().toUpperCase() || null,
+          notes: form.notes.trim() || null,
+          latitude: form.latitude,
+          longitude: form.longitude,
+          place_id: form.place_id || null,
+        })
+        .eq("id", id)
+        .select("id");
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("Você não tem permissão para editar clientes.");
+    },
+    onSuccess: () => {
+      toast.success("Cliente atualizado");
+      setEditOpen(false);
+      qc.invalidateQueries({ queryKey: ["client", id] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function openEdit() {
+    if (!client) return;
+    setForm(clientToForm(client));
+    setEditOpen(true);
+  }
+
   if (isLoading) return <div>Carregando…</div>;
   if (!client) return <div className="p-6">Cliente não encontrado.</div>;
+
+  const enderecoCompleto = [
+    client.address && `${client.address}${client.address_number ? `, ${client.address_number}` : ""}`,
+    client.address_complement,
+    client.neighborhood,
+    client.city && client.state ? `${client.city}/${client.state}` : client.city,
+    client.zip_code,
+  ].filter(Boolean).join(" · ");
 
   return (
     <div>
@@ -41,7 +128,14 @@ function ClienteDetalhe() {
         title={client.full_name}
         description={[client.cpf, client.phone, client.email].filter(Boolean).join(" · ") || "Cliente"}
         actions={
-          <Button asChild variant="outline"><Link to="/clientes"><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Link></Button>
+          <div className="flex gap-2">
+            {has("client.manage") && (
+              <Button variant="outline" onClick={openEdit}>
+                <Pencil className="mr-2 h-4 w-4" />Editar
+              </Button>
+            )}
+            <Button asChild variant="outline"><Link to="/clientes"><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Link></Button>
+          </div>
         }
       />
 
@@ -57,6 +151,10 @@ function ClienteDetalhe() {
             <Row k="CPF" v={client.cpf ?? "—"} />
             <Row k="Telefone" v={client.phone ?? "—"} />
             <Row k="E-mail" v={client.email ?? "—"} />
+            <Row k="Data de nascimento" v={client.birth_date ? new Date(client.birth_date + "T00:00:00").toLocaleDateString("pt-BR") : "—"} />
+            <Row k="Instagram" v={client.instagram ?? "—"} />
+            <Row k="Endereço" v={enderecoCompleto || "—"} />
+            <Row k="Observações" v={client.notes ?? "—"} />
           </Card>
         </TabsContent>
 
@@ -64,15 +162,28 @@ function ClienteDetalhe() {
           <ClientCreditPanel clientId={id} />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={editOpen} onOpenChange={(v) => !v && setEditOpen(false)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar cliente</DialogTitle></DialogHeader>
+          {form && (
+            <ClientFormFields value={form} onChange={(patch) => setForm((current) => current && { ...current, ...patch })} />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+            <Button onClick={() => save.mutate()} disabled={save.isPending}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 function Row({ k, v }: { k: string; v: React.ReactNode }) {
   return (
-    <div className="flex justify-between border-b py-1.5 last:border-0">
-      <span className="text-muted-foreground">{k}</span>
-      <b>{v}</b>
+    <div className="flex justify-between gap-4 border-b py-1.5 last:border-0">
+      <span className="text-muted-foreground shrink-0">{k}</span>
+      <b className="text-right">{v}</b>
     </div>
   );
 }

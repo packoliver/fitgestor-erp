@@ -6,12 +6,11 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { useState } from "react";
 import { Plus, Search, Trash2, Wallet } from "lucide-react";
 import { normalizeDigits, validCPF } from "@/lib/pos";
-import { CepAddressFields } from "@/components/cep-address-fields";
+import { ClientFormFields, EMPTY_CLIENT_FORM, type ClientFormValue } from "@/components/client-form-fields";
 import { toast } from "sonner";
 import { RequirePermission } from "@/components/require-permission";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -29,12 +28,7 @@ function ClientesPage() {
   const { has } = usePermissions();
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    full_name: "", cpf: "", phone: "", email: "",
-    zip_code: "", address: "", address_number: "", address_complement: "",
-    neighborhood: "", city: "", state: "",
-    latitude: null as number | null, longitude: null as number | null, place_id: "",
-  });
+  const [form, setForm] = useState<ClientFormValue>(EMPTY_CLIENT_FORM);
 
   const { data, isLoading } = useQuery({
     queryKey: ["clients", term],
@@ -68,6 +62,8 @@ function ClientesPage() {
         cpf: cpf || null,
         phone: normalizeDigits(form.phone) || null,
         email: form.email.trim() || null,
+        birth_date: form.birth_date || null,
+        instagram: form.instagram.trim() || null,
         zip_code: form.zip_code.trim() || null,
         address: form.address.trim() || null,
         address_number: form.address_number.trim() || null,
@@ -75,6 +71,7 @@ function ClientesPage() {
         neighborhood: form.neighborhood.trim() || null,
         city: form.city.trim() || null,
         state: form.state.trim().toUpperCase() || null,
+        notes: form.notes.trim() || null,
         latitude: form.latitude,
         longitude: form.longitude,
         place_id: form.place_id || null,
@@ -84,12 +81,7 @@ function ClientesPage() {
     onSuccess: () => {
       toast.success("Cliente cadastrado");
       setOpen(false);
-      setForm({
-        full_name: "", cpf: "", phone: "", email: "",
-        zip_code: "", address: "", address_number: "", address_complement: "",
-        neighborhood: "", city: "", state: "",
-        latitude: null, longitude: null, place_id: "",
-      });
+      setForm(EMPTY_CLIENT_FORM);
       qc.invalidateQueries({ queryKey: ["clients"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -122,30 +114,7 @@ function ClientesPage() {
             <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />Novo cliente</Button></DialogTrigger>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Novo cliente</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <div><Label>Nome completo *</Label><Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>CPF</Label><Input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} placeholder="opcional" /></div>
-                  <div><Label>Telefone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-                </div>
-                <div><Label>E-mail</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-
-                <div className="border-t pt-2">
-                  <CepAddressFields
-                    value={form}
-                    onChange={(patch) => setForm((current) => ({
-                      ...current,
-                      ...patch,
-                      latitude: null,
-                      longitude: null,
-                      place_id: "",
-                    }))}
-                  />
-                </div>
-                {form.latitude != null && form.longitude != null && (
-                  <p className="text-xs text-muted-foreground">📍 Localização salva: {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}</p>
-                )}
-              </div>
+              <ClientFormFields value={form} onChange={(patch) => setForm((current) => ({ ...current, ...patch }))} />
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
                 <Button onClick={() => create.mutate()} disabled={create.isPending}>Salvar</Button>
