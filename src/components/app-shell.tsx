@@ -84,6 +84,10 @@ function money(v: number): string {
   return (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function routeMatches(pathname: string, url: string): boolean {
+  return pathname === url || pathname.startsWith(`${url}/`);
+}
+
 /* Hide "Minhas rotas" from admins/employees — it belongs to the courier
    workspace. We keep the backend RLS check untouched; this is UX-only. */
 function applyCourierFilter(items: NavItem[], has: (c: string) => boolean) {
@@ -156,7 +160,6 @@ function AppSidebar({
   const { state, setOpenMobile, isMobile, setOpen } = useSidebar();
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (r) => r.location.pathname });
-  const isActive = (url: string) => pathname === url || pathname.startsWith(url + "/");
   const { has, hasAny, isLoading } = usePermissions();
   const badges = useNavBadges(hasAny, isLoading);
 
@@ -185,10 +188,18 @@ function AppSidebar({
 
   const groups = itemsByGroup(visible);
 
-  const activeGroup: NavGroup | null = useMemo(() => {
-    const active = permitted.find((i) => isActive(i.url));
-    return active?.group ?? null;
-  }, [permitted, pathname]);
+  // Rotas pais também combinam com suas filhas (ex.: /estoque combina com
+  // /estoque/recebimento-rapido). Escolher a correspondência mais específica
+  // evita destacar dois módulos ao mesmo tempo.
+  const activeItem = useMemo(
+    () => permitted.reduce<NavItem | null>((best, item) => {
+      if (!routeMatches(pathname, item.url)) return best;
+      return !best || item.url.length > best.url.length ? item : best;
+    }, null),
+    [permitted, pathname],
+  );
+
+  const activeGroup: NavGroup | null = activeItem?.group ?? null;
 
   // Sync selected group with the current active route.
   useEffect(() => {
@@ -207,7 +218,7 @@ function AppSidebar({
   const initials = userEmail ? userEmail.slice(0, 2).toUpperCase() : "FG";
 
   const renderItem = (item: NavItem) => {
-    const active = isActive(item.url);
+    const active = item.id === activeItem?.id;
     const badge = badges[item.id] ?? 0;
     return (
       <SidebarMenuItem key={item.id}>
@@ -215,15 +226,15 @@ function AppSidebar({
           asChild
           isActive={active}
           tooltip={item.description ? `${item.title} — ${item.description}` : item.title}
-          className={`h-10 rounded-xl text-xs transition-colors px-3 ${
+          className={`h-auto min-h-11 rounded-xl px-3 py-2.5 text-xs transition-colors sm:h-10 sm:min-h-0 sm:py-0 ${
             active
-              ? "bg-blue-600 text-white font-semibold shadow-sm"
+              ? "!bg-blue-600 !text-white font-semibold shadow-sm"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium"
           }`}
         >
           <Link to={item.url} onClick={handleNav} className="flex items-center gap-2.5">
             <item.icon className={`h-4 w-4 shrink-0 ${active ? "text-white" : "text-slate-400"}`} />
-            <span className="truncate flex-1">{item.title}</span>
+            <span className="min-w-0 flex-1 whitespace-normal leading-tight sm:truncate">{item.title}</span>
             {!collapsed && badge > 0 && (
               <span
                 aria-label={`${badge} pendente${badge === 1 ? "" : "s"}`}
@@ -349,7 +360,7 @@ function AppSidebar({
             {/* Rail de grupos (coluna 1) */}
             <nav
               aria-label="Categorias"
-              className="flex w-[96px] shrink-0 flex-col gap-1 border-r border-slate-200/80 bg-slate-50/60 px-2 py-3 overflow-y-auto"
+              className="flex w-[84px] shrink-0 flex-col gap-1 overflow-y-auto border-r border-slate-200/80 bg-slate-50/60 px-1.5 py-3 sm:w-[96px] sm:px-2"
             >
               {NAV_GROUPS.map((g) => {
                 const Meta = NAV_GROUP_META[g];
