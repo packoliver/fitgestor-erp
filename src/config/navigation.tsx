@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Package, Boxes, ArrowDownToLine, ClipboardList, Tag,
   Users, ShieldCheck, Truck, FolderTree, Sparkles, Settings, ScrollText,
   ShoppingCart, Wallet, Receipt, UserSquare2, RefreshCw, Ticket, PiggyBank, FileBarChart,
-  MapPin, AlertTriangle, Rocket, MessageCircle, Home, Briefcase, Trophy, Upload,
+  MapPin, AlertTriangle, Rocket, MessageCircle, Home, Briefcase, Trophy, Upload, Landmark,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -183,6 +183,10 @@ export const NAV_ITEMS: NavItem[] = [
     keywords: ["auditoria","log","registro","historico"] },
 
   // ── Relatórios ────────────────────────────────────────────
+  { id: "financeiro-receber", title: "Contas a receber", url: "/financeiro/contas-a-receber", icon: Landmark,
+    perm: "finance.manage_receivables", group: "Relatórios", workspaces: ["admin"], priority: 110,
+    description: "Parcelas de cartão a receber das adquirentes.",
+    keywords: ["financeiro","receber","cartao","parcela","adquirente","conciliacao"] },
   { id: "rel-mais-vendidos", title: "Produtos mais vendidos", url: "/relatorios/mais-vendidos", icon: Trophy,
     perm: "report.view", group: "Relatórios", workspaces: ["admin"], priority: 100,
     description: "Ranking dos produtos que mais saem da loja.",

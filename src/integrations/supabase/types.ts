@@ -102,6 +102,94 @@ export type Database = {
           },
         ]
       }
+      card_receivables: {
+        Row: {
+          card_brand: string | null
+          created_at: string
+          due_date: string
+          fee_amount: number
+          gross_amount: number
+          id: string
+          installment_number: number
+          installments_total: number
+          net_amount: number
+          notes: string | null
+          organization_id: string
+          payment_method: string
+          received_at: string | null
+          received_by: string | null
+          reconciliation_reference: string | null
+          sale_id: string
+          sale_payment_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          card_brand?: string | null
+          created_at?: string
+          due_date: string
+          fee_amount?: number
+          gross_amount: number
+          id?: string
+          installment_number: number
+          installments_total: number
+          net_amount: number
+          notes?: string | null
+          organization_id: string
+          payment_method: string
+          received_at?: string | null
+          received_by?: string | null
+          reconciliation_reference?: string | null
+          sale_id: string
+          sale_payment_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          card_brand?: string | null
+          created_at?: string
+          due_date?: string
+          fee_amount?: number
+          gross_amount?: number
+          id?: string
+          installment_number?: number
+          installments_total?: number
+          net_amount?: number
+          notes?: string | null
+          organization_id?: string
+          payment_method?: string
+          received_at?: string | null
+          received_by?: string | null
+          reconciliation_reference?: string | null
+          sale_id?: string
+          sale_payment_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_receivables_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_receivables_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_receivables_sale_payment_id_fkey"
+            columns: ["sale_payment_id"]
+            isOneToOne: false
+            referencedRelation: "sale_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_movements: {
         Row: {
           amount: number
@@ -4766,6 +4854,10 @@ export type Database = {
           seller: string
           total: number
         }[]
+      }
+      mark_card_receivable_received: {
+        Args: { _receivable_id: string; _reference?: string }
+        Returns: Json
       }
       mark_shipment_absent: {
         Args: { _notes: string; _shipment_id: string }
