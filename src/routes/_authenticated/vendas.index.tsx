@@ -28,7 +28,7 @@ type Row = {
   shipments: { status: string }[] | null;
 };
 
-const SALE_STATUS_LABEL: Record<string, string> = {
+export const SALE_STATUS_LABEL: Record<string, string> = {
   completed: "Concluída",
   draft: "Em aberto",
   pending: "Em aberto",
@@ -37,7 +37,7 @@ const SALE_STATUS_LABEL: Record<string, string> = {
   cancelled: "Cancelada",
 };
 
-const SALE_STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+export const SALE_STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   completed: "default",
   draft: "secondary",
   pending: "secondary",
