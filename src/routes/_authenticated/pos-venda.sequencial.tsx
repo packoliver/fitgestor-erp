@@ -66,7 +66,7 @@ function SequentialSender() {
     setEditing(false);
   };
 
-  const doRpc = (fn: string) => useMutation({
+  const useDoRpc = (fn: string) => useMutation({
     mutationFn: async () => {
       if (!current) return;
       const { error } = await supabase.rpc(fn as any, { _task_id: current.id } as any);
@@ -76,10 +76,10 @@ function SequentialSender() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const markSent = doRpc("post_sale_mark_sent");
-  const skip = doRpc("post_sale_skip");
-  const invalidPhone = doRpc("post_sale_mark_invalid_phone");
-  const optOut = doRpc("post_sale_opt_out_client");
+  const markSent = useDoRpc("post_sale_mark_sent");
+  const skip = useDoRpc("post_sale_skip");
+  const invalidPhone = useDoRpc("post_sale_mark_invalid_phone");
+  const optOut = useDoRpc("post_sale_opt_out_client");
 
   const saveEdit = useMutation({
     mutationFn: async () => {

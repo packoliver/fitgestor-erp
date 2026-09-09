@@ -76,7 +76,7 @@ const SELLER_KEY = "pdv_last_seller";
 function normalizeText(text: string) {
   return text.normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[\/:\-\(\)\[\]{}|,;.+*#@!?=]/g, " ")
+    .replace(/[/:\-()[\]{}|,;.+*#@!?=]/g, " ")
     .toLowerCase().trim();
 }
 function extractTokens(text: string) {
@@ -1651,7 +1651,9 @@ function VendasPdvPage() {
     setSellerRole(user.role);
     try {
       localStorage.setItem(SELLER_KEY, JSON.stringify({ id: user.id, name: user.name, role: user.role }));
-    } catch {}
+    } catch {
+      // Armazenamento local indisponível; segue sem persistir o vendedor.
+    }
   }
 
   // ── Mode & Settings ───────────────────────────────────────────────────────
@@ -1761,7 +1763,7 @@ function VendasPdvPage() {
 
   useEffect(() => {
     // Remove o turno de demonstração que versões anteriores gravavam no navegador.
-    try { localStorage.removeItem("pdv_current_shift"); } catch {}
+    try { localStorage.removeItem("pdv_current_shift"); } catch { /* melhor esforço */ }
 
     setCurrentShift({
       status: session ? "open" : "closed",
@@ -2954,7 +2956,7 @@ function VendasPdvPage() {
                 checked={requireCpfOnSale}
                 onCheckedChange={(val) => {
                   setRequireCpfOnSale(val);
-                  try { localStorage.setItem("pdv_require_cpf_on_sale", String(val)); } catch {}
+                  try { localStorage.setItem("pdv_require_cpf_on_sale", String(val)); } catch { /* melhor esforço */ }
                   toast.success(val ? "Exigência de CPF ATIVADA!" : "Exigência de CPF desativada.");
                 }}
               />

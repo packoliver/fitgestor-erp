@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Zap } from "lucide-react";
+import { ArrowRight, Download, Loader2, Zap } from "lucide-react";
+import { toast } from "sonner";
 import { StockLaunchDialog } from "@/components/stock-launch-dialog";
 
 export const Route = createFileRoute("/_authenticated/estoque/")({
@@ -46,6 +47,7 @@ function EstoquePage() {
   const [locationId, setLocationId] = useState("all");
   const [categoryId, setCategoryId] = useState("all");
   const [filter, setFilter] = useState<StockFilter>("all");
+  const [exporting, setExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["stock-overview"],
@@ -115,6 +117,10 @@ function EstoquePage() {
             </Button>
             <Button asChild variant="outline"><Link to="/estoque/movimentacoes"><ArrowRight className="mr-2 h-4 w-4" />Movimentações</Link></Button>
             <Button asChild variant="outline"><Link to="/estoque/inventario">Inventário</Link></Button>
+            <Button variant="outline" disabled={exporting} onClick={() => exportCatalogCsv(setExporting)}>
+              {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              Exportar catálogo (CSV)
+            </Button>
             <StockLaunchDialog />
           </>
         }
@@ -212,4 +218,111 @@ function EstoquePage() {
       </Card>
     </div>
   );
+}
+
+type CatalogExportRow = {
+  id: string;
+  size: string | null;
+  color: string | null;
+  sku: string | null;
+  barcode: string | null;
+  cost_price: number | null;
+  sale_price: number | null;
+  promotional_price: number | null;
+  status: string | null;
+  olist_variant_id: string | null;
+  shopify_variant_id: string | null;
+  product: {
+    name: string;
+    status: string | null;
+    olist_product_id: string | null;
+    shopify_product_id: string | null;
+    category: { name: string } | null;
+    brand: { name: string } | null;
+    supplier: { name: string } | null;
+  } | null;
+  balances: { physical_quantity: number; location: { name: string } | null }[] | null;
+};
+
+// Exportação completa do catálogo + estoque, pedida para conferência e backup
+// fora do sistema. Não usa o teto de 1000 da tela: pagina até trazer tudo,
+// direto de product_variants (não de inventory_balances) para que peças com
+// saldo zero — que nem sempre têm linha na tabela de saldo — apareçam também.
+async function exportCatalogCsv(setExporting: (v: boolean) => void) {
+  setExporting(true);
+  try {
+    const pageSize = 1000;
+    let offset = 0;
+    const all: CatalogExportRow[] = [];
+    for (;;) {
+      const { data, error } = await supabase
+        .from("product_variants")
+        .select(`
+          id, size, color, sku, barcode, cost_price, sale_price, promotional_price, status,
+          olist_variant_id, shopify_variant_id,
+          product:products(
+            name, status, olist_product_id, shopify_product_id,
+            category:categories(name), brand:brands(name), supplier:suppliers(name)
+          ),
+          balances:inventory_balances(physical_quantity, location:stock_locations(name))
+        `)
+        .is("deleted_at", null)
+        .order("id")
+        .range(offset, offset + pageSize - 1);
+      if (error) throw error;
+      const page = (data ?? []) as unknown as CatalogExportRow[];
+      all.push(...page);
+      if (page.length < pageSize) break;
+      offset += pageSize;
+    }
+
+    const fmtMoney = (v: number | null) => (v === null || v === undefined ? "" : Number(v).toFixed(2).replace(".", ","));
+    const headers = [
+      "Produto", "Categoria", "Marca", "Fornecedor", "Tamanho", "Cor", "SKU", "Código de barras",
+      "Preço de custo", "Preço de venda", "Preço promocional",
+      "Estoque Loja Principal", "Estoque total (todos os locais)",
+      "Status do produto", "Status da variação", "ID Olist", "ID Shopify",
+    ];
+    const csvRows = all.map((v) => {
+      const balances = v.balances ?? [];
+      const lojaPrincipal = balances.find((b) => b.location?.name === "Loja Principal")?.physical_quantity ?? 0;
+      const total = balances.reduce((sum, b) => sum + (b.physical_quantity ?? 0), 0);
+      return [
+        v.product?.name ?? "",
+        v.product?.category?.name ?? "",
+        v.product?.brand?.name ?? "",
+        v.product?.supplier?.name ?? "",
+        v.size ?? "",
+        v.color ?? "",
+        v.sku ?? "",
+        v.barcode ?? "",
+        fmtMoney(v.cost_price),
+        fmtMoney(v.sale_price),
+        fmtMoney(v.promotional_price),
+        String(lojaPrincipal),
+        String(total),
+        v.product?.status ?? "",
+        v.status ?? "",
+        v.product?.olist_product_id ?? v.olist_variant_id ?? "",
+        v.product?.shopify_product_id ?? v.shopify_variant_id ?? "",
+      ];
+    });
+
+    const csv = [headers, ...csvRows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+      .join("\r\n");
+
+    const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `catalogo-estoque-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exportado: ${all.length} variação(ões).`);
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : "Falha ao exportar o catálogo.");
+  } finally {
+    setExporting(false);
+  }
 }

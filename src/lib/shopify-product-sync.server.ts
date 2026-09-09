@@ -214,7 +214,7 @@ export function createShopifyProductClient(
       `query FitGestorFindCollection($query: String!) {
       collections(first: 25, query: $query) { nodes { id title } }
     }`,
-      { query: `title:\"${escaped}\"` },
+      { query: `title:"${escaped}"` },
     );
     return data.collections.nodes.find(
       (collection: any) =>
@@ -330,7 +330,7 @@ export function createShopifyProductClient(
         const afterConflict = await findCollection(title);
         if (afterConflict) return { id: afterConflict.id, created: false };
         throw new Error(
-          `Coleção \"${title}\" não pôde ser criada na Shopify: ${errors[0]?.message ?? "resposta incompleta"}.`,
+          `Coleção "${title}" não pôde ser criada na Shopify: ${errors[0]?.message ?? "resposta incompleta"}.`,
         );
       }
       return { id: created.collectionCreate.collection.id, created: true };
@@ -612,14 +612,14 @@ export async function enqueueShopifyProductBySku(sku: string) {
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data?.product_id)
-    return { ok: false, message: `SKU \"${sku}\" não encontrado no FitGestor.` };
+    return { ok: false, message: `SKU "${sku}" não encontrado no FitGestor.` };
   await enqueueShopifyProduct(data.product_id, 0);
   const stats = await processShopifyProductSyncQueue(1, data.product_id);
   return {
     ok: stats.success === 1,
     message:
       stats.success === 1
-        ? `Produto do SKU \"${sku}\" sincronizado.`
+        ? `Produto do SKU "${sku}" sincronizado.`
         : stats.disabled
           ? "Sincronização Shopify desativada; alteração mantida na fila."
           : "Produto mantido na fila da Shopify.",

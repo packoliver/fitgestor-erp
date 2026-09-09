@@ -157,7 +157,7 @@ function normalizeText(text: string): string {
   return text
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")           // remove acentos
-    .replace(/[\/:\-\(\)\[\]{}|,;.+*#@!?=]/g, " ") // separadores → espaço
+    .replace(/[/:\-()[\]{}|,;.+*#@!?=]/g, " ") // separadores → espaço
     .toLowerCase()
     .trim();
 }

@@ -116,7 +116,9 @@ export const retryOlistWebhookEvent = createServerFn({ method: "POST" })
     try {
       const { processPendingOlistEventsQueue } = await import("@/lib/olist-sync.server");
       await processPendingOlistEventsQueue(10);
-    } catch {}
+    } catch {
+      // Melhor esforço: a fila segura cobre o reprocessamento se isto falhar.
+    }
     return { ok: true };
   });
 

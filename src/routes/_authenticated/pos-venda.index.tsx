@@ -148,7 +148,7 @@ function PosVendaFila() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const doRpc = (fn: string, extra: Record<string, unknown> = {}) => useMutation({
+  const useDoRpc = (fn: string, extra: Record<string, unknown> = {}) => useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.rpc(fn as any, { _task_id: id, ...extra } as any);
       if (error) throw error;
@@ -160,11 +160,11 @@ function PosVendaFila() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const markSent = doRpc("post_sale_mark_sent");
-  const skip = doRpc("post_sale_skip");
-  const cancel = doRpc("post_sale_cancel");
-  const invalidPhone = doRpc("post_sale_mark_invalid_phone");
-  const optOut = doRpc("post_sale_opt_out_client");
+  const markSent = useDoRpc("post_sale_mark_sent");
+  const skip = useDoRpc("post_sale_skip");
+  const cancel = useDoRpc("post_sale_cancel");
+  const invalidPhone = useDoRpc("post_sale_mark_invalid_phone");
+  const optOut = useDoRpc("post_sale_opt_out_client");
 
   const saveEdit = useMutation({
     mutationFn: async () => {

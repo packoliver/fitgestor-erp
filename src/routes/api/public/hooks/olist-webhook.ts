@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/public/hooks/olist-webhook")({
             const params = new URLSearchParams(raw);
             for (const [k, v] of params.entries()) payload[k] = v;
             if (payload.dados && typeof payload.dados === "string") {
-              try { payload.dados = JSON.parse(payload.dados); } catch {}
+              try { payload.dados = JSON.parse(payload.dados); } catch { /* mantém como string */ }
             }
           }
         } catch {

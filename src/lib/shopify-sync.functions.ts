@@ -259,6 +259,8 @@ export const retryShopifyEvent = createServerFn({ method: "POST" })
     try {
       const { processPendingShopifyEventsQueue } = await import("@/lib/shopify-sync.server");
       await processPendingShopifyEventsQueue(10);
-    } catch {}
+    } catch {
+      // Melhor esforço: a fila segura cobre o reprocessamento se isto falhar.
+    }
     return { ok: true };
   });

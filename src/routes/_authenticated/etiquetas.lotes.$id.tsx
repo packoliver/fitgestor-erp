@@ -25,17 +25,19 @@ import { formatDateTime, SIZE_SINGLE, SIZE_SINGLE_LABEL, formatBRL } from "@/lib
 import { usePermissions } from "@/hooks/use-permissions";
 import { generateLabelPdf, MAX_LABELS_PER_ATTEMPT, QSF_DEFAULT_TEMPLATE, DEFAULT_EXCHANGE_POLICY, type LabelPayload, type LabelTemplate } from "@/lib/label-pdf";
 
+function LabelBatchErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  const router = useRouter();
+  return (
+    <div className="p-6 space-y-3">
+      <div className="text-destructive">Erro ao carregar lote: {error.message}</div>
+      <Button size="sm" onClick={() => { router.invalidate(); reset(); }}>Tentar novamente</Button>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_authenticated/etiquetas/lotes/$id")({
   component: LabelBatchPage,
-  errorComponent: ({ error, reset }) => {
-    const router = useRouter();
-    return (
-      <div className="p-6 space-y-3">
-        <div className="text-destructive">Erro ao carregar lote: {error.message}</div>
-        <Button size="sm" onClick={() => { router.invalidate(); reset(); }}>Tentar novamente</Button>
-      </div>
-    );
-  },
+  errorComponent: LabelBatchErrorComponent,
   notFoundComponent: () => <div className="p-6">Lote não encontrado.</div>,
 });
 
