@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Loader2, Check } from "lucide-react";
+import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import {
+  notifyShopifyInventorySync,
+  runShopifyInventorySync,
+} from "@/lib/shopify-inventory-sync";
 
 export const Route = createFileRoute("/_authenticated/estoque/inventario")({
   component: InventarioPage,
@@ -19,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/estoque/inventario")({
 type Count = { variant_id: string; label: string; expected: number; counted: string; location_id: string };
 
 function InventarioPage() {
+  const syncShopifyInventory = useServerFn(pushInventoryVariantsToShopifyFn);
   const qc = useQueryClient();
   const [locationId, setLocationId] = useState<string | undefined>();
   const [search, setSearch] = useState("");
@@ -57,6 +64,7 @@ function InventarioPage() {
   const finalize = useMutation({
     mutationFn: async () => {
       if (counts.length === 0) throw new Error("Nenhum item contado");
+      const changedVariantIds: string[] = [];
       for (const c of counts) {
         const cnt = Number(c.counted);
         if (Number.isNaN(cnt)) throw new Error("Quantidade contada inválida");
@@ -72,10 +80,13 @@ function InventarioPage() {
           _source: "inventario",
         });
         if (error) throw error;
+        changedVariantIds.push(c.variant_id);
       }
+      return await runShopifyInventorySync(syncShopifyInventory, changedVariantIds);
     },
-    onSuccess: () => {
+    onSuccess: (shopifySync) => {
       toast.success("Inventário finalizado e ajustes gerados");
+      notifyShopifyInventorySync(shopifySync);
       qc.invalidateQueries();
       setCounts([]);
     },

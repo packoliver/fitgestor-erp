@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,11 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Plus } from "lucide-react";
+import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import {
+  notifyShopifyInventorySync,
+  runShopifyInventorySync,
+} from "@/lib/shopify-inventory-sync";
 
 type Kind = "entrada" | "saida" | "balanco";
 
@@ -37,6 +43,7 @@ export function StockLaunchDialog({
   trigger?: React.ReactNode;
   onDone?: () => void;
 }) {
+  const syncShopifyInventory = useServerFn(pushInventoryVariantsToShopifyFn);
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<Kind>("entrada");
@@ -169,7 +176,10 @@ export function StockLaunchDialog({
         }
       }
 
-      return { kind, delta };
+      const shopifySync = await runShopifyInventorySync(syncShopifyInventory, [
+        selectedVariantId,
+      ]);
+      return { kind, delta, shopifySync };
     },
     onSuccess: (res) => {
       if (res?.kind === "balanco") {
@@ -178,6 +188,7 @@ export function StockLaunchDialog({
       } else {
         toast.success("Lançamento registrado");
       }
+      notifyShopifyInventorySync(res.shopifySync);
       qc.invalidateQueries();
       reset();
       setOpen(false);

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
@@ -24,6 +25,11 @@ import {
 import { usePermissions } from "@/hooks/use-permissions";
 import { PostSaleDeliveryDialog } from "@/components/post-sale-delivery-dialog";
 import { CepAddressFields } from "@/components/cep-address-fields";
+import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import {
+  notifyShopifyInventorySync,
+  runShopifyInventorySync,
+} from "@/lib/shopify-inventory-sync";
 
 export const Route = createFileRoute("/_authenticated/pdv")({
   component: PdvPage,
@@ -272,6 +278,7 @@ function QuickExchangeDialog({
 }
 
 function PdvPage() {
+  const syncShopifyInventory = useServerFn(pushInventoryVariantsToShopifyFn);
   const perms = usePermissions();
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -642,7 +649,11 @@ function PdvPage() {
           .eq("id", activeHeldId).eq("status", "active");
         heldCloseFailed = !!heldError;
       }
-      return { ...(data as any), heldCloseFailed } as any;
+      const shopifySync = await runShopifyInventorySync(
+        syncShopifyInventory,
+        cart.map((line) => line.variant_id),
+      );
+      return { ...(data as any), heldCloseFailed, shopifySync } as any;
     },
     onSuccess: (data: any) => {
       toast.success(`Venda #${data.sale_number ?? ""} concluída.`);
@@ -651,6 +662,7 @@ function PdvPage() {
       setPostSale({ saleId: data.sale_id, saleNumber: data.sale_number ?? null, clientId });
       setStep("done");
       setSubmitting(false);
+      notifyShopifyInventorySync(data.shopifySync);
       qc.invalidateQueries({ queryKey: ["pdv-held-sales"] });
       if (data.heldCloseFailed) toast.warning("A venda foi concluída, mas permaneceu na lista de salvas. A repetição continuará protegida pelo mesmo identificador.");
     },

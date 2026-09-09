@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +13,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Info, X, Package, HelpCircle } from "lucide-react";
+import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import {
+  notifyShopifyInventorySync,
+  runShopifyInventorySync,
+} from "@/lib/shopify-inventory-sync";
 
 export const Route = createFileRoute("/_authenticated/estoque/entrada")({
   component: EntradaPage,
@@ -29,6 +35,7 @@ type LineItem = {
 const HELP_KEY = "estoque-entrada-help-hidden";
 
 function EntradaPage() {
+  const syncShopifyInventory = useServerFn(pushInventoryVariantsToShopifyFn);
   const qc = useQueryClient();
   const [supplierId, setSupplierId] = useState<string | undefined>();
   const [locationId, setLocationId] = useState<string | undefined>();
@@ -114,9 +121,14 @@ function EntradaPage() {
           await supabase.from("product_variants").update({ cost_price: Number(it.cost_price.replace(",", ".")) }).eq("id", it.variant_id);
         }
       }
+      return await runShopifyInventorySync(
+        syncShopifyInventory,
+        items.map((item) => item.variant_id),
+      );
     },
-    onSuccess: () => {
+    onSuccess: (shopifySync) => {
       toast.success("Entrada registrada");
+      notifyShopifyInventorySync(shopifySync);
       qc.invalidateQueries();
       setItems([]);
       setReference("");

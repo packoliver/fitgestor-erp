@@ -7,6 +7,7 @@ import {
   type ErpProductForShopify,
   type ErpVariantForShopify,
 } from "@/lib/shopify-product-payload";
+import type { ImmediateShopifySyncResult } from "@/lib/shopify-sync.types";
 
 export const SHOPIFY_PRODUCT_API_VERSION = "2026-07";
 const REQUIRED_SCOPES = ["write_products", "write_publications"] as const;
@@ -622,6 +623,85 @@ export async function enqueueShopifyProductBySku(sku: string) {
         : stats.disabled
           ? "Sincronização Shopify desativada; alteração mantida na fila."
           : "Produto mantido na fila da Shopify.",
+  };
+}
+
+/**
+ * Makes the durable queue the write-ahead log, then immediately processes only
+ * the products affected by the current operation. If Shopify is unavailable,
+ * every product is already persisted in the queue for the scheduled recovery.
+ */
+export async function syncProductIdsToShopifyNow(
+  productIds: string[],
+): Promise<ImmediateShopifySyncResult> {
+  const uniqueProductIds = [...new Set(productIds.filter((id) => UUID_RE.test(id)))];
+  if (uniqueProductIds.length === 0) {
+    return {
+      ok: true,
+      queued: false,
+      synced: true,
+      disabled: false,
+      requested: 0,
+      productIds: [],
+      errors: [],
+    };
+  }
+
+  const errors: string[] = [];
+  const queuedProductIds: string[] = [];
+  for (const productId of uniqueProductIds) {
+    try {
+      await enqueueShopifyProduct(productId, 0);
+      queuedProductIds.push(productId);
+    } catch (cause) {
+      errors.push(`${productId}: ${safeMessage(cause)}`);
+    }
+  }
+
+  const runtime = shopifyProductSyncStatus();
+  if (!runtime.enabled) {
+    return {
+      ok: errors.length === 0,
+      queued: queuedProductIds.length > 0,
+      synced: false,
+      disabled: true,
+      requested: uniqueProductIds.length,
+      productIds: uniqueProductIds,
+      errors,
+    };
+  }
+
+  // Interactive operations normally affect one product. For unusually large
+  // imports, persist every product but cap the synchronous work so the request
+  // cannot time out; the already-durable queue remains the recovery worker.
+  const immediateProductIds = queuedProductIds.slice(0, 100);
+  let synced = 0;
+  for (const productId of immediateProductIds) {
+    try {
+      const stats = await processShopifyProductSyncQueue(1, productId);
+      if (stats.success === 1) synced++;
+      else if (stats.errors > 0)
+        errors.push(`${productId}: Shopify manteve o produto para nova tentativa.`);
+      else errors.push(`${productId}: Produto aguardando nova tentativa na fila Shopify.`);
+    } catch (cause) {
+      errors.push(`${productId}: ${safeMessage(cause)}`);
+    }
+  }
+
+  if (queuedProductIds.length > immediateProductIds.length) {
+    errors.push(
+      `${queuedProductIds.length - immediateProductIds.length} produto(s) de uma operação em massa permaneceram na fila segura.`,
+    );
+  }
+
+  return {
+    ok: synced === uniqueProductIds.length,
+    queued: synced !== uniqueProductIds.length,
+    synced: synced === uniqueProductIds.length,
+    disabled: false,
+    requested: uniqueProductIds.length,
+    productIds: uniqueProductIds,
+    errors,
   };
 }
 

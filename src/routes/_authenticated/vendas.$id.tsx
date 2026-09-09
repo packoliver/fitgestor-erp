@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,12 +26,18 @@ import { PrintDialog } from "@/components/print/print-dialog";
 import { SaleReceipt, type EnrichedPayment } from "@/components/print/sale-receipt";
 import { PostSaleDeliveryDialog } from "@/components/post-sale-delivery-dialog";
 import { SHIPMENT_STATUS_LABEL, statusVariant } from "@/lib/shipping";
+import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import {
+  notifyShopifyInventorySync,
+  runShopifyInventorySync,
+} from "@/lib/shopify-inventory-sync";
 
 export const Route = createFileRoute("/_authenticated/vendas/$id")({
   component: VendaDetalhe,
 });
 
 function VendaDetalhe() {
+  const syncShopifyInventory = useServerFn(pushInventoryVariantsToShopifyFn);
   const { id } = Route.useParams();
   const qc = useQueryClient();
   const [printOpen, setPrintOpen] = useState(false);
@@ -116,10 +123,15 @@ function VendaDetalhe() {
         _reason: reason,
       });
       if (error) throw error;
-      return data;
+      const shopifySync = await runShopifyInventorySync(
+        syncShopifyInventory,
+        items.map((item: any) => item.variant_id),
+      );
+      return { data, shopifySync };
     },
-    onSuccess: () => {
+    onSuccess: ({ shopifySync }) => {
       toast.success("Venda estornada. Estoque devolvido.");
+      notifyShopifyInventorySync(shopifySync);
       setCancelOpen(false);
       setCancelReason("");
       qc.invalidateQueries({ queryKey: ["sale", id] });

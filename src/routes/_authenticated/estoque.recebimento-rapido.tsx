@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +41,11 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import {
+  notifyShopifyInventorySync,
+  runShopifyInventorySync,
+} from "@/lib/shopify-inventory-sync";
 import {
   Zap,
   Search,
@@ -301,6 +307,7 @@ function QuickProductModal({
 // Componente principal
 // ─────────────────────────────────────────────────────────────────────────────
 function RecebimentoRapidoPage() {
+  const syncShopifyInventory = useServerFn(pushInventoryVariantsToShopifyFn);
   const qc = useQueryClient();
   const [productSearch, setProductSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -569,6 +576,7 @@ function RecebimentoRapidoPage() {
         );
 
       const labelsPayloadList: LabelPayload[] = [];
+      const updatedVariantIds: string[] = [];
 
       for (const item of batchItems) {
         let variantId = item.variantId;
@@ -607,6 +615,7 @@ function RecebimentoRapidoPage() {
         });
 
         if (mErr) throw mErr;
+        updatedVariantIds.push(variantId);
 
         labelsPayloadList.push({
           print_item_id: variantId,
@@ -672,14 +681,19 @@ function RecebimentoRapidoPage() {
         window.open(blobUrl, "_blank", "noopener,noreferrer");
       }
 
-      return labelsPayloadList.length;
+      const shopifySync = await runShopifyInventorySync(
+        syncShopifyInventory,
+        updatedVariantIds,
+      );
+      return { labelCount: labelsPayloadList.length, shopifySync };
     },
-    onSuccess: (_, variables) => {
+    onSuccess: ({ shopifySync }, variables) => {
       toast.success(
         variables.printLabels
           ? "Estoque atualizado e etiquetas enviadas para a impressora térmica!"
           : "Recebimento de estoque finalizado com sucesso!"
       );
+      notifyShopifyInventorySync(shopifySync);
       qc.invalidateQueries({ queryKey: ["stock-overview"] });
       qc.invalidateQueries({ queryKey: ["products-list"] });
       setBatchItems([]);

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +18,11 @@ import { PrintDialog } from "@/components/print/print-dialog";
 import { ExchangeReceipt } from "@/components/print/exchange-receipt";
 import { VoucherReceipt } from "@/components/print/voucher-receipt";
 import { usePermissions } from "@/hooks/use-permissions";
+import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import {
+  notifyShopifyInventorySync,
+  runShopifyInventorySync,
+} from "@/lib/shopify-inventory-sync";
 
 
 export const Route = createFileRoute("/_authenticated/trocas/$id")({
@@ -24,6 +30,7 @@ export const Route = createFileRoute("/_authenticated/trocas/$id")({
 });
 
 function TrocaDetalhe() {
+  const syncShopifyInventory = useServerFn(pushInventoryVariantsToShopifyFn);
   const { id } = Route.useParams();
 
   const qc = useQueryClient();
@@ -62,10 +69,15 @@ function TrocaDetalhe() {
     mutationFn: async () => {
       const { data, error } = await supabase.rpc("reverse_exchange", { _exchange_id: id, _reason: reverseReason });
       if (error) throw error;
-      return data;
+      const shopifySync = await runShopifyInventorySync(syncShopifyInventory, [
+        ...rets.map((item: any) => item.variant_id),
+        ...news.map((item: any) => item.variant_id),
+      ]);
+      return { data, shopifySync };
     },
-    onSuccess: () => {
+    onSuccess: ({ shopifySync }) => {
       toast.success("Troca estornada");
+      notifyShopifyInventorySync(shopifySync);
       setReverseOpen(false);
       setReverseReason("");
       qc.invalidateQueries();

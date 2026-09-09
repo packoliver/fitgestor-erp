@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import type { ImmediateShopifySyncResult } from "@/lib/shopify-sync.types";
 
 const RowSchema = z.record(z.string(), z.any());
 
@@ -257,6 +258,7 @@ async function importSuppliers(ctx: Ctx, orgId: string, rows: any[], updateExist
 async function importStock(ctx: Ctx, orgId: string, rows: any[], locationId: string | null | undefined) {
   const errors: { row: number; message: string }[] = [];
   let inserted = 0, updated = 0;
+  const changedProductIds = new Set<string>();
 
   let locId = locationId ?? null;
   if (!locId) {
@@ -275,7 +277,7 @@ async function importStock(ctx: Ctx, orgId: string, rows: any[], locationId: str
       if (qty == null || qty < 0) throw new Error("Quantidade inválida");
       if (!sku && !barcode) throw new Error("Informe SKU ou código de barras");
 
-      let vq = ctx.supabase.from("product_variants").select("id").eq("organization_id", orgId).limit(1);
+      let vq = ctx.supabase.from("product_variants").select("id,product_id").eq("organization_id", orgId).limit(1);
       if (sku) vq = vq.eq("sku", sku); else vq = vq.eq("barcode", barcode!);
       const { data: v } = await vq.maybeSingle();
       if (!v) throw new Error(`Variante não encontrada (SKU/EAN: ${sku ?? barcode})`);
@@ -298,11 +300,17 @@ async function importStock(ctx: Ctx, orgId: string, rows: any[], locationId: str
       });
       if (error) throw new Error(error.message);
       inserted++;
+      changedProductIds.add(v.product_id);
     } catch (e: any) {
       errors.push({ row: i + 2, message: e?.message ?? String(e) });
     }
   }
-  return { inserted, updated, errors };
+  let shopifySync: ImmediateShopifySyncResult | undefined;
+  if (changedProductIds.size > 0) {
+    const { syncProductIdsToShopifyNow } = await import("@/lib/shopify-product-sync.server");
+    shopifySync = await syncProductIdsToShopifyNow([...changedProductIds]);
+  }
+  return { inserted, updated, errors, shopifySync };
 }
 
 export const runImport = createServerFn({ method: "POST" })
@@ -313,7 +321,12 @@ export const runImport = createServerFn({ method: "POST" })
     const orgId = await getOrgId(ctx);
     const opt = data.options ?? { updateExisting: true };
 
-    let result;
+    let result: {
+      inserted: number;
+      updated: number;
+      errors: Array<{ row: number; message: string }>;
+      shopifySync?: ImmediateShopifySyncResult;
+    };
     if (data.kind === "products") result = await importProducts(ctx, orgId, data.rows, !!opt.updateExisting);
     else if (data.kind === "clients") result = await importClients(ctx, orgId, data.rows, !!opt.updateExisting);
     else if (data.kind === "suppliers") result = await importSuppliers(ctx, orgId, data.rows, !!opt.updateExisting);
@@ -325,6 +338,7 @@ export const runImport = createServerFn({ method: "POST" })
       updated: result.updated,
       failed: result.errors.length,
       errors: result.errors.slice(0, 500),
+      shopifySync: result.shopifySync,
     };
   });
 

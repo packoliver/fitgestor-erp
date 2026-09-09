@@ -14,7 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileCode, UploadCloud, CheckCircle2, ArrowRight, PackagePlus, AlertCircle, RefreshCw } from "lucide-react";
 import { parseNFeXML, ParsedNFe, NFeItem } from "@/lib/nfe-parser";
 import { generateSimpleSKU } from "@/lib/sku-generator";
-import { pushInventoryToShopifyFn } from "@/lib/shopify-sync.functions";
+import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import {
+  notifyShopifyInventorySync,
+  runShopifyInventorySync,
+} from "@/lib/shopify-inventory-sync";
 import { currentOrgId, formatBRL } from "@/lib/erp";
 import { toast } from "sonner";
 
@@ -24,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/estoque/entrada-xml")({
 
 function EntradaNFeXMLPage() {
   const navigate = useNavigate();
-  const pushShopifyStock = useServerFn(pushInventoryToShopifyFn);
+  const syncShopifyInventory = useServerFn(pushInventoryVariantsToShopifyFn);
   const [parsedNFe, setParsedNFe] = useState<ParsedNFe | null>(null);
   const [items, setItems] = useState<NFeItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -130,7 +134,7 @@ function EntradaNFeXMLPage() {
       if (!defaultLocation) throw new Error("Nenhum local de estoque ativo encontrado. Cadastre um local primeiro.");
       const locationId = defaultLocation.id;
 
-      const updatedSkus: { sku: string; newQty: number }[] = [];
+      const updatedVariantIds: string[] = [];
 
       for (const item of items) {
         let targetVariantId = item.matchedVariantId;
@@ -198,20 +202,18 @@ function EntradaNFeXMLPage() {
         });
         if (mErr) throw mErr;
 
-        if (targetSku) {
-          updatedSkus.push({ sku: targetSku, newQty: item.quantity });
-        }
+        updatedVariantIds.push(targetVariantId);
       }
 
-      // 4. Disparar Sincronização Shopify em Segundo Plano (roda no servidor,
-      // busca o saldo atual no momento do push)
-      for (const itemSync of updatedSkus) {
-        pushShopifyStock({ data: { sku: itemSync.sku } }).catch((err: any) => {
-          console.warn("Erro no sync em segundo plano com Shopify:", err);
-        });
-      }
+      // 4. Sincronizar exatamente os produtos alterados. A fila já foi gravada
+      // antes da tentativa externa e assume automaticamente se a Shopify falhar.
+      const shopifySync = await runShopifyInventorySync(
+        syncShopifyInventory,
+        updatedVariantIds,
+      );
 
       toast.success("Entrada de nota fiscal concluída e estoque atualizado!");
+      notifyShopifyInventorySync(shopifySync);
       setParsedNFe(null);
       setItems([]);
       navigate({ to: "/estoque" });

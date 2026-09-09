@@ -1,5 +1,30 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type {
+  ImmediateShopifySyncResult,
+  ProductShopifySyncResult,
+} from "@/lib/shopify-sync.types";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const INVENTORY_SYNC_PERMISSIONS = [
+  "pos.sell",
+  "pos.cancel_sale",
+  "sale.cancel",
+  "stock.adjust",
+  "inventory.manage",
+  "goods_receipt.create",
+  "goods_receipt.correct",
+  "exchanges.complete",
+  "exchanges.reverse",
+  "product.edit",
+] as const;
+
+async function canTriggerInventorySync(supabase: any) {
+  const checks = await Promise.all(
+    INVENTORY_SYNC_PERMISSIONS.map((code) => supabase.rpc("has_permission", { _code: code })),
+  );
+  return checks.some(({ data, error }) => !error && data === true);
+}
 
 /**
  * Chamado pelo PDV depois de confirmar uma venda, pra empurrar o novo saldo
@@ -9,12 +34,104 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const pushInventoryToShopifyFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { sku: string }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    if (!(await canTriggerInventorySync(context.supabase)))
+      return { ok: false, message: "Sem permissão para sincronizar estoque com a Shopify." };
+    const sku = data.sku.trim();
+    if (!sku) return { ok: false, message: "SKU inválido." };
+    const { data: variant, error } = await (context.supabase.from("product_variants") as any)
+      .select("product_id")
+      .eq("sku", sku)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error || !variant?.product_id)
+      return { ok: false, message: `SKU "${sku}" não encontrado ou sem permissão.` };
     try {
-      const { enqueueShopifyProductBySku } = await import("@/lib/shopify-product-sync.server");
-      return await enqueueShopifyProductBySku(data.sku);
+      const { syncProductIdsToShopifyNow } = await import("@/lib/shopify-product-sync.server");
+      const result = await syncProductIdsToShopifyNow([variant.product_id]);
+      return {
+        ...result,
+        message: result.synced
+          ? `Produto do SKU "${sku}" sincronizado.`
+          : result.disabled
+            ? "Sincronização Shopify desativada; alteração mantida na fila."
+            : "Produto mantido na fila da Shopify.",
+      };
     } catch (e: any) {
       return { ok: false, message: e?.message ?? "Falha ao sincronizar estoque com a Shopify." };
+    }
+  });
+
+/**
+ * Resolve variações visíveis ao usuário para seus produtos e solicita uma
+ * sincronização imediata. A Shopify nunca é chamada antes da operação local
+ * concluir; falhas externas ficam preservadas na fila durável.
+ */
+export const pushInventoryVariantsToShopifyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { variantIds: string[] }) => {
+    const variantIds = [...new Set(data.variantIds)].filter((id) => UUID_RE.test(id));
+    return { variantIds };
+  })
+  .handler(async ({ data, context }): Promise<ImmediateShopifySyncResult> => {
+    if (data.variantIds.length === 0) {
+      return {
+        ok: true,
+        queued: false,
+        synced: true,
+        disabled: false,
+        requested: 0,
+        productIds: [],
+        errors: [],
+      };
+    }
+    if (!(await canTriggerInventorySync(context.supabase))) {
+      return {
+        ok: false,
+        queued: false,
+        synced: false,
+        disabled: false,
+        requested: 0,
+        productIds: [],
+        errors: ["Sem permissão para sincronizar estoque com a Shopify."],
+      };
+    }
+
+    const { data: variants, error } = await (context.supabase.from("product_variants") as any)
+      .select("id,product_id")
+      .in("id", data.variantIds)
+      .is("deleted_at", null);
+    if (error) throw new Error("Não foi possível validar as variações alteradas.");
+    if ((variants ?? []).length !== data.variantIds.length) {
+      return {
+        ok: false,
+        queued: false,
+        synced: false,
+        disabled: false,
+        requested: 0,
+        productIds: [],
+        errors: ["Uma ou mais variações não foram encontradas ou não pertencem à sua loja."],
+      };
+    }
+
+    const productIds = [
+      ...new Set<string>(
+        ((variants ?? []) as Array<{ product_id: string }>).map((variant) => variant.product_id),
+      ),
+    ];
+    try {
+      const { syncProductIdsToShopifyNow } = await import("@/lib/shopify-product-sync.server");
+      return await syncProductIdsToShopifyNow(productIds);
+    } catch (e: any) {
+      return {
+        ok: false,
+        queued: true,
+        synced: false,
+        disabled: false,
+        requested: productIds.length,
+        productIds,
+        errors: [e?.message ?? "Falha ao sincronizar estoque com a Shopify."],
+      };
     }
   });
 
@@ -25,32 +142,46 @@ export const pushInventoryToShopifyFn = createServerFn({ method: "POST" })
 export const queueShopifyProductSyncFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { productId: string }) => data)
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }): Promise<ProductShopifySyncResult> => {
     const { data: product, error } = await (context.supabase.from("products") as any)
       .select("id")
       .eq("id", data.productId)
       .maybeSingle();
-    if (error || !product) return { ok: false, error: "Produto não encontrado ou sem permissão." };
-    try {
-      const { enqueueShopifyProduct, processShopifyProductSyncQueue, shopifyProductSyncStatus } =
-        await import("@/lib/shopify-product-sync.server");
-      const jobId = await enqueueShopifyProduct(data.productId, 0);
-      const runtime = shopifyProductSyncStatus();
-      if (!runtime.enabled) return { ok: true, queued: true, synced: false, disabled: true, jobId };
-      const stats = await processShopifyProductSyncQueue(1, data.productId);
+    if (error || !product)
       return {
-        ok: stats.success === 1,
-        queued: stats.success !== 1,
-        synced: stats.success === 1,
+        ok: false,
+        queued: false,
+        synced: false,
         disabled: false,
-        jobId,
-        stats,
+        requested: 0,
+        productIds: [],
+        errors: ["Produto não encontrado ou sem permissão."],
+        error: "Produto não encontrado ou sem permissão.",
       };
+    if (!(await canTriggerInventorySync(context.supabase)))
+      return {
+        ok: false,
+        queued: false,
+        synced: false,
+        disabled: false,
+        requested: 0,
+        productIds: [],
+        errors: ["Sem permissão para sincronizar este produto."],
+        error: "Sem permissão para sincronizar este produto.",
+      };
+    try {
+      const { syncProductIdsToShopifyNow } = await import("@/lib/shopify-product-sync.server");
+      const result = await syncProductIdsToShopifyNow([data.productId]);
+      return { ...result, error: result.errors[0] };
     } catch (e: any) {
       return {
         ok: false,
         queued: true,
         synced: false,
+        disabled: false,
+        requested: 1,
+        productIds: [data.productId],
+        errors: [e?.message ?? "Falha ao enfileirar o produto."],
         error: e?.message ?? "Falha ao enfileirar o produto.",
       };
     }

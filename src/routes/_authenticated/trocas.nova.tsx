@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate, useBlocker } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
@@ -15,6 +16,11 @@ import { useEffect, useMemo, useState } from "react";
 import { getOpenSession, money, PAYMENT_LABELS, normalizeDigits } from "@/lib/pos";
 import { Search, Trash2, Plus, ChevronLeft, ChevronRight, Check, User as UserIcon, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import {
+  notifyShopifyInventorySync,
+  runShopifyInventorySync,
+} from "@/lib/shopify-inventory-sync";
 
 export const Route = createFileRoute("/_authenticated/trocas/nova")({
   component: NovaTrocaPage,
@@ -77,6 +83,7 @@ function fmtDate(iso: string | null | undefined) {
 }
 
 function NovaTrocaPage() {
+  const syncShopifyInventory = useServerFn(pushInventoryVariantsToShopifyFn);
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [saleTerm, setSaleTerm] = useState("");
@@ -297,11 +304,16 @@ function NovaTrocaPage() {
       };
       const { data, error } = await supabase.rpc("complete_exchange", { _payload: payload });
       if (error) throw error;
-      return data as any;
+      const shopifySync = await runShopifyInventorySync(syncShopifyInventory, [
+        ...returns.map((item) => item.variant_id),
+        ...newItems.map((item) => item.variant_id),
+      ]);
+      return { ...(data as any), shopifySync } as any;
     },
     onSuccess: (data: any) => {
       setCompleted(true);
       toast.success(`Troca #${data.exchange_number} concluída.`);
+      notifyShopifyInventorySync(data.shopifySync);
       // pequeno atraso para garantir que o blocker leia o novo estado antes da navegação
       setTimeout(() => navigate({ to: "/trocas/$id", params: { id: data.exchange_id } }), 0);
     },

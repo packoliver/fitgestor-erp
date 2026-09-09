@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +20,11 @@ import { GoodsReceiptCountingPanel } from "@/components/goods-receipt-counting-p
 import { GoodsReceiptStockMovements } from "@/components/goods-receipt-stock-movements";
 import { GoodsReceiptTimeline } from "@/components/goods-receipt-timeline";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import {
+  notifyShopifyInventorySync,
+  runShopifyInventorySync,
+} from "@/lib/shopify-inventory-sync";
 
 type Mode = "restock" | "new_variant" | "new_product" | "count_only";
 type ResolutionStatus = "resolved" | "unresolved" | "pending_registration";
@@ -112,6 +118,7 @@ export function formatReceiptNumber(n: number | null | undefined): string {
 }
 
 export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
+  const syncShopifyInventory = useServerFn(pushInventoryVariantsToShopifyFn);
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [draftId, setDraftId] = useState<string | undefined>(initialId);
@@ -340,10 +347,25 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         _client_request_id: confirmRequestIdRef.current,
       });
       if (error) throw error;
-      return data as { summary?: unknown; total_quantity?: number; created_products?: unknown[]; created_variants?: unknown[] };
+      const result = data as {
+        summary?: unknown;
+        total_quantity?: number;
+        created_products?: string[];
+        created_variants?: string[];
+      };
+      const changedVariantIds = [
+        ...items.flatMap((item) => item.cells.map((cell) => cell.variant_id).filter(Boolean)),
+        ...(result.created_variants ?? []),
+      ] as string[];
+      const shopifySync = await runShopifyInventorySync(
+        syncShopifyInventory,
+        changedVariantIds,
+      );
+      return { ...result, shopifySync };
     },
     onSuccess: (result) => {
       toast.success("Recebimento confirmado. As etiquetas ainda estão pendentes de geração.");
+      notifyShopifyInventorySync(result.shopifySync);
       setStatus("confirmed");
       setConfirmedAt(new Date().toISOString());
       setConfirmationSummary(result?.summary ?? result);
@@ -408,12 +430,21 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
         _client_request_id: revertRequestIdRef.current,
       } as never);
       if (error) throw error;
-      return data as { reversed_movements: number; total_quantity_reverted: number };
+      const result = data as { reversed_movements: number; total_quantity_reverted: number };
+      const changedVariantIds = items.flatMap((item) =>
+        item.cells.map((cell) => cell.variant_id).filter(Boolean),
+      ) as string[];
+      const shopifySync = await runShopifyInventorySync(
+        syncShopifyInventory,
+        changedVariantIds,
+      );
+      return { ...result, shopifySync };
     },
     onSuccess: (res) => {
       toast.success(
         `Estorno concluído: ${res?.total_quantity_reverted ?? 0} peça(s) revertida(s) em ${res?.reversed_movements ?? 0} movimento(s).`
       );
+      notifyShopifyInventorySync(res.shopifySync);
       setSubStatus("reverted");
       setRevertOpen(false);
       setRevertReason("");
