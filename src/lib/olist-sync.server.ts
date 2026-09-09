@@ -909,7 +909,7 @@ async function adjustStockForVariant(
       .maybeSingle();
     const current = Number(bal?.physical_quantity ?? 0);
     const delta = saldo - current;
-    if (delta === 0) return;
+    if (delta === 0) return false;
     const { error: movementError } = await supabaseAdmin.rpc("set_olist_stock_balance", {
       _organization_id: orgId,
       _variant_id: variantId,
@@ -918,8 +918,38 @@ async function adjustStockForVariant(
     });
     if (movementError) throw movementError;
     counters.stock_adjusted++;
+    return true;
   } catch (e: any) {
     counters.errors.push({ scope: "stock.inline", id: variantId, message: e?.message ?? String(e) });
+    return false;
+  }
+}
+
+async function syncOlistVariantsToShopify(variantIds: string[]) {
+  const uniqueVariantIds = [...new Set(variantIds.filter(Boolean))];
+  if (uniqueVariantIds.length === 0) return;
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("product_variants")
+      .select("product_id")
+      .in("id", uniqueVariantIds)
+      .is("deleted_at", null);
+    if (error) throw error;
+    const productIds = [
+      ...new Set((data ?? []).map((variant) => variant.product_id).filter(Boolean)),
+    ];
+    if (productIds.length === 0) return;
+
+    const { syncProductIdsToShopifyNow } = await import("@/lib/shopify-product-sync.server");
+    const result = await syncProductIdsToShopifyNow(productIds);
+    if (!result.synced && !result.disabled) {
+      console.warn("[Olist -> Shopify] Atualização preservada na fila:", result.errors);
+    }
+  } catch (error) {
+    // A alteração local já acionou o trigger transacional da outbox. Nunca
+    // invalide a venda/baixa da Olist por indisponibilidade externa.
+    console.warn("[Olist -> Shopify] Falha na tentativa imediata:", error);
   }
 }
 
@@ -935,6 +965,7 @@ async function syncStock(orgId: string, since: Date | null, counters: Counters) 
 
   const produtos: any[] = Array.isArray(retorno?.produtos) ? retorno.produtos.map((x: any) => x.produto ?? x) : [];
   const locationId = await defaultLocationId(orgId);
+  const changedVariantIds: string[] = [];
 
   for (const item of produtos) {
     try {
@@ -966,11 +997,13 @@ async function syncStock(orgId: string, since: Date | null, counters: Counters) 
       });
       if (movementError) throw movementError;
       counters.stock_adjusted++;
+      changedVariantIds.push(variantId);
       await sleep(50);
     } catch (e: any) {
       counters.errors.push({ scope: "stock", id: item?.id ? String(item.id) : undefined, message: e?.message ?? String(e) });
     }
   }
+  await syncOlistVariantsToShopify(changedVariantIds);
 }
 
 export async function runOlistSync(opts: { organizationId?: string } = {}): Promise<Counters> {
@@ -1439,7 +1472,14 @@ export async function syncOlistStockByExternalId(
     return counters;
   }
   const locationId = await defaultLocationId(org);
-  await adjustStockForVariant(org, variantId, locationId, Number(saldo) || 0, counters);
+  const changed = await adjustStockForVariant(
+    org,
+    variantId,
+    locationId,
+    Number(saldo) || 0,
+    counters,
+  );
+  if (changed) await syncOlistVariantsToShopify([variantId]);
   return counters;
 }
 
@@ -1613,6 +1653,7 @@ export async function syncOlistOrderById(externalOrderId: string, orgId?: string
   // 5. Processa os itens do pedido e atualiza o estoque
   const rawItems = p.itens ?? [];
   const items: any[] = Array.isArray(rawItems) ? rawItems.map((x: any) => x.item ?? x) : [];
+  const changedVariantIds: string[] = [];
 
   for (const item of items) {
     const sku = item.codigo ?? null;
@@ -1670,11 +1711,14 @@ export async function syncOlistOrderById(externalOrderId: string, orgId?: string
           _metadata: { source: "olist_sync", notes: `Baixa de estoque por pedido #${orderNumber}` },
         });
         if (movementError) throw movementError;
+        changedVariantIds.push(variantId);
       } catch (stkErr) {
         console.warn(`[Olist Sync Stock Warning] Não foi possível dar baixa no item ${variantId}:`, stkErr);
       }
     }
   }
+
+  await syncOlistVariantsToShopify(changedVariantIds);
 
   // 6. REGRA DE NEGÓCIO PONTUAMAX: CÁLCULO DINÂMICO DE PONTOS DE FIDELIDADE & CASHBACK
   // Busca dinamicamente as configurações vigentes cadastradas no banco de dados para a loja
