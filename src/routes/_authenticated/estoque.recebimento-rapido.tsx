@@ -219,7 +219,7 @@ function QuickProductModal({
         })
         .select(
           `id, name, color, sale_price, promotional_price,
-           product_images!left(url, is_primary),
+           product_images!left(url:image_url, is_primary),
            brand:brands(name), category:categories(name),
            product_variants!left(id, size, sku, barcode, sale_price)`
         )
@@ -372,7 +372,7 @@ function RecebimentoRapidoPage() {
         .from("products")
         .select(
           `id, name, color, sale_price, promotional_price, status,
-           product_images!left(url, is_primary),
+           product_images!left(url:image_url, is_primary),
            brand:brands(name), category:categories(name),
            product_variants!left(id, size, sku, barcode, sale_price)`
         )
@@ -396,7 +396,7 @@ function RecebimentoRapidoPage() {
               `id, sku, barcode, size, sale_price,
                product:products!inner(
                  id, name, color, sale_price, promotional_price, status,
-                 product_images!left(url, is_primary),
+                 product_images!left(url:image_url, is_primary),
                  brand:brands(name), category:categories(name),
                  product_variants!left(id, size, sku, barcode, sale_price)
                )`
