@@ -184,8 +184,16 @@ export function createShopifyProductClient(
         await wait(Math.min(20_000, Math.max(1000 * 2 ** attempt, (retryAfter || 0) * 1000)));
         continue;
       }
-      if (!response.ok)
-        throw new Error(`Shopify GraphQL recusou a operação (HTTP ${response.status}).`);
+      if (!response.ok) {
+        // Diagnóstico: 404/403 nessa chamada normalmente não vêm com corpo JSON útil,
+        // mas o texto cru (mesmo que HTML) já ajuda a distinguir "domínio errado" de
+        // "app sem acesso" de "versão de API retirada" sem precisar reproduzir na mão.
+        const bodyText = await response.text().catch(() => "");
+        const snippet = bodyText.replace(/\s+/g, " ").trim().slice(0, 300);
+        throw new Error(
+          `Shopify GraphQL recusou a operação (HTTP ${response.status})${snippet ? `: ${snippet}` : "."}`,
+        );
+      }
       const actualVersion = response.headers.get("x-shopify-api-version");
       if (actualVersion && actualVersion !== SHOPIFY_PRODUCT_API_VERSION) {
         throw new Error(
