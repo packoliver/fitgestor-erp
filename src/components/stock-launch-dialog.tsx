@@ -30,6 +30,7 @@ import {
   runShopifyInventorySync,
 } from "@/lib/shopify-inventory-sync";
 import { invalidateStock } from "@/lib/query-keys";
+import { searchVariantsByCode } from "@/lib/catalog.queries";
 
 type Kind = "entrada" | "saida" | "balanco";
 
@@ -90,16 +91,7 @@ export function StockLaunchDialog({
   const variants = useQuery({
     queryKey: ["stock-launch-variants", variantSearch],
     enabled: !variantId && variantSearch.length > 1,
-    queryFn: async () => {
-      const q = variantSearch.trim();
-      const { data } = await supabase
-        .from("product_variants")
-        .select("id, size, sku, barcode, product:products!inner(name, color)")
-        .is("deleted_at", null)
-        .or(`sku.ilike.%${q}%,barcode.ilike.%${q}%`)
-        .limit(10);
-      return data ?? [];
-    },
+    queryFn: () => searchVariantsByCode(variantSearch),
   });
 
   // Carregado sempre (não só no Balanço) porque o cabeçalho do diálogo mostra

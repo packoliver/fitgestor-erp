@@ -17,7 +17,8 @@ import {
   notifyShopifyInventorySync,
   runShopifyInventorySync,
 } from "@/lib/shopify-inventory-sync";
-import { invalidateStock } from "@/lib/query-keys";
+import { invalidateStock, stockKeys } from "@/lib/query-keys";
+import { searchVariantsByCode } from "@/lib/catalog.queries";
 
 export const Route = createFileRoute("/_authenticated/estoque/inventario")({
   component: InventarioPage,
@@ -35,23 +36,15 @@ function InventarioPage() {
   const locations = useQuery({ queryKey: ["stock-locations"], queryFn: async () => (await supabase.from("stock_locations").select("id, name").eq("status", "ativo").order("name")).data ?? [] });
 
   const found = useQuery({
-    queryKey: ["inv-search", search, locationId],
+    queryKey: stockKeys.inventorySearch(search, locationId),
     enabled: search.length > 1 && !!locationId,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("product_variants")
-        .select("id, size, sku, barcode, product:products!inner(name, color), inventory_balances(physical_quantity, location_id)")
-        .is("deleted_at", null)
-        .or(`sku.ilike.%${search}%,barcode.ilike.%${search}%`)
-        .limit(10);
-      return data ?? [];
-    },
+    queryFn: () => searchVariantsByCode(search, { withBalances: true }),
   });
 
   function addCount(v: any) {
     if (!locationId) return;
     if (counts.find((c) => c.variant_id === v.id)) return;
-    const bal = (v.inventory_balances ?? []).find((b: any) => b.location_id === locationId);
+    const bal = (v.balances ?? []).find((b: any) => b.location_id === locationId);
     setCounts([...counts, {
       variant_id: v.id,
       label: `${v.product.name} · ${v.product.color ?? ""} · ${v.size}`,

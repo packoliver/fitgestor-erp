@@ -33,6 +33,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { RequirePermission } from "@/components/require-permission";
+import { catalogKeys } from "@/lib/query-keys";
+import { searchVariantsByCode } from "@/lib/catalog.queries";
 
 export const Route = createFileRoute("/_authenticated/etiquetas")({
   component: () => (
@@ -148,17 +150,9 @@ function EtiquetasPage() {
   });
 
   const found = useQuery({
-    queryKey: ["label-search", search],
+    queryKey: catalogKeys.labelSearch(search),
     enabled: search.length > 1,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("product_variants")
-        .select("id, size, color, sku, barcode, sale_price, product:products!inner(name, color, sale_price, promotional_price)")
-        .is("deleted_at", null)
-        .or(`sku.ilike.%${search}%,barcode.ilike.%${search}%`)
-        .limit(10);
-      return data ?? [];
-    },
+    queryFn: () => searchVariantsByCode(search),
   });
 
   const previewBlobUrl = useMemo(() => {

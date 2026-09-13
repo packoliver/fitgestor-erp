@@ -19,6 +19,7 @@ import {
   runShopifyInventorySync,
 } from "@/lib/shopify-inventory-sync";
 import { invalidateStock } from "@/lib/query-keys";
+import { searchVariantsByCode } from "@/lib/catalog.queries";
 
 export const Route = createFileRoute("/_authenticated/estoque/entrada")({
   component: EntradaPage,
@@ -54,16 +55,7 @@ function EntradaPage() {
   const variants = useQuery({
     queryKey: ["variants-search", variantSearch],
     enabled: variantSearch.length > 1,
-    queryFn: async () => {
-      const q = variantSearch.trim();
-      const { data } = await supabase
-        .from("product_variants")
-        .select("id, size, sku, barcode, product:products!inner(name, color, category_id, category:categories(id, name))")
-        .is("deleted_at", null)
-        .or(`sku.ilike.%${q}%,barcode.ilike.%${q}%`)
-        .limit(10);
-      return data ?? [];
-    },
+    queryFn: () => searchVariantsByCode(variantSearch, { withCategory: true }),
   });
 
   function dismissHelp() {
