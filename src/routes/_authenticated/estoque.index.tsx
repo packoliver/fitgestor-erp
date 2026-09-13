@@ -21,9 +21,14 @@ export const Route = createFileRoute("/_authenticated/estoque/")({
 // Teto de segurança: a consulta busca TODAS as variações ativas do catálogo
 // (não só as que já têm saldo lançado — ver comentário na query abaixo).
 // 3722 variações ativas hoje; 6000 cobre com folga o crescimento próximo.
-// Se um dia passar disso, o filtro por local/categoria já reduz o problema
-// antes de precisar de paginação de verdade.
 const FETCH_CAP = 6000;
+
+// O PostgREST do Supabase corta toda resposta em 1000 linhas (`max-rows`), e
+// esse corte ignora o `.limit()` que a gente pede. Pedir 6000 de uma vez
+// devolvia silenciosamente só as 1000 primeiras — foi exatamente o que
+// aconteceu no primeiro deploy desta tela. Então tem que paginar, igual a
+// exportação de catálogo mais abaixo neste arquivo já fazia.
+const PAGE_SIZE = 1000;
 
 type Balance = {
   id: string;
@@ -39,6 +44,10 @@ type Balance = {
     product: { id: string; name: string; color: string | null; category: { id: string; name: string } | null } | null;
   } | null;
   location: { id: string; name: string } | null;
+  // Texto de busca já montado e em minúsculas. Com 323 saldos dava pra montar
+  // na hora a cada tecla; agora que a lista é o catálogo inteiro (~3.700
+  // linhas) vale calcular uma vez só, na montagem das linhas.
+  haystack: string;
 };
 
 type VariantWithBalances = {
@@ -75,20 +84,26 @@ function EstoquePage() {
   // ativo), com os saldos vindos por left join; quem não tem nenhuma linha de
   // saldo entra como "Sem estoque" (zero) na Loja Principal, em vez de sumir.
   const { data, isLoading, error } = useQuery({
-    queryKey: ["stock-overview-v2"],
+    queryKey: ["stock-overview-v3"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("product_variants")
-        .select(`
-          id, size, sku, barcode,
-          product:products(id, name, color, category:categories(id, name)),
-          balances:inventory_balances(id, physical_quantity, reserved_quantity, available_quantity, minimum_quantity, location:stock_locations(id, name))
-        `)
-        .is("deleted_at", null)
-        .order("id")
-        .limit(FETCH_CAP);
-      if (error) throw error;
-      return (data ?? []) as unknown as VariantWithBalances[];
+      const all: VariantWithBalances[] = [];
+      for (let offset = 0; offset < FETCH_CAP; offset += PAGE_SIZE) {
+        const { data, error } = await supabase
+          .from("product_variants")
+          .select(`
+            id, size, sku, barcode,
+            product:products(id, name, color, category:categories(id, name)),
+            balances:inventory_balances(id, physical_quantity, reserved_quantity, available_quantity, minimum_quantity, location:stock_locations(id, name))
+          `)
+          .is("deleted_at", null)
+          .order("id")
+          .range(offset, offset + PAGE_SIZE - 1);
+        if (error) throw error;
+        const page = (data ?? []) as unknown as VariantWithBalances[];
+        all.push(...page);
+        if (page.length < PAGE_SIZE) break;
+      }
+      return all;
     },
   });
 
@@ -116,6 +131,10 @@ function EstoquePage() {
     const out: Balance[] = [];
     for (const v of variants) {
       const variantInfo = { id: v.id, size: v.size, sku: v.sku, barcode: v.barcode, product: v.product };
+      const haystack = [v.product?.name, v.product?.color, v.size, v.sku, v.barcode]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
       if (v.balances && v.balances.length > 0) {
         for (const b of v.balances) {
           out.push({
@@ -126,6 +145,7 @@ function EstoquePage() {
             minimum_quantity: b.minimum_quantity,
             variant: variantInfo,
             location: b.location,
+            haystack,
           });
         }
       } else {
@@ -137,6 +157,7 @@ function EstoquePage() {
           minimum_quantity: 0,
           variant: variantInfo,
           location: defaultLocation.data ?? null,
+          haystack,
         });
       }
     }
@@ -151,13 +172,7 @@ function EstoquePage() {
       if (categoryId !== "all" && b.variant?.product?.category?.id !== categoryId) return false;
       if (filter === "zero" && b.physical_quantity !== 0) return false;
       if (filter === "low" && !(b.minimum_quantity > 0 && b.physical_quantity <= b.minimum_quantity)) return false;
-      if (term) {
-        const haystack = [
-          b.variant?.product?.name, b.variant?.product?.color, b.variant?.size,
-          b.variant?.sku, b.variant?.barcode,
-        ].filter(Boolean).join(" ").toLowerCase();
-        if (!haystack.includes(term)) return false;
-      }
+      if (term && !b.haystack.includes(term)) return false;
       return true;
     });
   }, [rows, search, locationId, categoryId, filter]);
