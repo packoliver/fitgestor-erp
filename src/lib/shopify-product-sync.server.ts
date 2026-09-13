@@ -677,7 +677,7 @@ export async function syncProductIdsToShopifyNow(
       await enqueueShopifyProduct(productId, 0);
       queuedProductIds.push(productId);
     } catch (cause) {
-      errors.push(`${productId}: ${safeMessage(cause)}`);
+      errors.push(safeMessage(cause));
     }
   }
 
@@ -703,18 +703,21 @@ export async function syncProductIdsToShopifyNow(
     try {
       const stats = await processShopifyProductSyncQueue(1, productId);
       if (stats.success === 1) synced++;
-      else if (stats.errors > 0)
-        errors.push(`${productId}: Shopify manteve o produto para nova tentativa.`);
-      else errors.push(`${productId}: Produto aguardando nova tentativa na fila Shopify.`);
+      // "Não sincronizou agora, ficou na fila" NÃO é erro: é o padrão outbox
+      // funcionando como projetado. Antes isso virava uma string de erro — com
+      // o UUID do produto na frente — que a interface exibia como aviso a cada
+      // salvamento, em toda tela do ERP. Enquanto a Shopify esteve fora do ar,
+      // o usuário levou esse toast em cada ação que fez.
+      //
+      // A informação não se perde: o motivo real fica gravado em
+      // products.shopify_last_sync_error e aparece no painel de status da
+      // Shopify dentro da ficha do produto, que é onde ela é acionável.
+      // O estado agora é comunicado pelos campos `queued`/`synced` abaixo.
     } catch (cause) {
-      errors.push(`${productId}: ${safeMessage(cause)}`);
+      // Exceção de verdade continua reportada — mas sem o UUID, que não diz
+      // nada para quem está operando a loja.
+      errors.push(safeMessage(cause));
     }
-  }
-
-  if (queuedProductIds.length > immediateProductIds.length) {
-    errors.push(
-      `${queuedProductIds.length - immediateProductIds.length} produto(s) de uma operação em massa permaneceram na fila segura.`,
-    );
   }
 
   return {

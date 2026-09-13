@@ -531,12 +531,12 @@ export function ProductForm({
     onSuccess: ({ id, sync }) => {
       toast.success(productId ? "Produto atualizado" : "Produto criado com sucesso!");
       if (sync?.synced) toast.success("Alterações confirmadas na Shopify.");
-      else if (sync?.disabled)
-        toast.info("Shopify ainda está desativada; o produto ficou na fila segura.");
-      else if (!sync?.ok)
-        toast.warning(
-          sync?.error ?? "Produto salvo; sincronização Shopify aguardando nova tentativa.",
-        );
+      else if (sync?.error) toast.warning(sync.error);
+      // "Ficou na fila para nova tentativa" (inclusive com a Shopify
+      // desativada) não vira aviso: o salvamento deu certo, e o estado da
+      // sincronização aparece no painel da Shopify aqui mesmo nesta ficha,
+      // logo abaixo — com data da última sincronização e o erro real, quando
+      // houver. Ver comentário em lib/shopify-inventory-sync.ts.
       // Antes invalidava só products-list / product / shopify-product-sync, e
       // o produto novo não aparecia na busca do PDV, do Recebimento, das
       // Etiquetas nem das Trocas sem recarregar a página.
