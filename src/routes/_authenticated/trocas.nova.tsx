@@ -17,6 +17,8 @@ import { getOpenSession, money, PAYMENT_LABELS, normalizeDigits } from "@/lib/po
 import { Search, Trash2, Plus, ChevronLeft, ChevronRight, Check, User as UserIcon, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import { catalogKeys } from "@/lib/query-keys";
+import { codeLikeFilter, searchVariantsByCode } from "@/lib/catalog.queries";
 import {
   notifyShopifyInventorySync,
   runShopifyInventorySync,
@@ -183,7 +185,7 @@ function NovaTrocaPage() {
 
       // 4) SKU ou código de barras → vendas contendo o item
       const { data: vars } = await supabase.from("product_variants")
-        .select("id").or(`sku.ilike.%${t}%,barcode.eq.${t}`).limit(20);
+        .select("id").or(codeLikeFilter(t)).limit(20);
       const varIds = (vars ?? []).map((v) => v.id);
       if (varIds.length > 0) {
         const { data: sitems } = await supabase.from("sale_items")
@@ -225,18 +227,9 @@ function NovaTrocaPage() {
   }
 
   const { data: productResults = [] } = useQuery({
-    queryKey: ["exchange-search", productTerm, session?.location_id],
+    queryKey: catalogKeys.exchangeSearch(productTerm, session?.location_id),
     enabled: productTerm.trim().length > 0 && !!session,
-    queryFn: async () => {
-      const t = productTerm.trim();
-      const { data } = await supabase
-        .from("product_variants")
-        .select("id, product_id, size, color, sku, barcode, sale_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
-        .is("deleted_at", null)
-        .or(`sku.ilike.%${t}%,barcode.ilike.%${t}%`)
-        .limit(20);
-      return data ?? [];
-    },
+    queryFn: () => searchVariantsByCode(productTerm, { withBalances: true, limit: 20 }),
   });
 
   function addReturn(item: any) {

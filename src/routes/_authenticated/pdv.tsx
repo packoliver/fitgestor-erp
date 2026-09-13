@@ -26,6 +26,8 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { PostSaleDeliveryDialog } from "@/components/post-sale-delivery-dialog";
 import { CepAddressFields } from "@/components/cep-address-fields";
 import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import { catalogKeys } from "@/lib/query-keys";
+import { searchSellableVariants, getVariantsByIds } from "@/lib/catalog.queries";
 import {
   notifyShopifyInventorySync,
   runShopifyInventorySync,
@@ -347,31 +349,9 @@ function PdvPage() {
 
   // Product search
   const { data: results = [] } = useQuery({
-    queryKey: ["pdv-search", term, session?.location_id],
+    queryKey: catalogKeys.pdvSearch(term, session?.location_id),
     enabled: term.trim().length > 0 && !!session,
-    queryFn: async () => {
-      const t = term.trim();
-      const exact = await supabase
-        .from("product_variants")
-        .select("id, product_id, size, color, sku, barcode, sale_price, promotional_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
-        .or(`barcode.eq.${t},sku.eq.${t}`).is("deleted_at", null).limit(1);
-      if (exact.data && exact.data.length === 1) return exact.data;
-      const { data } = await supabase
-        .from("product_variants")
-        .select("id, product_id, size, color, sku, barcode, sale_price, promotional_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
-        .is("deleted_at", null)
-        .or(`sku.ilike.%${t}%,barcode.ilike.%${t}%,size.ilike.%${t}%`).limit(20);
-      if (!data || data.length === 0) {
-        const { data: byProduct } = await supabase
-          .from("products")
-          .select("id, name, color, sale_price, promotional_price, status, variants:product_variants!inner(id, product_id, size, color, sku, barcode, sale_price, promotional_price, status, balances:inventory_balances(physical_quantity, reserved_quantity, location_id))")
-          .or(`name.ilike.%${t}%,color.ilike.%${t}%`).is("deleted_at", null).limit(20);
-        const flat: any[] = [];
-        (byProduct ?? []).forEach((p: any) => p.variants?.forEach((v: any) => flat.push({ ...v, product: { id: p.id, name: p.name, color: p.color, sale_price: p.sale_price, promotional_price: p.promotional_price, status: p.status } })));
-        return flat;
-      }
-      return data;
-    },
+    queryFn: () => searchSellableVariants(term),
   });
 
   // Client search
@@ -797,12 +777,8 @@ function PdvPage() {
         throw new Error("Este carrinho salvo está inválido.");
       }
 
-      const ids = [...new Set(snapshot.cart.map((line) => line.variant_id))];
-      const { data, error } = await supabase
-        .from("product_variants")
-        .select("id, product_id, size, color, sku, barcode, sale_price, promotional_price, status, product:products(id, name, color, sale_price, promotional_price, status), balances:inventory_balances(physical_quantity, reserved_quantity, location_id)")
-        .in("id", ids).is("deleted_at", null);
-      if (error) throw error;
+      const ids = snapshot.cart.map((line) => line.variant_id);
+      const data = await getVariantsByIds(ids);
 
       const currentById = new Map((data ?? []).map((variant: any) => [variant.id, variant]));
       const unavailable: string[] = [];

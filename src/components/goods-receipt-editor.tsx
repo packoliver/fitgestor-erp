@@ -22,6 +22,7 @@ import { GoodsReceiptTimeline } from "@/components/goods-receipt-timeline";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
 import { invalidateCatalog } from "@/lib/query-keys";
+import { codeExactFilter } from "@/lib/catalog.queries";
 import {
   notifyShopifyInventorySync,
   runShopifyInventorySync,
@@ -1182,7 +1183,7 @@ function ProductSearchCard({
         .from("product_variants")
         .select("id, size, sku, barcode, product:products!inner(id, name, color, category_id, supplier_id)")
         .is("deleted_at", null)
-        .or(`barcode.eq.${t},sku.eq.${t}`)
+        .or(codeExactFilter(t))
         .limit(1)
         .maybeSingle();
 

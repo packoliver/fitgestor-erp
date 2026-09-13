@@ -45,10 +45,16 @@ export function quoteFilterValue(value: string): string {
   return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }
 
-/** Filtro OR para casar SKU ou código de barras por trecho (busca digitada). */
-export function codeLikeFilter(term: string): string {
+/**
+ * Filtro OR para casar SKU ou código de barras por trecho (busca digitada).
+ * `includeSize` acrescenta o tamanho — o PDV sempre casou por tamanho também,
+ * e manter isso evita mudar o resultado de quem já está acostumado.
+ */
+export function codeLikeFilter(term: string, includeSize = false): string {
   const v = quoteFilterValue(`%${term}%`);
-  return `sku.ilike.${v},barcode.ilike.${v}`;
+  const parts = [`sku.ilike.${v}`, `barcode.ilike.${v}`];
+  if (includeSize) parts.push(`size.ilike.${v}`);
+  return parts.join(",");
 }
 
 /** Filtro OR para casar SKU ou código de barras exato (leitor de código). */
@@ -121,7 +127,13 @@ export type VariantSearchRow = {
  */
 export async function searchVariantsByCode(
   term: string,
-  opts: { exact?: boolean; withBalances?: boolean; withCategory?: boolean; limit?: number } = {},
+  opts: {
+    exact?: boolean;
+    withBalances?: boolean;
+    withCategory?: boolean;
+    includeSize?: boolean;
+    limit?: number;
+  } = {},
 ): Promise<VariantSearchRow[]> {
   const t = term.trim();
   if (!t) return [];
@@ -142,11 +154,34 @@ export async function searchVariantsByCode(
     .from("product_variants")
     .select(columns)
     .is("deleted_at", null)
-    .or(opts.exact ? codeExactFilter(t) : codeLikeFilter(t))
+    .or(opts.exact ? codeExactFilter(t) : codeLikeFilter(t, opts.includeSize))
     .limit(opts.limit ?? 10);
 
   // Erro nunca vira "nada encontrado": foi assim que o bug do image_url ficou
   // invisível por uma semana.
+  if (error) throw error;
+  return (data ?? []) as unknown as VariantSearchRow[];
+}
+
+/**
+ * Carrega variações por id, com produto e saldo.
+ *
+ * Usado ao restaurar uma venda em espera no PDV: os preços e o estoque podem
+ * ter mudado desde que o carrinho foi guardado, então é preciso reler o estado
+ * atual em vez de confiar no que está salvo.
+ */
+export async function getVariantsByIds(ids: string[]): Promise<VariantSearchRow[]> {
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("product_variants")
+    .select(
+      `${VARIANT_BASE_COLUMNS}, product:products(${PRODUCT_BASE_COLUMNS}), balances:inventory_balances(${BALANCE_COLUMNS})`,
+    )
+    .in("id", unique)
+    .is("deleted_at", null);
+
   if (error) throw error;
   return (data ?? []) as unknown as VariantSearchRow[];
 }
@@ -223,7 +258,11 @@ export async function searchSellableVariants(term: string): Promise<VariantSearc
   const exact = await searchVariantsByCode(t, { exact: true, withBalances: true, limit: 1 });
   if (exact.length === 1) return exact;
 
-  const byCode = await searchVariantsByCode(t, { withBalances: true, limit: 10 });
+  const byCode = await searchVariantsByCode(t, {
+    withBalances: true,
+    includeSize: true,
+    limit: 10,
+  });
   if (byCode.length > 0) return byCode;
 
   const products = await searchProductsByName(t, { withBalances: true, limit: 25 });

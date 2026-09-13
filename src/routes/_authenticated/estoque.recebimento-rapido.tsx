@@ -68,6 +68,12 @@ import {
 } from "@/lib/label-pdf";
 import { RequirePermission } from "@/components/require-permission";
 import { invalidateCatalog } from "@/lib/query-keys";
+import {
+  PRODUCT_IMAGE_COLUMNS,
+  codeLikeFilter,
+  extractTokens,
+  matchAllTokens,
+} from "@/lib/catalog.queries";
 
 export const Route = createFileRoute(
   "/_authenticated/estoque/recebimento-rapido"
@@ -143,38 +149,6 @@ type LabelPresetKey =
   | "custom";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Utilitários de normalização de texto (busca sem acento / case-insensitive)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Normaliza texto para busca:
- * 1. Remove diacríticos (acentos)
- * 2. Substitui /:-() e outros separadores por espaço
- * 3. Converte para minúsculas
- * Ex: "PRETO/OFF TAM:M" → "preto off tam m"
- * Ex: "GOTA (CHOCOLATE)" → "gota  chocolate "
- */
-function normalizeText(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")           // remove acentos
-    .replace(/[/:\-()[\]{}|,;.+*#@!?=]/g, " ") // separadores → espaço
-    .toLowerCase()
-    .trim();
-}
-
-/** Extrai tokens limpos (mín. 1 char) de uma string normalizada */
-function extractTokens(text: string): string[] {
-  return normalizeText(text).split(/\s+/).filter((t) => t.length >= 1);
-}
-
-/** Retorna true se TODOS os tokens da query estiverem presentes no texto normalizado */
-function matchAllTokens(text: string, tokens: string[]): boolean {
-  const normalized = normalizeText(text);
-  return tokens.every((t) => normalized.includes(t));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Modal de Cadastro Rápido de Produto
 // ─────────────────────────────────────────────────────────────────────────────
 function QuickProductModal({
@@ -220,7 +194,7 @@ function QuickProductModal({
         })
         .select(
           `id, name, color, sale_price, promotional_price,
-           product_images!left(url:image_url, is_primary),
+           product_images!left(${PRODUCT_IMAGE_COLUMNS}),
            brand:brands(name), category:categories(name),
            product_variants!left(id, size, sku, barcode, sale_price)`
         )
@@ -373,7 +347,7 @@ function RecebimentoRapidoPage() {
         .from("products")
         .select(
           `id, name, color, sale_price, promotional_price, status,
-           product_images!left(url:image_url, is_primary),
+           product_images!left(${PRODUCT_IMAGE_COLUMNS}),
            brand:brands(name), category:categories(name),
            product_variants!left(id, size, sku, barcode, sale_price)`
         )
@@ -397,12 +371,12 @@ function RecebimentoRapidoPage() {
               `id, sku, barcode, size, sale_price,
                product:products!inner(
                  id, name, color, sale_price, promotional_price, status,
-                 product_images!left(url:image_url, is_primary),
+                 product_images!left(${PRODUCT_IMAGE_COLUMNS}),
                  brand:brands(name), category:categories(name),
                  product_variants!left(id, size, sku, barcode, sale_price)
                )`
             )
-            .or(`sku.ilike.%${rawQ}%,barcode.ilike.%${rawQ}%`)
+            .or(codeLikeFilter(rawQ))
             .limit(10)
         : Promise.resolve({ data: [], error: null });
 
