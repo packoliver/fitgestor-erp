@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { currentOrgId, formatBRL } from "@/lib/erp";
+import { currentOrgId, defaultStockLocationId, formatBRL } from "@/lib/erp";
 import { generateEAN13, generateSKU } from "@/lib/barcode-utils";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -569,13 +569,8 @@ function RecebimentoRapidoPage() {
       const org = await currentOrgId();
       if (!org) throw new Error("Organização não encontrada.");
 
-      const { data: loc } = await supabase
-        .from("stock_locations")
-        .select("id")
-        .order("created_at")
-        .limit(1)
-        .single();
-      if (!loc)
+      const locId = await defaultStockLocationId();
+      if (!locId)
         throw new Error(
           "Nenhum local de estoque encontrado. Cadastre um local primeiro."
         );
@@ -612,7 +607,7 @@ function RecebimentoRapidoPage() {
 
         const { error: mErr } = await supabase.rpc("apply_stock_movement", {
           _variant_id: variantId,
-          _location_id: loc.id,
+          _location_id: locId,
           _movement_type: "entrada",
           _quantity: item.quantity,
           _reason: "Recebimento Rápido em Loja",

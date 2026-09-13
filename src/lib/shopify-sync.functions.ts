@@ -27,44 +27,9 @@ async function canTriggerInventorySync(supabase: any) {
 }
 
 /**
- * Chamado pelo PDV depois de confirmar uma venda, pra empurrar o novo saldo
- * de estoque pra Shopify. Roda no servidor — o token da Shopify nunca é
- * enviado ao navegador (diferente do @/services/shopify-service.ts antigo).
- */
-export const pushInventoryToShopifyFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((data: { sku: string }) => data)
-  .handler(async ({ data, context }) => {
-    if (!(await canTriggerInventorySync(context.supabase)))
-      return { ok: false, message: "Sem permissão para sincronizar estoque com a Shopify." };
-    const sku = data.sku.trim();
-    if (!sku) return { ok: false, message: "SKU inválido." };
-    const { data: variant, error } = await (context.supabase.from("product_variants") as any)
-      .select("product_id")
-      .eq("sku", sku)
-      .is("deleted_at", null)
-      .maybeSingle();
-    if (error || !variant?.product_id)
-      return { ok: false, message: `SKU "${sku}" não encontrado ou sem permissão.` };
-    try {
-      const { syncProductIdsToShopifyNow } = await import("@/lib/shopify-product-sync.server");
-      const result = await syncProductIdsToShopifyNow([variant.product_id]);
-      return {
-        ...result,
-        message: result.synced
-          ? `Produto do SKU "${sku}" sincronizado.`
-          : result.disabled
-            ? "Sincronização Shopify desativada; alteração mantida na fila."
-            : "Produto mantido na fila da Shopify.",
-      };
-    } catch (e: any) {
-      return { ok: false, message: e?.message ?? "Falha ao sincronizar estoque com a Shopify." };
-    }
-  });
-
-/**
  * Resolve variações visíveis ao usuário para seus produtos e solicita uma
- * sincronização imediata. A Shopify nunca é chamada antes da operação local
+ * sincronização imediata. Roda no servidor — o token da Shopify nunca é
+ * enviado ao navegador. A Shopify nunca é chamada antes da operação local
  * concluir; falhas externas ficam preservadas na fila durável.
  */
 export const pushInventoryVariantsToShopifyFn = createServerFn({ method: "POST" })

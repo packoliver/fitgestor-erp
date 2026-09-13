@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { currentOrgId, formatBRL, SIZE_SUGGESTIONS } from "@/lib/erp";
+import { currentOrgId, defaultStockLocationId, formatBRL, SIZE_SUGGESTIONS } from "@/lib/erp";
 import { generateEAN13, generateSKU } from "@/lib/barcode-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -492,16 +492,11 @@ export function ProductForm({
 
           const initialStock = Number(v.initial_stock || "0");
           if (initialStock > 0) {
-            const { data: loc } = await supabase
-              .from("stock_locations")
-              .select("id")
-              .order("created_at")
-              .limit(1)
-              .single();
-            if (loc) {
+            const locId = await defaultStockLocationId();
+            if (locId) {
               const { error: mErr } = await supabase.rpc("apply_stock_movement", {
                 _variant_id: newV.id,
-                _location_id: loc.id,
+                _location_id: locId,
                 _movement_type: "entrada",
                 _quantity: initialStock,
                 _reason: "Estoque inicial no cadastro",

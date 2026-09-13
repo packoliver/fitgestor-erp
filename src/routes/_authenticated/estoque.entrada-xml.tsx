@@ -19,7 +19,7 @@ import {
   notifyShopifyInventorySync,
   runShopifyInventorySync,
 } from "@/lib/shopify-inventory-sync";
-import { currentOrgId, formatBRL } from "@/lib/erp";
+import { currentOrgId, defaultStockLocationId, formatBRL } from "@/lib/erp";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/estoque/entrada-xml")({
@@ -123,16 +123,8 @@ function EntradaNFeXMLPage() {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("Usuário não autenticado.");
 
-      // Buscar local de estoque padrão
-      const { data: defaultLocation } = await supabase
-        .from("stock_locations")
-        .select("id")
-        .eq("status", "ativo")
-        .order("created_at")
-        .limit(1)
-        .maybeSingle();
-      if (!defaultLocation) throw new Error("Nenhum local de estoque ativo encontrado. Cadastre um local primeiro.");
-      const locationId = defaultLocation.id;
+      const locationId = await defaultStockLocationId();
+      if (!locationId) throw new Error("Nenhum local de estoque ativo encontrado. Cadastre um local primeiro.");
 
       const updatedVariantIds: string[] = [];
 

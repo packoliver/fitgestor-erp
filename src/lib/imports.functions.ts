@@ -262,10 +262,22 @@ async function importStock(ctx: Ctx, orgId: string, rows: any[], locationId: str
 
   let locId = locationId ?? null;
   if (!locId) {
+    // Era `.order("created_at").limit(1)`, não-determinístico: os locais desta
+    // loja foram criados no mesmo INSERT e têm created_at idêntico, então uma
+    // importação podia lançar estoque em "Perda / Baixa". Agora usa a flag
+    // is_default, com o local de loja mais antigo (desempatado por id) como
+    // reserva para organizações que ainda não marcaram um padrão.
     const { data } = await ctx.supabase.from("stock_locations").select("id")
-      .eq("organization_id", orgId).eq("status", "ativo").order("created_at").limit(1).maybeSingle();
-    if (!data) throw new Error("Nenhum local de estoque ativo encontrado. Selecione um local antes de importar.");
-    locId = data.id;
+      .eq("organization_id", orgId).eq("status", "ativo").eq("is_default", true).maybeSingle();
+    if (data?.id) {
+      locId = data.id;
+    } else {
+      const { data: fallback } = await ctx.supabase.from("stock_locations").select("id")
+        .eq("organization_id", orgId).eq("status", "ativo").eq("type", "loja")
+        .order("created_at").order("id").limit(1).maybeSingle();
+      if (!fallback) throw new Error("Nenhum local de estoque ativo encontrado. Selecione um local antes de importar.");
+      locId = fallback.id;
+    }
   }
 
   for (let i = 0; i < rows.length; i++) {
