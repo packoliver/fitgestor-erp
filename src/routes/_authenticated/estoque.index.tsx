@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
@@ -13,6 +13,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight, Download, Loader2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { StockLaunchDialog } from "@/components/stock-launch-dialog";
+import { TablePagination } from "@/components/table-pagination";
 
 export const Route = createFileRoute("/_authenticated/estoque/")({
   component: EstoquePage,
@@ -29,6 +30,11 @@ const FETCH_CAP = 6000;
 // aconteceu no primeiro deploy desta tela. Então tem que paginar, igual a
 // exportação de catálogo mais abaixo neste arquivo já fazia.
 const PAGE_SIZE = 1000;
+
+// Preferência de "quantos por página" fica salva no navegador de quem usa —
+// quem confere estoque o dia inteiro não quer reescolher isso a cada visita.
+const ROWS_PER_PAGE_KEY = "fitgestor:estoque:linhas-por-pagina";
+const DEFAULT_ROWS_PER_PAGE = 50;
 
 type Balance = {
   id: string;
@@ -74,6 +80,15 @@ function EstoquePage() {
   const [categoryId, setCategoryId] = useState("all");
   const [filter, setFilter] = useState<StockFilter>("all");
   const [exporting, setExporting] = useState(false);
+  const [page, setPage] = useState(1);
+  // Começa no padrão e só lê o localStorage depois de montar: ler direto no
+  // useState quebraria a hidratação, porque no SSR não existe localStorage.
+  const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_ROWS_PER_PAGE);
+
+  useEffect(() => {
+    const saved = Number(localStorage.getItem(ROWS_PER_PAGE_KEY));
+    if (saved > 0) setRowsPerPage(saved);
+  }, []);
 
   // Antes esta tela buscava direto de inventory_balances — só aparecia aqui a
   // variação que JÁ tinha uma linha de saldo lançada (recebimento, ajuste de
@@ -177,6 +192,19 @@ function EstoquePage() {
     });
   }, [rows, search, locationId, categoryId, filter]);
 
+  // Qualquer mudança de filtro/busca refaz o conjunto por baixo — continuar na
+  // página 7 de um resultado que agora tem 2 páginas mostraria tabela vazia.
+  useEffect(() => {
+    setPage(1);
+  }, [search, locationId, categoryId, filter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
+  const currentPage = Math.min(page, totalPages);
+  const paged = useMemo(
+    () => filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage),
+    [filtered, currentPage, rowsPerPage],
+  );
+
   const counts = useMemo(() => {
     let low = 0, zero = 0;
     for (const b of rows) {
@@ -275,9 +303,9 @@ function EstoquePage() {
               <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
             ) : error ? (
               <TableRow><TableCell colSpan={8} className="text-center py-8 text-destructive">Falha ao buscar: {(error as Error)?.message ?? "erro desconhecido"}. Tente de novo.</TableCell></TableRow>
-            ) : filtered.length === 0 ? (
+            ) : paged.length === 0 ? (
               <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhum saldo encontrado com esses filtros.</TableCell></TableRow>
-            ) : filtered.map((b) => {
+            ) : paged.map((b) => {
               const low = b.minimum_quantity > 0 && b.physical_quantity <= b.minimum_quantity;
               const zero = b.physical_quantity === 0;
               return (
@@ -297,9 +325,24 @@ function EstoquePage() {
             })}
           </TableBody>
         </Table>
-        <div className="flex items-center justify-between px-4 py-3 border-t text-sm text-muted-foreground">
-          <span>{filtered.length} saldo(s) no filtro{variants.length >= FETCH_CAP ? ` (mostrando as ${FETCH_CAP} primeiras variações)` : ""}</span>
-        </div>
+        {variants.length >= FETCH_CAP && (
+          <div className="border-t bg-warning/10 px-4 py-2 text-xs text-warning-foreground">
+            O catálogo passou de {FETCH_CAP.toLocaleString("pt-BR")} variações e esta tela está mostrando só as
+            primeiras. Avise o suporte para aumentar o limite.
+          </div>
+        )}
+        <TablePagination
+          page={currentPage}
+          pageSize={rowsPerPage}
+          totalItems={filtered.length}
+          itemLabel="saldos"
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setRowsPerPage(size);
+            setPage(1);
+            localStorage.setItem(ROWS_PER_PAGE_KEY, String(size));
+          }}
+        />
       </Card>
     </div>
   );
