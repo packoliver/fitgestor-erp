@@ -40,6 +40,7 @@ import {
   CircleAlert,
 } from "lucide-react";
 import { z } from "zod";
+import { invalidateCatalog } from "@/lib/query-keys";
 import {
   getShopifyProductSyncStatusFn,
   queueShopifyProductSyncFn,
@@ -541,9 +542,10 @@ export function ProductForm({
         toast.warning(
           sync?.error ?? "Produto salvo; sincronização Shopify aguardando nova tentativa.",
         );
-      qc.invalidateQueries({ queryKey: ["products-list"] });
-      qc.invalidateQueries({ queryKey: ["product", id] });
-      qc.invalidateQueries({ queryKey: ["shopify-product-sync", id] });
+      // Antes invalidava só products-list / product / shopify-product-sync, e
+      // o produto novo não aparecia na busca do PDV, do Recebimento, das
+      // Etiquetas nem das Trocas sem recarregar a página.
+      invalidateCatalog(qc);
       onSaved?.(id);
     },
     onError: (e: Error) => toast.error(e.message),

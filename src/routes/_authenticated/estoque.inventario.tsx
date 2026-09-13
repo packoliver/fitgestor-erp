@@ -17,6 +17,7 @@ import {
   notifyShopifyInventorySync,
   runShopifyInventorySync,
 } from "@/lib/shopify-inventory-sync";
+import { invalidateStock } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/_authenticated/estoque/inventario")({
   component: InventarioPage,
@@ -87,7 +88,7 @@ function InventarioPage() {
     onSuccess: (shopifySync) => {
       toast.success("Inventário finalizado e ajustes gerados");
       notifyShopifyInventorySync(shopifySync);
-      qc.invalidateQueries();
+      invalidateStock(qc);
       setCounts([]);
     },
     onError: (e: Error) => toast.error(e.message),

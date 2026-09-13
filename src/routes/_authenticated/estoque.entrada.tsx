@@ -18,6 +18,7 @@ import {
   notifyShopifyInventorySync,
   runShopifyInventorySync,
 } from "@/lib/shopify-inventory-sync";
+import { invalidateStock } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/_authenticated/estoque/entrada")({
   component: EntradaPage,
@@ -129,7 +130,7 @@ function EntradaPage() {
     onSuccess: (shopifySync) => {
       toast.success("Entrada registrada");
       notifyShopifyInventorySync(shopifySync);
-      qc.invalidateQueries();
+      invalidateStock(qc);
       setItems([]);
       setReference("");
     },

@@ -67,6 +67,7 @@ import {
   type LabelTemplate,
 } from "@/lib/label-pdf";
 import { RequirePermission } from "@/components/require-permission";
+import { invalidateCatalog } from "@/lib/query-keys";
 
 export const Route = createFileRoute(
   "/_authenticated/estoque/recebimento-rapido"
@@ -698,8 +699,9 @@ function RecebimentoRapidoPage() {
           : "Recebimento de estoque finalizado com sucesso!"
       );
       notifyShopifyInventorySync(shopifySync);
-      qc.invalidateQueries({ queryKey: ["stock-overview"] });
-      qc.invalidateQueries({ queryKey: ["products-list"] });
+      // Recebimento pode criar variação nova (grade preenchida na hora), então
+      // é catálogo, não só estoque.
+      invalidateCatalog(qc);
       setBatchItems([]);
       setSelectedProduct(null);
       setGridQuantities({});
@@ -1239,7 +1241,9 @@ function RecebimentoRapidoPage() {
             product: prod,
           };
           handleSelectVariant(noVariant);
-          qc.invalidateQueries({ queryKey: ["products-list"] });
+          // Invalidava só products-list — a busca desta própria tela
+          // (products-search-recebimento-v3) ficava sem o produto recém-criado.
+          invalidateCatalog(qc);
         }}
       />
     </div>

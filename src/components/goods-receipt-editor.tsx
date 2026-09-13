@@ -21,6 +21,7 @@ import { GoodsReceiptStockMovements } from "@/components/goods-receipt-stock-mov
 import { GoodsReceiptTimeline } from "@/components/goods-receipt-timeline";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
+import { invalidateCatalog } from "@/lib/query-keys";
 import {
   notifyShopifyInventorySync,
   runShopifyInventorySync,
@@ -370,9 +371,10 @@ export function ReceiptEditor({ draftId: initialId }: { draftId?: string }) {
       setConfirmedAt(new Date().toISOString());
       setConfirmationSummary(result?.summary ?? result);
       setConfirmOpen(false);
-      qc.invalidateQueries({ queryKey: ["goods-receipts-list"] });
       if (draftId) qc.invalidateQueries({ queryKey: ["goods-receipt-draft", draftId] });
-      qc.invalidateQueries({ queryKey: ["stock-overview"] });
+      // Confirmar recebimento pode criar variação nova, então invalida catálogo
+      // inteiro (que já inclui estoque e a lista de recebimentos).
+      invalidateCatalog(qc);
     },
     onError: (e: Error) => {
       toast.error(e.message);

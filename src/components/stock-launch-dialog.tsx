@@ -29,6 +29,7 @@ import {
   notifyShopifyInventorySync,
   runShopifyInventorySync,
 } from "@/lib/shopify-inventory-sync";
+import { invalidateStock } from "@/lib/query-keys";
 
 type Kind = "entrada" | "saida" | "balanco";
 
@@ -240,7 +241,10 @@ export function StockLaunchDialog({
         toast.success("Lançamento registrado");
       }
       notifyShopifyInventorySync(res.shopifySync);
-      qc.invalidateQueries();
+      // Era `invalidateQueries()` sem argumento, que refazia TODA consulta viva
+      // do sistema a cada lançamento — inclusive caixa, entregas e pós-venda,
+      // que nada têm a ver com saldo.
+      invalidateStock(qc);
       reset();
       setOpen(false);
       onDone?.();
