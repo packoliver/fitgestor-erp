@@ -19,6 +19,7 @@ import {
 } from "@/lib/shipping";
 import { OverrideScheduleDialog } from "@/components/shipping/override-schedule-dialog";
 import { DeliveryOutcomeDialog } from "@/components/shipping/delivery-outcome-dialog";
+import { invalidateShipping } from "@/lib/query-keys";
 
 const money = (v: number | string | null | undefined) =>
   Number(v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -83,7 +84,7 @@ function OrdemDetalhe() {
       const { error } = await supabase.rpc("refresh_shipment_payment_summary", { _shipment_id: id });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Resumo financeiro atualizado."); qc.invalidateQueries(); },
+    onSuccess: () => { toast.success("Resumo financeiro atualizado."); invalidateShipping(qc); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -94,7 +95,7 @@ function OrdemDetalhe() {
       });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Status alterado."); qc.invalidateQueries(); },
+    onSuccess: () => { toast.success("Status alterado."); invalidateShipping(qc); },
     onError: (e: Error) => toast.error(e.message),
   });
 

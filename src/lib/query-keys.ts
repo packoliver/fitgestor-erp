@@ -78,6 +78,63 @@ export const stockKeys = {
   launchMovements: (variantId?: string) => ["stock-launch-movements", variantId] as const,
 } as const;
 
+// ── Raízes de expedição/entrega ───────────────────────────────────────────
+// Mexer numa entrega respinga em muita tela: fila, detalhe da ordem, rota,
+// resumo, pendências, a tela do motoboy, o contador de "entregas pendentes" da
+// tela de Trabalho e o badge do menu lateral. Era por isso que essas telas
+// usavam `invalidateQueries()` sem argumento — mais fácil que lembrar de tudo.
+const SHIPPING_ROOTS = [
+  "shipments-queue",
+  "shipment-detail",
+  "shipment-events",
+  "route",
+  "route-shipments",
+  "routes-list",
+  "available-shipments",
+  "open-routes-today",
+  "expedicao-summary",
+  "expedicao-pendencias",
+  "me-shipments",
+  "pending-deliveries-count",
+  "delivery-forecast",
+  "sale-delivery",
+  "nav-badge",
+] as const;
+
+// ── Raízes financeiras ────────────────────────────────────────────────────
+// Entrega com cobrança na porta e estorno de troca movimentam dinheiro: a
+// sessão de caixa, os movimentos, os recebíveis de cartão e o detalhe da venda
+// mudam junto. Estreitar a invalidação sem incluir isto deixaria o Caixa
+// mostrando saldo velho depois de o motoboy receber em dinheiro.
+const FINANCIAL_ROOTS = [
+  "current-session",
+  "cash-movements",
+  "card-receivables",
+  "sale",
+  "sale-payments",
+  "sales-list",
+] as const;
+
+// ── Raízes de troca, vale e crédito de loja ───────────────────────────────
+// Estornar uma troca desfaz itens, pagamentos, vale e crédito de uma vez.
+const EXCHANGE_ROOTS = [
+  "exchange",
+  "exchanges",
+  "ex-ret",
+  "ex-new",
+  "ex-pay",
+  "ex-voucher",
+  "vouchers",
+  "voucher-tx",
+  "credits",
+  "credit-account",
+  "credit-totals",
+  "credit-history",
+  "sale-voucher-tx",
+  "sale-credit-tx",
+  "report_exchanges",
+] as const;
+
 function invalidateRoots(qc: QueryClient, roots: readonly string[]) {
   // `Promise.all` em vez de sequencial: são invalidações independentes e
   // esperar uma a uma atrasaria o refetch da tela que o usuário está vendo.
@@ -105,4 +162,28 @@ export function invalidateCatalog(qc: QueryClient) {
  */
 export function invalidateStock(qc: QueryClient) {
   return invalidateRoots(qc, STOCK_ROOTS);
+}
+
+/**
+ * Chame depois de mexer em entrega ou rota — status, motoboy, ordem das
+ * paradas, reagendamento, desfecho da entrega.
+ *
+ * Inclui as raízes financeiras porque o desfecho da entrega pode receber
+ * dinheiro do cliente na porta (`mark_shipment_delivered_with_payment`).
+ */
+export function invalidateShipping(qc: QueryClient) {
+  return invalidateRoots(qc, [...new Set([...SHIPPING_ROOTS, ...FINANCIAL_ROOTS])]);
+}
+
+/**
+ * Chame depois de concluir ou estornar uma troca.
+ *
+ * Inclui estoque (troca movimenta peça, e o saldo precisa aparecer atualizado
+ * nas telas de estoque e na busca do PDV) e financeiro (troca tem pagamento de
+ * diferença, vale e crédito de loja).
+ */
+export function invalidateExchange(qc: QueryClient) {
+  return invalidateRoots(qc, [
+    ...new Set([...EXCHANGE_ROOTS, ...STOCK_ROOTS, ...FINANCIAL_ROOTS]),
+  ]);
 }

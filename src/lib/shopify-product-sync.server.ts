@@ -185,13 +185,28 @@ export function createShopifyProductClient(
         continue;
       }
       if (!response.ok) {
-        // Diagnóstico: 404/403 nessa chamada normalmente não vêm com corpo JSON útil,
-        // mas o texto cru (mesmo que HTML) já ajuda a distinguir "domínio errado" de
-        // "app sem acesso" de "versão de API retirada" sem precisar reproduzir na mão.
+        // Diagnóstico. O 404 que apareceu em 13/09 chega como {"errors":"Not Found"},
+        // o que não distingue as causas possíveis. Três fatos já são conhecidos e
+        // estreitam o cerco:
+        //
+        //  - A troca de token ACIMA funcionou, incluindo a conferência de escopos.
+        //    Então não é credencial revogada nem app sem permissão — esses casos
+        //    quebrariam em `token()` com outra mensagem.
+        //  - A URL não tem como estar malformada: SHOP_RE proíbe protocolo, barra e
+        //    caminho no domínio, e o caminho é montado numa string só.
+        //  - Sobra: versão de API que a loja não serve, ou app não instalado nessa
+        //    loja (a Shopify responde 404 nos dois casos).
+        //
+        // Por isso o erro agora diz QUAL loja e QUAL versão foram chamadas: a
+        // próxima falha responde sozinha, sem depender de reproduzir à mão.
         const bodyText = await response.text().catch(() => "");
-        const snippet = bodyText.replace(/\s+/g, " ").trim().slice(0, 300);
+        const snippet = bodyText.replace(/\s+/g, " ").trim().slice(0, 200);
+        const servedVersion = response.headers.get("x-shopify-api-version");
         throw new Error(
-          `Shopify GraphQL recusou a operação (HTTP ${response.status})${snippet ? `: ${snippet}` : "."}`,
+          `Shopify GraphQL recusou a operação (HTTP ${response.status}) ` +
+            `em ${config.shop} na versão ${SHOPIFY_PRODUCT_API_VERSION}` +
+            (servedVersion ? ` (a loja respondeu servindo ${servedVersion})` : "") +
+            (snippet ? `: ${snippet}` : "."),
         );
       }
       const actualVersion = response.headers.get("x-shopify-api-version");

@@ -18,6 +18,7 @@ import {
   statusVariant, DEFAULT_WHATSAPP_TEMPLATE, renderTemplate,
 } from "@/lib/shipping";
 import { AddShipmentToRouteDialog, CancelRouteDialog } from "@/components/shipping/route-dialogs";
+import { invalidateShipping } from "@/lib/query-keys";
 
 const money = (v: any) => Number(v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -83,7 +84,7 @@ function RotaDetalhe() {
       });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Ordem salva."); setPendingOrder(null); qc.invalidateQueries(); },
+    onSuccess: () => { toast.success("Ordem salva."); setPendingOrder(null); invalidateShipping(qc); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -92,7 +93,7 @@ function RotaDetalhe() {
       const { error } = await supabase.rpc("remove_shipment_from_route", { _shipment_id: sid });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Entrega removida da rota."); qc.invalidateQueries(); },
+    onSuccess: () => { toast.success("Entrega removida da rota."); invalidateShipping(qc); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -102,7 +103,7 @@ function RotaDetalhe() {
       const { error } = await supabase.rpc("dispatch_and_start_route", { _route_id: id });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Motoboy saiu para entrega."); qc.invalidateQueries(); },
+    onSuccess: () => { toast.success("Motoboy saiu para entrega."); invalidateShipping(qc); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -112,7 +113,7 @@ function RotaDetalhe() {
       const { error } = await supabase.rpc("start_route", { _route_id: id });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Rota iniciada."); qc.invalidateQueries(); },
+    onSuccess: () => { toast.success("Rota iniciada."); invalidateShipping(qc); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -121,7 +122,7 @@ function RotaDetalhe() {
       const { error } = await supabase.rpc("complete_route", { _route_id: id });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Rota concluída."); qc.invalidateQueries(); },
+    onSuccess: () => { toast.success("Rota concluída."); invalidateShipping(qc); },
     onError: (e: Error) => toast.error(e.message),
   });
 

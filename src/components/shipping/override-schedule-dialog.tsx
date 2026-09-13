@@ -13,6 +13,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { invalidateShipping } from "@/lib/query-keys";
 
 type OpenRoute = {
   id: string; route_number: number; courier_id: string; courier_name: string;
@@ -55,7 +56,7 @@ export function OverrideScheduleDialog({
     },
     onSuccess: () => {
       toast.success("Entrega incluída na saída de hoje.");
-      qc.invalidateQueries();
+      invalidateShipping(qc);
       onOpenChange(false);
       setReason(""); setRouteId("");
       onSuccess?.();

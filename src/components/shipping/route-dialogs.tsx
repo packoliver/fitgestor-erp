@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Search, Plus } from "lucide-react";
+import { invalidateShipping } from "@/lib/query-keys";
 
 type Available = {
   id: string; shipment_number: number; recipient_name: string; neighborhood: string | null;
@@ -51,7 +52,7 @@ export function AddShipmentToRouteDialog({
     },
     onSuccess: () => {
       toast.success("Entrega adicionada à rota.");
-      qc.invalidateQueries();
+      invalidateShipping(qc);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -114,7 +115,7 @@ export function CancelRouteDialog({
     },
     onSuccess: () => {
       toast.success("Rota cancelada. Entregas liberadas para replanejamento.");
-      qc.invalidateQueries();
+      invalidateShipping(qc);
       onClose();
     },
     onError: (e: Error) => toast.error(e.message),

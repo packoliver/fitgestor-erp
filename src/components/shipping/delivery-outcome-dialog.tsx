@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { invalidateShipping } from "@/lib/query-keys";
 
 type Kind = "delivered" | "absent" | "failed" | "rescheduled" | "cancelled";
 
@@ -109,7 +110,7 @@ export function DeliveryOutcomeDialog({
     },
     onSuccess: (result) => {
       toast.success(result?.payment_recorded ? "Entrega e pagamento registrados." : "Ação registrada.");
-      qc.invalidateQueries();
+      invalidateShipping(qc);
       onOpenChange(false);
       setNotes(""); setNewDate(""); setAmountReceived("");
       onDone?.();

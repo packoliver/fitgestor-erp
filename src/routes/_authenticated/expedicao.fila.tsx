@@ -18,6 +18,7 @@ import { AlertTriangle, ExternalLink, Filter, MapPin, Package, PlayCircle, Searc
 import { SHIPMENT_STATUS_LABEL, statusVariant } from "@/lib/shipping";
 import { OverrideScheduleDialog } from "@/components/shipping/override-schedule-dialog";
 import { DeliveryOutcomeDialog } from "@/components/shipping/delivery-outcome-dialog";
+import { invalidateShipping } from "@/lib/query-keys";
 
 const money = (v: number | string | null | undefined) =>
   Number(v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -92,7 +93,7 @@ function FilaPage() {
       });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Status atualizado."); qc.invalidateQueries(); },
+    onSuccess: () => { toast.success("Status atualizado."); invalidateShipping(qc); },
     onError: (e: Error) => toast.error(e.message),
   });
 

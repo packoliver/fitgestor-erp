@@ -23,6 +23,7 @@ import {
   notifyShopifyInventorySync,
   runShopifyInventorySync,
 } from "@/lib/shopify-inventory-sync";
+import { invalidateExchange } from "@/lib/query-keys";
 
 
 export const Route = createFileRoute("/_authenticated/trocas/$id")({
@@ -80,7 +81,7 @@ function TrocaDetalhe() {
       notifyShopifyInventorySync(shopifySync);
       setReverseOpen(false);
       setReverseReason("");
-      qc.invalidateQueries();
+      invalidateExchange(qc);
     },
     onError: (err: any) => toast.error(err.message ?? "Erro ao estornar"),
   });
