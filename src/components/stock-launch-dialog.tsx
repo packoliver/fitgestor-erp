@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,18 +34,33 @@ type Kind = "entrada" | "saida" | "balanco";
 
 export function StockLaunchDialog({
   variantId,
+  variantLabel: fixedVariantLabel,
   locationId: fixedLocationId,
   trigger,
   onDone,
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
 }: {
   variantId?: string;
+  /** Nome do item, exibido quando a variação já vem escolhida de fora. */
+  variantLabel?: string;
   locationId?: string;
   trigger?: React.ReactNode;
   onDone?: () => void;
+  /**
+   * Modo controlado: a tela hospeda UM diálogo e abre com a linha clicada, em
+   * vez de montar um diálogo por linha da tabela. Quando usado, não renderiza
+   * gatilho próprio.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const syncShopifyInventory = useServerFn(pushInventoryVariantsToShopifyFn);
   const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = isControlled ? (setControlledOpen ?? (() => {})) : setUncontrolledOpen;
   const [kind, setKind] = useState<Kind>("entrada");
   const [locationId, setLocationId] = useState<string | undefined>(fixedLocationId);
   const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(variantId);
@@ -54,6 +69,16 @@ export function StockLaunchDialog({
   const [quantity, setQuantity] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
   const [notes, setNotes] = useState("");
+
+  // Em modo controlado o mesmo diálogo atende várias linhas da tabela: a cada
+  // abertura o item muda, e `useState(prop)` só olharia o valor da primeira
+  // montagem. Sem isto, clicar na segunda linha lançaria no item da primeira.
+  useEffect(() => {
+    if (variantId) setSelectedVariantId(variantId);
+  }, [variantId]);
+  useEffect(() => {
+    if (fixedLocationId) setLocationId(fixedLocationId);
+  }, [fixedLocationId]);
 
   const locations = useQuery({
     queryKey: ["stock-locations-launch"],
@@ -76,21 +101,47 @@ export function StockLaunchDialog({
     },
   });
 
+  // Carregado sempre (não só no Balanço) porque o cabeçalho do diálogo mostra
+  // o saldo do item — quem abre pela linha da tabela quer confirmar que está
+  // lançando na peça certa antes de digitar.
   const currentBalance = useQuery({
     queryKey: ["stock-launch-balance", selectedVariantId, locationId],
-    enabled: !!selectedVariantId && !!locationId && kind === "balanco",
+    enabled: !!selectedVariantId && !!locationId,
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("inventory_balances")
-        .select("physical_quantity")
+        .select("physical_quantity, reserved_quantity, available_quantity")
         .eq("variant_id", selectedVariantId!)
         .eq("location_id", locationId!)
         .maybeSingle();
       if (error) throw error;
-      return data?.physical_quantity ?? 0;
+      // Sem linha de saldo = item nunca movimentado, que é zero de verdade,
+      // não "desconhecido" — 91% do catálogo estava nessa situação.
+      return {
+        physical: data?.physical_quantity ?? 0,
+        reserved: data?.reserved_quantity ?? 0,
+        available: data?.available_quantity ?? 0,
+      };
+    },
+  });
+
+  // Últimos lançamentos do item, como a lista que a Olist mostra na tela de
+  // controle de estoque. Só faz sentido quando o item já veio escolhido.
+  const recentMovements = useQuery({
+    queryKey: ["stock-launch-movements", selectedVariantId],
+    enabled: open && !!selectedVariantId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("inventory_movements")
+        .select("id, movement_type, quantity, quantity_before, quantity_after, reason, created_at")
+        .eq("variant_id", selectedVariantId!)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
@@ -200,17 +251,39 @@ export function StockLaunchDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />Incluir lançamento
-          </Button>
-        )}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />Incluir lançamento
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Lançamento de estoque</DialogTitle>
+          {fixedVariantLabel && (
+            <p className="text-sm font-medium text-foreground">{fixedVariantLabel}</p>
+          )}
         </DialogHeader>
+
+        {variantId && (
+          <div className="grid grid-cols-3 gap-2 rounded-md border bg-muted/40 px-3 py-2 text-center">
+            {[
+              { label: "Saldo físico", value: currentBalance.data?.physical },
+              { label: "Reservado", value: currentBalance.data?.reserved },
+              { label: "Disponível", value: currentBalance.data?.available },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <p className="text-lg font-semibold leading-tight">
+                  {currentBalance.isLoading ? "…" : (stat.value ?? 0)}
+                </p>
+                <p className="text-[11px] text-muted-foreground">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         <Tabs value={kind} onValueChange={(v) => setKind(v as Kind)}>
           <TabsList className="grid grid-cols-3 w-full">
@@ -286,7 +359,7 @@ export function StockLaunchDialog({
                 placeholder="0"
               />
               {kind === "balanco" && selectedVariantId && locationId && (() => {
-                const cur = currentBalance.data ?? 0;
+                const cur = currentBalance.data?.physical ?? 0;
                 const raw = (quantity || "").trim().replace(",", ".");
                 const parsed = raw === "" ? null : Number(raw);
                 const valid = parsed !== null && !Number.isNaN(parsed) && Number.isInteger(parsed) && parsed >= 0;
@@ -334,6 +407,34 @@ export function StockLaunchDialog({
             />
           </div>
         </div>
+
+        {variantId && (
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Últimos lançamentos</Label>
+            {recentMovements.isLoading ? (
+              <p className="text-xs text-muted-foreground">Carregando…</p>
+            ) : (recentMovements.data ?? []).length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nenhum lançamento registrado para este item ainda.</p>
+            ) : (
+              <ul className="divide-y rounded-md border text-xs">
+                {recentMovements.data!.map((m: any) => (
+                  <li key={m.id} className="flex items-center justify-between gap-2 px-2.5 py-1.5">
+                    <span className="text-muted-foreground whitespace-nowrap">
+                      {new Date(m.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                    </span>
+                    <span className="truncate" title={m.reason ?? ""}>{m.reason ?? m.movement_type}</span>
+                    <span className="whitespace-nowrap font-medium">
+                      {m.quantity > 0 ? `+${m.quantity}` : m.quantity}
+                      <span className="ml-1 font-normal text-muted-foreground">
+                        ({m.quantity_before} → {m.quantity_after})
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         <DialogFooter className="mt-2">
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>

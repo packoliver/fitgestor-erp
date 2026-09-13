@@ -81,6 +81,9 @@ function EstoquePage() {
   const [filter, setFilter] = useState<StockFilter>("all");
   const [exporting, setExporting] = useState(false);
   const [page, setPage] = useState(1);
+  // Um único diálogo para a tabela inteira, alimentado pela linha clicada —
+  // montar um diálogo por linha custaria 50 instâncias por página à toa.
+  const [launchTarget, setLaunchTarget] = useState<Balance | null>(null);
   // Começa no padrão e só lê o localStorage depois de montar: ler direto no
   // useState quebraria a hidratação, porque no SSR não existe localStorage.
   const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_ROWS_PER_PAGE);
@@ -309,8 +312,23 @@ function EstoquePage() {
               const low = b.minimum_quantity > 0 && b.physical_quantity <= b.minimum_quantity;
               const zero = b.physical_quantity === 0;
               return (
-                <TableRow key={b.id}>
-                  <TableCell>{b.variant?.product?.name} <span className="text-muted-foreground">· {b.variant?.product?.color}</span></TableCell>
+                <TableRow
+                  key={b.id}
+                  className="cursor-pointer"
+                  onClick={() => setLaunchTarget(b)}
+                >
+                  <TableCell>
+                    {/* Botão de verdade (e não só o clique na linha) para quem
+                        navega por teclado conseguir chegar no lançamento. */}
+                    <button
+                      type="button"
+                      className="text-left font-medium hover:underline focus-visible:underline focus-visible:outline-none"
+                      onClick={(e) => { e.stopPropagation(); setLaunchTarget(b); }}
+                    >
+                      {b.variant?.product?.name}
+                    </button>
+                    <span className="text-muted-foreground"> · {b.variant?.product?.color}</span>
+                  </TableCell>
                   <TableCell>{b.variant?.size}</TableCell>
                   <TableCell className="font-mono text-xs">{b.variant?.sku ?? "—"}</TableCell>
                   <TableCell>{b.location?.name}</TableCell>
@@ -344,6 +362,24 @@ function EstoquePage() {
           }}
         />
       </Card>
+
+      {launchTarget && (
+        <StockLaunchDialog
+          key={launchTarget.id}
+          open
+          onOpenChange={(v) => { if (!v) setLaunchTarget(null); }}
+          variantId={launchTarget.variant!.id}
+          variantLabel={[
+            launchTarget.variant?.product?.name,
+            launchTarget.variant?.product?.color,
+            launchTarget.variant?.size && `Tam. ${launchTarget.variant.size}`,
+            launchTarget.variant?.sku && `SKU ${launchTarget.variant.sku}`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          locationId={launchTarget.location?.id}
+        />
+      )}
     </div>
   );
 }
