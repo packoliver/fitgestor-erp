@@ -368,7 +368,7 @@ function RecebimentoRapidoPage() {
 
       // ── 1. Busca por nome do produto ─────────────────────────────────────
       // Limite amplo (50) para compensar o filtro client-side dos outros tokens
-      const { data: byName } = await supabase
+      const { data: byName, error: byNameError } = await supabase
         .from("products")
         .select(
           `id, name, color, sale_price, promotional_price, status,
@@ -380,6 +380,9 @@ function RecebimentoRapidoPage() {
         .ilike("name", `%${firstToken}%`)
         .order("status", { ascending: true }) // 'active' vem antes de 'inactive' alfabeticamente
         .limit(50);
+      // A busca engolia qualquer erro do Supabase e devolvia lista vazia — o
+      // produto sumia da busca sem nenhum aviso, indistinguível de "não existe".
+      if (byNameError) throw byNameError;
 
       // ── 2. Busca por SKU ou EAN nas variações ─────────────────────────────
       // Suporte a SKUs nulos: filtramos só quando o valor buscado parece um código
@@ -400,9 +403,10 @@ function RecebimentoRapidoPage() {
             )
             .or(`sku.ilike.%${rawQ}%,barcode.ilike.%${rawQ}%`)
             .limit(10)
-        : Promise.resolve({ data: [] });
+        : Promise.resolve({ data: [], error: null });
 
-      const { data: byVariant } = await byVariantPromise;
+      const { data: byVariant, error: byVariantError } = await byVariantPromise;
+      if (byVariantError) throw byVariantError;
 
       // ── 3. Merge + deduplicação ───────────────────────────────────────────
       // O mapa prioriza produtos ativos (já ordenados no Supabase)
@@ -713,6 +717,7 @@ function RecebimentoRapidoPage() {
   }
 
   const isSearchLoading = searchResults.isFetching;
+  const searchFailed = searchResults.isError;
   const flatResults = searchResults.data ?? [];
   const showDropdown =
     dropdownOpen && productSearch.trim().length >= 2;
@@ -806,8 +811,16 @@ function RecebimentoRapidoPage() {
                       </div>
                     )}
 
+                    {/* Erro de verdade — não misturar com "não encontrado" */}
+                    {!isSearchLoading && searchFailed && (
+                      <div className="px-4 py-3 text-sm text-destructive flex items-center gap-2">
+                        <X className="h-4 w-4 shrink-0" />
+                        Falha ao buscar: {(searchResults.error as Error)?.message ?? "erro desconhecido"}. Tente de novo.
+                      </div>
+                    )}
+
                     {/* Sem resultados */}
-                    {!isSearchLoading && flatResults.length === 0 && (
+                    {!isSearchLoading && !searchFailed && flatResults.length === 0 && (
                       <div className="px-4 py-3 text-sm text-muted-foreground flex items-center gap-2">
                         <Package className="h-4 w-4" />
                         Nenhum produto encontrado para &ldquo;{productSearch}&rdquo;.
