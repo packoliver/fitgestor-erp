@@ -18,11 +18,12 @@ export const Route = createFileRoute("/_authenticated/estoque/")({
   component: EstoquePage,
 });
 
-// Teto de segurança: a consulta buscava TODO o saldo de uma vez, sem limite —
-// ia pesar conforme o catálogo crescesse. 1000 saldos cobre com folga o
-// tamanho atual da loja; se um dia passar disso, o filtro por local/categoria
-// já reduz o problema antes de precisar de paginação de verdade.
-const FETCH_CAP = 1000;
+// Teto de segurança: a consulta busca TODAS as variações ativas do catálogo
+// (não só as que já têm saldo lançado — ver comentário na query abaixo).
+// 3722 variações ativas hoje; 6000 cobre com folga o crescimento próximo.
+// Se um dia passar disso, o filtro por local/categoria já reduz o problema
+// antes de precisar de paginação de verdade.
+const FETCH_CAP = 6000;
 
 type Balance = {
   id: string;
@@ -40,6 +41,22 @@ type Balance = {
   location: { id: string; name: string } | null;
 };
 
+type VariantWithBalances = {
+  id: string;
+  size: string | null;
+  sku: string | null;
+  barcode: string | null;
+  product: { id: string; name: string; color: string | null; category: { id: string; name: string } | null } | null;
+  balances: {
+    id: string;
+    physical_quantity: number;
+    reserved_quantity: number;
+    available_quantity: number;
+    minimum_quantity: number;
+    location: { id: string; name: string } | null;
+  }[];
+};
+
 type StockFilter = "all" | "low" | "zero";
 
 function EstoquePage() {
@@ -49,19 +66,29 @@ function EstoquePage() {
   const [filter, setFilter] = useState<StockFilter>("all");
   const [exporting, setExporting] = useState(false);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["stock-overview"],
+  // Antes esta tela buscava direto de inventory_balances — só aparecia aqui a
+  // variação que JÁ tinha uma linha de saldo lançada (recebimento, ajuste de
+  // inventário, importação do Olist etc.). Descobrimos que 3399 das 3722
+  // variações ativas do catálogo (91%!) nunca tiveram nenhum movimento de
+  // estoque, então nunca apareciam em Estoque nem eram encontradas — mesmo
+  // recém-cadastradas. Agora a fonte é product_variants (todo o catálogo
+  // ativo), com os saldos vindos por left join; quem não tem nenhuma linha de
+  // saldo entra como "Sem estoque" (zero) na Loja Principal, em vez de sumir.
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["stock-overview-v2"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("inventory_balances")
+      const { data, error } = await supabase
+        .from("product_variants")
         .select(`
-          id, physical_quantity, reserved_quantity, available_quantity, minimum_quantity,
-          variant:product_variants(id, size, sku, barcode, product:products(id, name, color, category:categories(id, name))),
-          location:stock_locations(id, name)
+          id, size, sku, barcode,
+          product:products(id, name, color, category:categories(id, name)),
+          balances:inventory_balances(id, physical_quantity, reserved_quantity, available_quantity, minimum_quantity, location:stock_locations(id, name))
         `)
-        .order("physical_quantity", { ascending: true })
+        .is("deleted_at", null)
+        .order("id")
         .limit(FETCH_CAP);
-      return (data ?? []) as unknown as Balance[];
+      if (error) throw error;
+      return (data ?? []) as unknown as VariantWithBalances[];
     },
   });
 
@@ -74,7 +101,48 @@ function EstoquePage() {
     queryFn: async () => (await supabase.from("categories").select("id, name").order("name")).data ?? [],
   });
 
-  const rows = data ?? [];
+  // Local padrão de recebimento (o mais antigo cadastrado — "Loja Principal"),
+  // usado só para exibir as variações sem nenhum saldo lançado ainda.
+  const defaultLocation = useQuery({
+    queryKey: ["stock-locations-default"],
+    queryFn: async () =>
+      (await supabase.from("stock_locations").select("id, name").order("created_at").limit(1).maybeSingle()).data ??
+      null,
+  });
+
+  const variants = data ?? [];
+
+  const rows = useMemo<Balance[]>(() => {
+    const out: Balance[] = [];
+    for (const v of variants) {
+      const variantInfo = { id: v.id, size: v.size, sku: v.sku, barcode: v.barcode, product: v.product };
+      if (v.balances && v.balances.length > 0) {
+        for (const b of v.balances) {
+          out.push({
+            id: b.id,
+            physical_quantity: b.physical_quantity,
+            reserved_quantity: b.reserved_quantity,
+            available_quantity: b.available_quantity,
+            minimum_quantity: b.minimum_quantity,
+            variant: variantInfo,
+            location: b.location,
+          });
+        }
+      } else {
+        out.push({
+          id: `${v.id}:sem-entrada`,
+          physical_quantity: 0,
+          reserved_quantity: 0,
+          available_quantity: 0,
+          minimum_quantity: 0,
+          variant: variantInfo,
+          location: defaultLocation.data ?? null,
+        });
+      }
+    }
+    out.sort((a, b) => a.physical_quantity - b.physical_quantity);
+    return out;
+  }, [variants, defaultLocation.data]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -190,6 +258,8 @@ function EstoquePage() {
           <TableBody>
             {isLoading ? (
               <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+            ) : error ? (
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-destructive">Falha ao buscar: {(error as Error)?.message ?? "erro desconhecido"}. Tente de novo.</TableCell></TableRow>
             ) : filtered.length === 0 ? (
               <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhum saldo encontrado com esses filtros.</TableCell></TableRow>
             ) : filtered.map((b) => {
@@ -213,7 +283,7 @@ function EstoquePage() {
           </TableBody>
         </Table>
         <div className="flex items-center justify-between px-4 py-3 border-t text-sm text-muted-foreground">
-          <span>{filtered.length} saldo(s) no filtro{rows.length >= FETCH_CAP ? ` (mostrando os ${FETCH_CAP} primeiros por quantidade)` : ""}</span>
+          <span>{filtered.length} saldo(s) no filtro{variants.length >= FETCH_CAP ? ` (mostrando as ${FETCH_CAP} primeiras variações)` : ""}</span>
         </div>
       </Card>
     </div>
