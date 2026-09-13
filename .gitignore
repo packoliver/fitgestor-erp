@@ -47,3 +47,13 @@ scripts/sandbox/.sandbox-credentials.json
 CONTINUIDADE-CODEX.md
 CONTINUIDADE-CLAUDE.md
 SHOPIFY-AUDIT-STATUS.md
+
+# Estado local do Supabase CLI (ref do projeto, versões, URL do pooler).
+# Sem senha, mas é estado de máquina, não do projeto.
+supabase/.temp/
+
+# Config local do Claude Code (dev server, permissões da sessão)
+.claude/
+
+# Documento de trabalho do usuário, não faz parte do código
+RESUMO-PARA-ANALISE-EXTERNA.md
