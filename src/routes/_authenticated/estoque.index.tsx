@@ -14,14 +14,14 @@ import { ArrowRight, Download, Loader2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { StockLaunchDialog } from "@/components/stock-launch-dialog";
 import { TablePagination } from "@/components/table-pagination";
+import { stockKeys } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/_authenticated/estoque/")({
   component: EstoquePage,
 });
 
-// Teto de segurança: a consulta busca TODAS as variações ativas do catálogo
-// (não só as que já têm saldo lançado — ver comentário na query abaixo).
-// 3722 variações ativas hoje; 6000 cobre com folga o crescimento próximo.
+// Teto de segurança. 3.722 saldos hoje (um por variação ativa no local padrão,
+// mais os de quarentena/perda quando houver); 6000 cobre o crescimento próximo.
 const FETCH_CAP = 6000;
 
 // O PostgREST do Supabase corta toda resposta em 1000 linhas (`max-rows`), e
@@ -56,22 +56,6 @@ type Balance = {
   haystack: string;
 };
 
-type VariantWithBalances = {
-  id: string;
-  size: string | null;
-  sku: string | null;
-  barcode: string | null;
-  product: { id: string; name: string; color: string | null; category: { id: string; name: string } | null } | null;
-  balances: {
-    id: string;
-    physical_quantity: number;
-    reserved_quantity: number;
-    available_quantity: number;
-    minimum_quantity: number;
-    location: { id: string; name: string } | null;
-  }[];
-};
-
 type StockFilter = "all" | "low" | "zero";
 
 function EstoquePage() {
@@ -93,31 +77,33 @@ function EstoquePage() {
     if (saved > 0) setRowsPerPage(saved);
   }, []);
 
-  // Antes esta tela buscava direto de inventory_balances — só aparecia aqui a
-  // variação que JÁ tinha uma linha de saldo lançada (recebimento, ajuste de
-  // inventário, importação do Olist etc.). Descobrimos que 3399 das 3722
-  // variações ativas do catálogo (91%!) nunca tiveram nenhum movimento de
-  // estoque, então nunca apareciam em Estoque nem eram encontradas — mesmo
-  // recém-cadastradas. Agora a fonte é product_variants (todo o catálogo
-  // ativo), com os saldos vindos por left join; quem não tem nenhuma linha de
-  // saldo entra como "Sem estoque" (zero) na Loja Principal, em vez de sumir.
+  // Voltou a ler direto de inventory_balances. Isso só é correto porque a
+  // integridade passou a ser garantida no banco: o gatilho
+  // trg_variant_ensure_balance cria a linha zerada no local padrão a cada
+  // variação nova (migration 20260913180000), e o backfill da mesma migration
+  // cobriu as 3.399 órfãs que existiam. Antes desse gatilho, esta consulta
+  // enxergava só 9% do catálogo — por isso a tela precisou, por um dia, ler de
+  // product_variants e sintetizar zeros na exibição.
+  //
+  // A paginação continua necessária: são 3.722 saldos e o PostgREST corta
+  // qualquer resposta em 1.000 linhas, ignorando `.limit()` maior.
   const { data, isLoading, error } = useQuery({
-    queryKey: ["stock-overview-v3"],
+    queryKey: stockKeys.overview(),
     queryFn: async () => {
-      const all: VariantWithBalances[] = [];
+      const all: Balance[] = [];
       for (let offset = 0; offset < FETCH_CAP; offset += PAGE_SIZE) {
         const { data, error } = await supabase
-          .from("product_variants")
+          .from("inventory_balances")
           .select(`
-            id, size, sku, barcode,
-            product:products(id, name, color, category:categories(id, name)),
-            balances:inventory_balances(id, physical_quantity, reserved_quantity, available_quantity, minimum_quantity, location:stock_locations(id, name))
+            id, physical_quantity, reserved_quantity, available_quantity, minimum_quantity,
+            variant:product_variants!inner(id, size, sku, barcode, deleted_at, product:products(id, name, color, category:categories(id, name))),
+            location:stock_locations(id, name)
           `)
-          .is("deleted_at", null)
+          .is("variant.deleted_at", null)
           .order("id")
           .range(offset, offset + PAGE_SIZE - 1);
         if (error) throw error;
-        const page = (data ?? []) as unknown as VariantWithBalances[];
+        const page = (data ?? []) as unknown as Balance[];
         all.push(...page);
         if (page.length < PAGE_SIZE) break;
       }
@@ -134,54 +120,18 @@ function EstoquePage() {
     queryFn: async () => (await supabase.from("categories").select("id, name").order("name")).data ?? [],
   });
 
-  // Local padrão de recebimento (o mais antigo cadastrado — "Loja Principal"),
-  // usado só para exibir as variações sem nenhum saldo lançado ainda.
-  const defaultLocation = useQuery({
-    queryKey: ["stock-locations-default"],
-    queryFn: async () =>
-      (await supabase.from("stock_locations").select("id, name").order("created_at").limit(1).maybeSingle()).data ??
-      null,
-  });
-
-  const variants = data ?? [];
-
   const rows = useMemo<Balance[]>(() => {
-    const out: Balance[] = [];
-    for (const v of variants) {
-      const variantInfo = { id: v.id, size: v.size, sku: v.sku, barcode: v.barcode, product: v.product };
-      const haystack = [v.product?.name, v.product?.color, v.size, v.sku, v.barcode]
+    const out = (data ?? []).map((b) => ({
+      ...b,
+      haystack: [b.variant?.product?.name, b.variant?.product?.color, b.variant?.size, b.variant?.sku, b.variant?.barcode]
         .filter(Boolean)
         .join(" ")
-        .toLowerCase();
-      if (v.balances && v.balances.length > 0) {
-        for (const b of v.balances) {
-          out.push({
-            id: b.id,
-            physical_quantity: b.physical_quantity,
-            reserved_quantity: b.reserved_quantity,
-            available_quantity: b.available_quantity,
-            minimum_quantity: b.minimum_quantity,
-            variant: variantInfo,
-            location: b.location,
-            haystack,
-          });
-        }
-      } else {
-        out.push({
-          id: `${v.id}:sem-entrada`,
-          physical_quantity: 0,
-          reserved_quantity: 0,
-          available_quantity: 0,
-          minimum_quantity: 0,
-          variant: variantInfo,
-          location: defaultLocation.data ?? null,
-          haystack,
-        });
-      }
-    }
+        .toLowerCase(),
+    }));
+    // Menor saldo primeiro: o que precisa de reposição aparece antes.
     out.sort((a, b) => a.physical_quantity - b.physical_quantity);
     return out;
-  }, [variants, defaultLocation.data]);
+  }, [data]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -343,10 +293,10 @@ function EstoquePage() {
             })}
           </TableBody>
         </Table>
-        {variants.length >= FETCH_CAP && (
+        {rows.length >= FETCH_CAP && (
           <div className="border-t bg-warning/10 px-4 py-2 text-xs text-warning-foreground">
-            O catálogo passou de {FETCH_CAP.toLocaleString("pt-BR")} variações e esta tela está mostrando só as
-            primeiras. Avise o suporte para aumentar o limite.
+            O catálogo passou de {FETCH_CAP.toLocaleString("pt-BR")} saldos e esta tela está mostrando só os
+            primeiros. Avise o suporte para aumentar o limite.
           </div>
         )}
         <TablePagination
