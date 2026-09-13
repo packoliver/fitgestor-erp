@@ -27,7 +27,7 @@ import { PostSaleDeliveryDialog } from "@/components/post-sale-delivery-dialog";
 import { CepAddressFields } from "@/components/cep-address-fields";
 import { pushInventoryVariantsToShopifyFn } from "@/lib/shopify-sync.functions";
 import { catalogKeys } from "@/lib/query-keys";
-import { searchSellableVariants, getVariantsByIds } from "@/lib/catalog.queries";
+import { searchSellableVariants, searchVariantsByCode, getVariantsByIds } from "@/lib/catalog.queries";
 import {
   notifyShopifyInventorySync,
   runShopifyInventorySync,
@@ -319,6 +319,8 @@ function PdvPage() {
 
   const [requestId, setRequestId] = useState(newRequestId());
   const [submitting, setSubmitting] = useState(false);
+  // Trava do bipe: leitor que manda Enter duas vezes não adiciona em dobro.
+  const [scanning, setScanning] = useState(false);
   const [heldOpen, setHeldOpen] = useState(false);
   const [activeHeldId, setActiveHeldId] = useState<string | null>(null);
   const [heldBusyId, setHeldBusyId] = useState<string | null>(null);
@@ -419,35 +421,114 @@ function PdvPage() {
     setQty("1");
   }
 
-  function commitAdd() {
-    if (!session || !pickedVariant) return;
-    const v = pickedVariant;
+  /**
+   * Põe uma variação no carrinho recebendo tudo por argumento.
+   *
+   * Tudo vem por parâmetro (e não do estado `pickedVariant`/`qty`/`currentPrice`)
+   * porque o bipe do leitor precisa achar o item e adicionar na MESMA volta,
+   * sem esperar re-render. Devolve false quando não deu para adicionar, pra
+   * quem chamou decidir se limpa o campo.
+   *
+   * A checagem de estoque é feita aqui fora, antes do `setCart`: o updater do
+   * React pode rodar duas vezes em desenvolvimento, e um `toast` lá dentro
+   * apareceria duplicado.
+   */
+  function addVariantToCart(v: any, wantQty: number, unitPrice: number): boolean {
+    if (!session) return false;
+    if (v.status !== "ativo" || v.product?.status !== "ativo") {
+      toast.error("Produto inativo.");
+      return false;
+    }
+    if (!unitPrice || unitPrice <= 0) {
+      toast.error("Produto sem preço.");
+      return false;
+    }
     const bal = (v.balances ?? []).find((b: any) => b.location_id === session.location_id);
     const available = bal ? Number(bal.physical_quantity) - Number(bal.reserved_quantity ?? 0) : 0;
-    const wantQty = Math.max(1, Math.floor(Number(qty) || 1));
+    const idx = cart.findIndex((l) => l.variant_id === v.id);
+    const currentInCart = idx >= 0 ? cart[idx].quantity : 0;
+    if (currentInCart + wantQty > available) {
+      toast.error("Estoque insuficiente.");
+      return false;
+    }
     setCart((prev) => {
-      const idx = prev.findIndex((l) => l.variant_id === v.id);
-      const currentInCart = idx >= 0 ? prev[idx].quantity : 0;
-      if (currentInCart + wantQty > available) { toast.error("Estoque insuficiente."); return prev; }
-      if (idx >= 0) {
+      const i = prev.findIndex((l) => l.variant_id === v.id);
+      if (i >= 0) {
         const copy = [...prev];
-        copy[idx] = { ...copy[idx], quantity: copy[idx].quantity + wantQty, unit_price: currentPrice };
+        copy[i] = { ...copy[i], quantity: copy[i].quantity + wantQty, unit_price: unitPrice };
         return copy;
       }
       return [...prev, {
         variant_id: v.id, product_id: v.product_id, name: v.product?.name ?? "—",
         color: v.color ?? v.product?.color ?? null, size: v.size, sku: v.sku, barcode: v.barcode,
-        unit_price: currentPrice, quantity: wantQty, available,
+        unit_price: unitPrice, quantity: wantQty, available,
       }];
     });
+    return true;
+  }
+
+  function commitAdd() {
+    if (!session || !pickedVariant) return;
+    const wantQty = Math.max(1, Math.floor(Number(qty) || 1));
+    if (!addVariantToCart(pickedVariant, wantQty, currentPrice)) return;
     setPickedVariant(null); setPickedPrice(""); setQty("1"); setTerm("");
     setTimeout(() => searchRef.current?.focus(), 50);
   }
 
-  function onSearchSubmit(e: React.FormEvent) {
+  /**
+   * Enter no campo de busca — o caminho do leitor de código de barras.
+   *
+   * Antes, o Enter só olhava `results`, que vem de uma query disparada a cada
+   * tecla. O leitor digita o código e manda Enter junto com o último caractere,
+   * então `results` quase sempre ainda estava em voo: o operador bipava, nada
+   * acontecia, e era preciso esperar o dropdown e apertar Enter de novo.
+   *
+   * Agora o Enter faz a busca exata ele mesmo (`{ exact: true }`), sem depender
+   * de nenhuma query assíncrona. Achou código de barras ou SKU exato: entra 1
+   * unidade no carrinho, campo limpo, foco de volta — pronto pro próximo bipe.
+   */
+  async function onSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (pickedVariant) { commitAdd(); return; }
-    if (results.length === 1) pickVariant(results[0]);
+
+    const code = term.trim();
+    if (!code || !session) return;
+    // Alguns leitores mandam Enter duas vezes; a trava evita bipar em dobro.
+    if (scanning) return;
+
+    setScanning(true);
+    try {
+      const exact = await searchVariantsByCode(code, {
+        exact: true,
+        withBalances: true,
+        limit: 1,
+      });
+
+      if (exact.length === 1) {
+        const v = exact[0];
+        const price = Number(effectiveVariantPrice(v, v.product ?? undefined)) || 0;
+        if (addVariantToCart(v, 1, price)) {
+          setTerm("");
+          setPickedVariant(null);
+          searchRef.current?.focus();
+        }
+        return;
+      }
+
+      // Sem código exato: segue o comportamento antigo de busca por texto.
+      if (results.length === 1) { pickVariant(results[0]); return; }
+
+      // Só avisa quando o que foi digitado tem cara de código lido pelo leitor
+      // (sem espaço, 6+ caracteres). Assim quem está digitando nome de produto
+      // não leva toast a cada Enter.
+      if (results.length === 0 && /^[A-Za-z0-9\-_.]{6,}$/.test(code)) {
+        toast.warning(`Código "${code}" não encontrado no catálogo.`);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao buscar o código.");
+    } finally {
+      setScanning(false);
+    }
   }
 
   const subtotal = useMemo(() => cart.reduce((s, l) => s + l.unit_price * l.quantity, 0), [cart]);
@@ -867,7 +948,14 @@ function PdvPage() {
       }
       if (e.ctrlKey && e.key === "Enter") {
         if (step === "sale" && cart.length > 0) { setStep("checkout"); e.preventDefault(); }
-        else if (step === "checkout" && (remaining === 0 || !!deliveryCollection) && cart.length > 0) { complete.mutate(); e.preventDefault(); }
+        else if (step === "checkout" && (remaining === 0 || !!deliveryCollection) && cart.length > 0) {
+          // Mesma trava que o F10 logo acima já tinha: sem ela, dois Ctrl+Enter
+          // seguidos disparavam duas vezes. O banco é idempotente por
+          // client_request_id e devolveria a mesma venda, mas não há motivo
+          // para depender disso.
+          e.preventDefault();
+          if (!submitting) complete.mutate();
+        }
         else if (step === "done") { startNewSale(); e.preventDefault(); }
       }
     }
