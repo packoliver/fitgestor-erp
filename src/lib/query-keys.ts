@@ -28,7 +28,6 @@ const CATALOG_ROOTS = [
   "product",
   "products-search-recebimento-v3",
   "pdv-search",
-  "pdv2-search",
   "label-search",
   "exchange-search",
   "inv-search",
@@ -53,7 +52,6 @@ const STOCK_ROOTS = [
   "goods-receipts-list",
   "inv-search",
   "pdv-search",
-  "pdv2-search",
   "exchange-search",
 ] as const;
 
@@ -67,7 +65,6 @@ export const catalogKeys = {
   shopifySync: (productId: string) => ["shopify-product-sync", productId] as const,
   recebimentoSearch: (term: string) => ["products-search-recebimento-v3", term] as const,
   pdvSearch: (term: string, locationId?: string) => ["pdv-search", term, locationId] as const,
-  pdv2Search: (term: string, locationId?: string) => ["pdv2-search", term, locationId] as const,
   labelSearch: (term: string) => ["label-search", term] as const,
   exchangeSearch: (term: string, locationId?: string) => ["exchange-search", term, locationId] as const,
 } as const;
