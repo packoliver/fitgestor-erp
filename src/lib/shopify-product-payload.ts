@@ -139,7 +139,16 @@ export function buildShopifyProductInput(args: BuildShopifyProductInput) {
     );
   }
 
-  const weight = Number(product.gross_weight ?? product.weight ?? 0);
+  // O Olist importou alguns pesos brutos como zero. Zero significa "não
+  // informado" aqui e não pode esconder um peso líquido válido.
+  const grossWeight = Number(product.gross_weight ?? 0);
+  const netWeight = Number(product.weight ?? 0);
+  const weight =
+    Number.isFinite(grossWeight) && grossWeight > 0
+      ? grossWeight
+      : Number.isFinite(netWeight) && netWeight > 0
+        ? netWeight
+        : 0;
   const variantInputs = variants.map((variant, index) => {
     const prices = effectivePrice(product, variant);
     const image = sortedImages.find((candidate) => candidate.variant_id === variant.id);
