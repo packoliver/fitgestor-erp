@@ -137,6 +137,25 @@ test("inventory only enters the payload behind the dedicated switch", () => {
   assert.equal(withStock.input.variants[1].inventoryQuantities[0].quantity, 0);
 });
 
+test("uses positive gross weight, falls back to net weight and omits missing weight", () => {
+  const buildWithWeight = (weight, grossWeight) =>
+    buildShopifyProductInput({
+      product: { ...product, weight, gross_weight: grossWeight },
+      variants: [variants[0]],
+      images: [],
+      collectionIds: [],
+      includeInventory: false,
+    }).input.variants[0].inventoryItem;
+
+  assert.deepEqual(buildWithWeight(0.25, 0).measurement, {
+    weight: { value: 0.25, unit: "KILOGRAMS" },
+  });
+  assert.deepEqual(buildWithWeight(0.25, 0.3).measurement, {
+    weight: { value: 0.3, unit: "KILOGRAMS" },
+  });
+  assert.equal("measurement" in buildWithWeight(0, null), false);
+});
+
 test("handle and variant matching stay stable and accent-insensitive", () => {
   assert.equal(shopifyHandle(product), "bermuda-power-bolsos-12345678");
   assert.equal(
