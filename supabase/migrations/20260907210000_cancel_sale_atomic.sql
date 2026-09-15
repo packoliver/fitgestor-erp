@@ -56,7 +56,15 @@ BEGIN
   END IF;
 
   -- Devolve o estoque de cada item vendido.
-  FOR v_item IN SELECT * FROM public.sale_items WHERE sale_id = _sale_id LOOP
+  -- ORDER BY variant_id garante lock ordering consistente: transações
+  -- concorrentes (ex.: outro estorno ou entrada de estoque) que também
+  -- ordenem por variant_id nunca adquirem locks em sentido inverso,
+  -- eliminando a condição de deadlock cruzado em inventory_balances.
+  FOR v_item IN
+    SELECT * FROM public.sale_items
+     WHERE sale_id = _sale_id
+     ORDER BY variant_id
+  LOOP
     SELECT physical_quantity INTO v_bal
       FROM public.inventory_balances
      WHERE variant_id = v_item.variant_id AND location_id = v_sale.location_id

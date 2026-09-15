@@ -368,8 +368,14 @@ export function createShopifyProductClient(
         productSet(identifier: $identifier, input: $input, synchronous: true) {
           product {
             id handle status
-            variants(first: 250) { nodes { id sku selectedOptions { name value } inventoryItem { id } } }
-            media(first: 250) { nodes { id alt mediaContentType } }
+            variants(first: 250) {
+              nodes { id sku selectedOptions { name value } inventoryItem { id } }
+              pageInfo { hasNextPage }
+            }
+            media(first: 250) {
+              nodes { id alt mediaContentType }
+              pageInfo { hasNextPage }
+            }
           }
           userErrors { code field message }
         }
@@ -387,7 +393,23 @@ export function createShopifyProductClient(
           }.`,
         );
       }
-      return data.productSet.product;
+      const product = data.productSet.product;
+      // Produtos com mais de 250 variações ou mídias excedem o limite estático
+      // da query. Lançamos um erro explícito e tratável aqui para evitar que o
+      // job entre em loop infinito de retries sem chance de sucesso.
+      if (product.variants?.pageInfo?.hasNextPage) {
+        throw new Error(
+          `Produto ${product.id} tem mais de 250 variações na Shopify — ` +
+            `implemente paginação ou reduza a grade de tamanhos/cores.`,
+        );
+      }
+      if (product.media?.pageInfo?.hasNextPage) {
+        throw new Error(
+          `Produto ${product.id} tem mais de 250 mídias na Shopify — ` +
+            `implemente paginação ou remova imagens excedentes.`,
+        );
+      }
+      return product;
     },
 
     async setPublication(productId: string, publicationId: string, publish: boolean) {
