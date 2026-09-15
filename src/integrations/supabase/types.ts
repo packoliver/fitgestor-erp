@@ -5097,7 +5097,13 @@ export type Database = {
         | "forfeit"
         | "require_equal_or_higher_value"
       credit_account_status: "active" | "blocked" | "closed"
-      delivery_method: "pickup" | "motoboy" | "correios" | "carrier" | "other"
+      delivery_method:
+        | "in_store"
+        | "pickup"
+        | "motoboy"
+        | "correios"
+        | "carrier"
+        | "other"
       entity_status: "ativo" | "inativo"
       exchange_pay_direction: "incoming" | "outgoing"
       exchange_status:
@@ -5366,7 +5372,7 @@ export const Constants = {
         "require_equal_or_higher_value",
       ],
       credit_account_status: ["active", "blocked", "closed"],
-      delivery_method: ["pickup", "motoboy", "correios", "carrier", "other"],
+      delivery_method: ["in_store", "pickup", "motoboy", "correios", "carrier", "other"],
       entity_status: ["ativo", "inativo"],
       exchange_pay_direction: ["incoming", "outgoing"],
       exchange_status: [

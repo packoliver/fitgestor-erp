@@ -15,14 +15,14 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CheckCircle2, Truck, Store, Package, Mail, MoreHorizontal, Loader2, MessageCircle } from "lucide-react";
+import { CheckCircle2, Truck, Store, Package, Mail, MoreHorizontal, Loader2, MessageCircle, ShoppingBag } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { money } from "@/lib/pos";
 import { OverrideScheduleDialog } from "@/components/shipping/override-schedule-dialog";
 import { CepAddressFields } from "@/components/cep-address-fields";
 import { generateMotoboyMessage } from "@/lib/delivery-utils";
 
-type DeliveryMethod = "pickup" | "motoboy" | "correios" | "carrier" | "other";
+type DeliveryMethod = "in_store" | "pickup" | "motoboy" | "correios" | "carrier" | "other";
 
 type Props = {
   saleId: string;
@@ -47,6 +47,7 @@ const EMPTY_ADDR: Address = {
 };
 
 const METHOD_OPTIONS: { value: DeliveryMethod; label: string; icon: React.ComponentType<{ className?: string }>; desc: string }[] = [
+  { value: "in_store", label: "Cliente em loja", icon: ShoppingBag, desc: "Compra entregue agora no balcão" },
   { value: "pickup",   label: "Retirada na loja", icon: Store, desc: "O cliente vai até a loja retirar" },
   { value: "motoboy",  label: "Entrega por motoboy", icon: Truck, desc: "Rota de entrega da loja" },
   { value: "correios", label: "Correios", icon: Mail, desc: "Envio pelos Correios" },

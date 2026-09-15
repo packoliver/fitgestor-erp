@@ -46,7 +46,8 @@ export const SALE_STATUS_VARIANT: Record<string, "default" | "secondary" | "dest
   cancelled: "outline",
 };
 
-const DELIVERY_METHOD_LABEL: Record<string, string> = {
+export const DELIVERY_METHOD_LABEL: Record<string, string> = {
+  in_store: "Cliente em loja",
   pickup: "Retirada na loja",
   motoboy: "Motoboy",
   correios: "Correios",

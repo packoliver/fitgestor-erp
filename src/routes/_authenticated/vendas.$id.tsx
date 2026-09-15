@@ -32,6 +32,15 @@ import {
   runShopifyInventorySync,
 } from "@/lib/shopify-inventory-sync";
 
+const DELIVERY_METHOD_LABEL: Record<string, string> = {
+  in_store: "Cliente em loja",
+  pickup: "Retirada na loja",
+  motoboy: "Motoboy",
+  correios: "Correios",
+  carrier: "Transportadora",
+  other: "Outro",
+};
+
 export const Route = createFileRoute("/_authenticated/vendas/$id")({
   component: VendaDetalhe,
 });
@@ -251,7 +260,9 @@ function VendaDetalhe() {
                 <Badge variant={statusVariant(delivery.data.shipment.status)}>{SHIPMENT_STATUS_LABEL[delivery.data.shipment.status] ?? delivery.data.shipment.status}</Badge>
               </>
             ) : delivery.data?.pref ? (
-              <span className="text-muted-foreground">Forma registrada: {delivery.data.pref.delivery_method}</span>
+              <span className="text-muted-foreground">
+                Forma registrada: {DELIVERY_METHOD_LABEL[delivery.data.pref.delivery_method] ?? delivery.data.pref.delivery_method}
+              </span>
             ) : (
               <span className="text-muted-foreground">Sem forma de entrega definida.</span>
             )}
