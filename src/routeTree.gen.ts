@@ -77,6 +77,7 @@ import { Route as ApiPublicHooksOlistSyncRouteImport } from './routes/api/public
 import { Route as ApiPublicHooksOlistWebhookRouteImport } from './routes/api/public/hooks/olist-webhook'
 import { Route as ApiPublicHooksShopifySyncRouteImport } from './routes/api/public/hooks/shopify-sync'
 import { Route as ApiPublicHooksShopifyWebhookRouteImport } from './routes/api/public/hooks/shopify-webhook'
+import { Route as ApiPublicHooksStorefrontCustomerRouteImport } from './routes/api/public/hooks/storefront-customer'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -461,6 +462,12 @@ const ApiPublicHooksShopifyWebhookRoute =
     path: '/api/public/hooks/shopify-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksStorefrontCustomerRoute =
+  ApiPublicHooksStorefrontCustomerRouteImport.update({
+    id: '/api/public/hooks/storefront-customer',
+    path: '/api/public/hooks/storefront-customer',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -528,6 +535,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/olist-webhook': typeof ApiPublicHooksOlistWebhookRoute
   '/api/public/hooks/shopify-sync': typeof ApiPublicHooksShopifySyncRoute
   '/api/public/hooks/shopify-webhook': typeof ApiPublicHooksShopifyWebhookRoute
+  '/api/public/hooks/storefront-customer': typeof ApiPublicHooksStorefrontCustomerRoute
   '/estoque/recebimentos/': typeof AuthenticatedEstoqueRecebimentosIndexRoute
   '/expedicao/rotas/': typeof AuthenticatedExpedicaoRotasIndexRoute
 }
@@ -597,6 +605,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/olist-webhook': typeof ApiPublicHooksOlistWebhookRoute
   '/api/public/hooks/shopify-sync': typeof ApiPublicHooksShopifySyncRoute
   '/api/public/hooks/shopify-webhook': typeof ApiPublicHooksShopifyWebhookRoute
+  '/api/public/hooks/storefront-customer': typeof ApiPublicHooksStorefrontCustomerRoute
   '/estoque/recebimentos': typeof AuthenticatedEstoqueRecebimentosIndexRoute
   '/expedicao/rotas': typeof AuthenticatedExpedicaoRotasIndexRoute
 }
@@ -668,6 +677,7 @@ export interface FileRoutesById {
   '/api/public/hooks/olist-webhook': typeof ApiPublicHooksOlistWebhookRoute
   '/api/public/hooks/shopify-sync': typeof ApiPublicHooksShopifySyncRoute
   '/api/public/hooks/shopify-webhook': typeof ApiPublicHooksShopifyWebhookRoute
+  '/api/public/hooks/storefront-customer': typeof ApiPublicHooksStorefrontCustomerRoute
   '/_authenticated/estoque/recebimentos/': typeof AuthenticatedEstoqueRecebimentosIndexRoute
   '/_authenticated/expedicao/rotas/': typeof AuthenticatedExpedicaoRotasIndexRoute
 }
@@ -739,6 +749,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/olist-webhook'
     | '/api/public/hooks/shopify-sync'
     | '/api/public/hooks/shopify-webhook'
+    | '/api/public/hooks/storefront-customer'
     | '/estoque/recebimentos/'
     | '/expedicao/rotas/'
   fileRoutesByTo: FileRoutesByTo
@@ -808,6 +819,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/olist-webhook'
     | '/api/public/hooks/shopify-sync'
     | '/api/public/hooks/shopify-webhook'
+    | '/api/public/hooks/storefront-customer'
     | '/estoque/recebimentos'
     | '/expedicao/rotas'
   id:
@@ -878,6 +890,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/olist-webhook'
     | '/api/public/hooks/shopify-sync'
     | '/api/public/hooks/shopify-webhook'
+    | '/api/public/hooks/storefront-customer'
     | '/_authenticated/estoque/recebimentos/'
     | '/_authenticated/expedicao/rotas/'
   fileRoutesById: FileRoutesById
@@ -894,6 +907,7 @@ export interface RootRouteChildren {
   ApiPublicHooksOlistWebhookRoute: typeof ApiPublicHooksOlistWebhookRoute
   ApiPublicHooksShopifySyncRoute: typeof ApiPublicHooksShopifySyncRoute
   ApiPublicHooksShopifyWebhookRoute: typeof ApiPublicHooksShopifyWebhookRoute
+  ApiPublicHooksStorefrontCustomerRoute: typeof ApiPublicHooksStorefrontCustomerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1374,6 +1388,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksShopifyWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/storefront-customer': {
+      id: '/api/public/hooks/storefront-customer'
+      path: '/api/public/hooks/storefront-customer'
+      fullPath: '/api/public/hooks/storefront-customer'
+      preLoaderRoute: typeof ApiPublicHooksStorefrontCustomerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1534,6 +1555,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksOlistWebhookRoute: ApiPublicHooksOlistWebhookRoute,
   ApiPublicHooksShopifySyncRoute: ApiPublicHooksShopifySyncRoute,
   ApiPublicHooksShopifyWebhookRoute: ApiPublicHooksShopifyWebhookRoute,
+  ApiPublicHooksStorefrontCustomerRoute: ApiPublicHooksStorefrontCustomerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
