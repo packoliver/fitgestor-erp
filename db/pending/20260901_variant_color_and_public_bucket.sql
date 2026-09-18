@@ -31,6 +31,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS product_variants_product_color_size_uniq
   WHERE deleted_at IS NULL;
 
 -- 3) Bucket de imagens público
--- ATENÇÃO: no Lovable, use a ferramenta de storage (storage_update_bucket)
+-- ATENÇÃO: altere a configuração do bucket pelo painel ou pela CLI do Supabase.
 -- em vez de UPDATE direto em storage.buckets. Comando equivalente:
 --   storage_update_bucket(name => 'product-images', public => true)

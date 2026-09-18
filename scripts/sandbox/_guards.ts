@@ -1,7 +1,7 @@
 // Guardas de segurança compartilhadas — aborta se detectar produção.
 // Uso: import { assertSandboxEnv, SANDBOX_IDS, SANDBOX_USERS } from "./_guards";
 
-const PROD_REF = "crlgixvekzgeizckzxgg"; // Ref de produção deste projeto Lovable — SEMPRE bloqueado.
+const PROD_REF = "crlgixvekzgeizckzxgg"; // Ref legado de produção — SEMPRE bloqueado.
 // Hostnames aceitos como "local" — comparação EXATA, nunca substring.
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "host.docker.internal", "kong"]);
 

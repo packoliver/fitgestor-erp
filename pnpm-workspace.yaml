@@ -1,2 +1,5 @@
 allowBuilds:
   core-js: true
+# Guarda de supply-chain: ignora versoes publicadas ha menos de 24h (em minutos).
+# Estava so no bunfig.toml, que deixou de valer quando o bun.lock saiu do projeto.
+minimumReleaseAge: 1440

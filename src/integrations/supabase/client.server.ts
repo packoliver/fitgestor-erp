@@ -31,9 +31,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 function createSupabaseAdminClient() {
   const SUPABASE_URL = process.env.SUPABASE_URL;
-  // Nome único padronizado da chave service role em TODO o projeto: SERVICE_ROLE_KEY.
-  // Observação: o prefixo `SUPABASE_` é reservado pela Lovable Cloud e não pode ser
-  // criado manualmente via Secrets, por isso usamos `SERVICE_ROLE_KEY` como nome canônico.
+  // Nome único padronizado da chave service role em todo o projeto.
   const serviceRoleKey = process.env.SERVICE_ROLE_KEY;
 
   if (!SUPABASE_URL || !serviceRoleKey) {
@@ -41,7 +39,7 @@ function createSupabaseAdminClient() {
       ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
       ...(!serviceRoleKey ? ['SERVICE_ROLE_KEY'] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Configure SERVICE_ROLE_KEY nos segredos do projeto.`;
+    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Configure-as na Vercel.`;
     console.error(`[Supabase] ${message}`);
     throw new Error(message);
   }

@@ -1,5 +1,5 @@
 // ⚠️  ATENÇÃO: Este arquivo contém lógica de segurança customizada.
-// NÃO sobrescreva com geradores automáticos (Lovable scaffold, supabase gen, etc.).
+// NÃO sobrescreva com geradores automáticos sem revisar a lógica customizada.
 // Qualquer regeneração deve ser feita manualmente e revisada em code review.
 import { createMiddleware } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
@@ -43,7 +43,7 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
         ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
         ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
       ];
-      const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
+      const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Configure-as na Vercel.`;
       console.error(`[Supabase] ${message}`);
       throw new Error(message);
     }
